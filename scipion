@@ -148,7 +148,6 @@ try:
             os.makedirs(d)
 
     SCIPION_SOFTWARE = DIRS_GLOBAL['SCIPION_SOFTWARE']
-    XMIPP_LIB = join(PACKAGES['XMIPP_HOME'], 'lib')
 
     PATH = os.pathsep.join(
         [join(SCIPION_SOFTWARE, 'bin'),
@@ -165,7 +164,6 @@ try:
     PYTHONPATH = os.pathsep.join(
         [SCIPION_HOME,
          join(SCIPION_SOFTWARE, 'lib', 'python2.7', 'site-packages'),
-         XMIPP_LIB,
          os.environ.get('PYTHONPATH', '')]
     )
 
@@ -362,14 +360,12 @@ Installs Scipion. Also used to install only part of it, as specified
 in the <target>, or to add extra em packages to Scipion.
 
 Arguments:
-  <target>      a library, a python module, an em package or a xmipp file
+  <target>      a library or a python module
    -j N         where N is the number of processors to use during installation
   --help        show this help message
   --show        just show what would be done, without actually installing
   --no-opencv   do not install opencv (big) or anything that depends on it
   --no-scipy    do not install scipy or anything that depends on it
-  --no-xmipp    use this option only after a successful compilation of Xmipp
-                to save some time when installing other packages 
 """ % ' '.join(sys.argv[:2]))
         else:
             # Create folders if needed.
@@ -378,57 +374,7 @@ Arguments:
                     sys.stdout.write("  Creating folder %s ...\n" % path)
                     os.makedirs(path)
 
-        def build(args):
-            # Just importing the script will launch the install actions
-            import install.script as script
-            # Remove targets names from environment, that are
-            # not recognized by Scons.
-            # TODO: think more deeply in a way to separate
-            # options for scons and our own install script
-            sconsArgs = [a for a in args if not script.env.hasTarget(a)]
-
-            # Special argument to skip Xmipp compilation, mainly for debugging
-            if '--no-xmipp' in args:
-                return 0
-
-            cmd = 'install/scons.py %s' % ' '.join(sconsArgs)
-            from install.funcs import green, yellow
-            print(green('Compiling Xmipp ...'))
-            print(cmd)
-
-            # If using some kind of show, do not compile Xmipp
-            if '--show' in args or '--show-tree' in args:
-                return 0
-
-            # Write xmipp.bashrc, xmipp.csh and xmipp.fish
-            # TODO: maybe consider moving this logic to an script
-            # under install/ module
-            tDir = join(SCIPION_HOME, 'config', 'templates')
-            for fname in os.listdir(tDir):
-                if fname.startswith('xmipp.') and fname.endswith('.template'):
-                    out = join(PACKAGES['XMIPP_HOME'], fname[:-len('.template')])
-                    if exists(out):
-                        print(yellow("Keeping existing file: %s" % out))
-                        continue
-                    print(yellow("Writing sourceable shell file: %s" % out))
-                    open(out, 'w').write(open(join(tDir, fname)).read() % VARS)
-
-            return os.system(cmd)
-
-        if args and args[0] == '--binary':
-            assert 'LDFLAGS' not in os.environ, "LDFLAGS already set. Refusing."
-            os.environ['LDFLAGS'] = '-Wl,-rpath,REPLACE_ME_WITH_FUNNY_'
-            # Install external libraries and compile Xmipp
-            ret = build(args[1:]) # ignore the --binary argument
-            if ret == 0:
-                ret = os.system(
-                    'scripts/change_rpath.py %(ss)s/bin %(ss)s/lib %(ss)s/em'
-                    % {'ss': SCIPION_SOFTWARE})
-        else:
-            # Install external libraries and compile Xmipp
-            ret = build(args)
-
-        if ret == 0 and not ('--help' in args or '-h' in args or '-H' in args
+        if not ('--help' in args or '-h' in args or '-H' in args
                              or'-c' in args):
             open(join(VARS['SCIPION_SOFTWARE'], 'log',
                       'success.log'), 'w').write('Yes :)')
@@ -440,7 +386,7 @@ Arguments:
   ************************************************************************
 """)
         os.chdir(cwd) # Go back to original folder
-        sys.exit(ret)
+        sys.exit(0)
 
     elif mode == MODE_CONFIG:
         runApp('pw_config.py', sys.argv[2:])
@@ -489,13 +435,6 @@ Arguments:
 
     # Allow to run programs from different packages
     # scipion will load the specified environment
-    elif (mode.startswith('xmipp') or
-          mode.startswith('relion') or
-          mode.startswith('e2') or 
-          mode.startswith('sx') or
-          mode.startswith('b')):
-        runApp('pw_program.py',  sys.argv[1:], chdir=False)
-    
     elif mode == MODE_HELP:
         sys.stdout.write("""\
 Usage: scipion [MODE] [ARGUMENTS]
@@ -539,10 +478,6 @@ MODE can be:
                              <dataset>: name of dataset to download, upload or format
                              --list: list the datasets in the local computer and in the server
                              --help: show all the available options
-                           For example, to download the dataset xmipp_tutorial:
-                             scipion testdata --download xmipp_tutorial
-                           Or to upload it:
-                             scipion testdata --upload xmipp_tutorial
                              
     tutorial [NAME]        Create a new protocol with a tutorial workflow loaded.
                            If NAME is empty, the list of available tutorials are shown.
