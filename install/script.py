@@ -101,35 +101,11 @@ zlib = env.addLibrary(
     tar='zlib-1.2.8.tgz',
     configTarget='zlib.pc')
 
-jpeg = env.addLibrary(
-    'jpeg',
-    tar='libjpeg-turbo-1.3.1.tgz',
-    flags=['--without-simd'])
-    #flags=([] if progInPath('nasm') else ['--without-simd']))
-
-png = env.addLibrary(
-    'png',
-    tar='libpng-1.6.16.tgz',
-    deps=[zlib])
-
-tiff = env.addLibrary(
-     'tiff',
-     tar='tiff-3.9.4.tgz',
-     deps=[zlib, jpeg])
-
 sqlite = env.addLibrary(
     'sqlite3',
     tar='sqlite-3.6.23.tgz',
     flags=['CPPFLAGS=-w',
            'CFLAGS=-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT=1'])
-
-hdf5 = env.addLibrary(
-     'hdf5',
-     tar='hdf5-1.8.14.tgz',
-     flags=['--enable-cxx', '--enable-shared'],
-     targets=[env.getLib('hdf5'), env.getLib('hdf5_cpp')],
-     configAlways=True,
-     deps=[zlib])
 
 python = env.addLibrary(
     'python',
@@ -171,8 +147,6 @@ arpack = env.addLibrary(
                'software/lib/libarpack.a')],
     default=False)
 # See http://modb.oce.ulg.ac.be/mediawiki/index.php/How_to_compile_ARPACK
-
-# ---------- Libraries required by PyTom 
 
 boost = env.addLibrary(
     'boost',
@@ -263,12 +237,6 @@ paramiko = env.addModule(
     'paramiko',
     tar='paramiko-1.14.0.tgz',
     default=False)
-
-pillow = env.addModule(
-    'Pillow',
-    tar='Pillow-2.5.1.tgz',
-    targets=['Pillow-2.5.1*'],
-    deps=[setuptools, jpeg])
 
 winpdb = env.addModule(
     'winpdb',
