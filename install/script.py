@@ -152,14 +152,6 @@ swig = env.addLibrary(
     deps=[pcre],
     default=False)
 
-sh_alignment = env.addLibrary(
-    'sh_alignment',
-    tar='sh_alignment.tgz',
-    commands=[('cd software/tmp/sh_alignment; make install',
-               'software/lib/python2.7/site-packages/sh_alignment/frm.py')],
-    deps=[python, swig],
-    default=False)
-
 lapack = env.addLibrary(
     'lapack',
     tar='lapack-3.5.0.tgz',
@@ -179,18 +171,6 @@ arpack = env.addLibrary(
                'software/lib/libarpack.a')],
     default=False)
 # See http://modb.oce.ulg.ac.be/mediawiki/index.php/How_to_compile_ARPACK
-
-if get('CUDA'):
-    opencvFlags = ['-DWITH_CUDA:BOOL=ON']
-else:
-    opencvFlags = ['-DWITH_CUDA:BOOL=OFF']
-opencv = env.addLibrary(
-    'opencv',
-    tar='opencv-2.4.9.tgz',
-    targets=[env.getLib('opencv_core')],
-    flags=opencvFlags,
-    cmake=True,
-    default=not noOpencv)
 
 # ---------- Libraries required by PyTom 
 
@@ -341,124 +321,6 @@ cythongsl = env.addModule(
     default=False,
     deps=[cython])
 # TODO: add checks for dependencies: GSL
-
-
-#  ************************************************************************
-#  *                                                                      *
-#  *                       External (EM) Packages                         *
-#  *                                                                      *
-#  ************************************************************************
-
-# 'commands' is a list of (command, [targets]) to run after installation.
-
-
-env.addPackage('bsoft-1.8.8',
-               tar='bsoft1_8_8_Fedora_12.tgz',
-               default=False)
-
-env.addPackage('bsoft-1.9.0',
-               tar='bsoft1_9_0_Fedora_20.tgz',
-               default=False)
-
-env.addPackage('ctffind',
-               tar='ctffind_V3.5.tgz',
-               default=False)
-
-env.addPackage('ctffind4',
-               tar='ctffind_V4.0.15.tgz',
-               default=False)
-
-env.addPackage('summovie',
-               tar='summovie_1.0.2.tgz',
-               default=False)
-
-env.addPackage('unblur',
-               tar='unblur_1.0_150529.tgz',
-               default=False)
-
-env.addPackage('eman2.11',
-               tar='eman2.11.linux64.tgz',
-               commands=[('./eman2-installer', 
-                          'eman2.bashrc')],
-               default=False)
-
-env.addPackage('eman2.12',
-               tar='eman2.12.linux64.tgz',
-               commands=[('./eman2-installer', 
-                          'eman2.bashrc')],
-               default=False)
-
-env.addPackage('frealign',
-               tar='frealign_v9.07.tgz',
-               default=False)
-
-env.addPackage('relion-1.4',
-               tar='relion-1.4.tgz',
-               commands=[('./INSTALL.sh -j %d' % env.getProcessors(),
-                          ['relion_build.log',
-                           'bin/relion'])],
-               default=False)
-
-env.addPackage('relion-1.4_float',
-               tar='relion-1.4_float.tgz',
-               commands=[('./INSTALL.sh -j %d' % env.getProcessors(),
-                          ['relion_build.log',
-                           'bin/relion'])],
-               default=False)
-
-env.addPackage('relion-1.3',
-               tar='relion-1.3.tgz',
-               commands=[('./INSTALL.sh -j %d' % env.getProcessors(),
-                          ['relion_build.log',
-                           'bin/relion'])],
-               default=False)
-
-env.addPackage('resmap',
-               tar='resmap-1.1.5-s2.tgz',
-               deps=['scipy'],
-               default=False)
-
-env.addPackage('spider',
-               tar='spider-web-21.13.tgz',
-               neededProgs=['csh'],
-               default=False)
-
-env.addPackage('motioncorr',
-               tar='motioncorr_v2.1.tgz',
-               default=False)
-
-env.addPackage('simple',
-               tar='simple2.tgz',
-               default=False)
-
-env.addPackage('chimera',
-               tar='chimera-1.10.1-linux_x86_64.tgz',
-               targetDir='chimera-1.10.1',
-               commands=[('./scipion_installer','bin/chimera')],
-               default=False)
-
-env.addPackage('dogpicker',
-               tar='dogpicker-0.2.1.tgz',
-               default=False)
-
-env.addPackage('nma',
-               tar='nma.tgz',
-               commands=[('cd ElNemo; make; mv nma_* ..', 'nma_elnemo_pdbmat'),
-                         ('cd NMA_cart; LDFLAGS=-L%s/lib make; mv nma_* ..' %
-                          os.environ['SCIPION_SOFTWARE'], 'nma_diag_arpack')],
-               deps=['arpack'],
-               default=False)
-
-cryoem = env.addPackage(
-                'cryoem',
-                tar='cryoem-1.0.tgz',
-                default=False,
-                pythonMod=True,
-                deps=[numpy, scipy, matplotlib, cythongsl])
-
-env.addPackage('gEMpicker_v1.1',
-               tar='gEMpicker_v1.1.tgz',
-               default=False)
 
 
 env.execute()
