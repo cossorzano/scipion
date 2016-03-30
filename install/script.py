@@ -208,7 +208,7 @@ matplotlib = env.addModule(
     tar='matplotlib-1.3.1.tgz',
     targets=['matplotlib-1.3.1*'],
     numpyIncludes=True,
-    deps=[numpy, png, dateutil, pyparsing])
+    deps=[numpy, dateutil, pyparsing])
 
 psutil = env.addModule(
     'psutil',
