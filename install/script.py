@@ -101,11 +101,35 @@ zlib = env.addLibrary(
     tar='zlib-1.2.8.tgz',
     configTarget='zlib.pc')
 
+jpeg = env.addLibrary(
+    'jpeg',
+    tar='libjpeg-turbo-1.3.1.tgz',
+    flags=['--without-simd'])
+    #flags=([] if progInPath('nasm') else ['--without-simd']))
+
+png = env.addLibrary(
+    'png',
+    tar='libpng-1.6.16.tgz',
+    deps=[zlib])
+
+tiff = env.addLibrary(
+     'tiff',
+     tar='tiff-3.9.4.tgz',
+     deps=[zlib, jpeg])
+
 sqlite = env.addLibrary(
     'sqlite3',
     tar='sqlite-3.6.23.tgz',
     flags=['CPPFLAGS=-w',
            'CFLAGS=-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT=1'])
+
+hdf5 = env.addLibrary(
+     'hdf5',
+     tar='hdf5-1.8.14.tgz',
+     flags=['--enable-cxx', '--enable-shared'],
+     targets=[env.getLib('hdf5'), env.getLib('hdf5_cpp')],
+     configAlways=True,
+     deps=[zlib])
 
 python = env.addLibrary(
     'python',
@@ -208,7 +232,7 @@ matplotlib = env.addModule(
     tar='matplotlib-1.3.1.tgz',
     targets=['matplotlib-1.3.1*'],
     numpyIncludes=True,
-    deps=[numpy, dateutil, pyparsing])
+    deps=[numpy, png, dateutil, pyparsing])
 
 psutil = env.addModule(
     'psutil',
@@ -237,6 +261,12 @@ paramiko = env.addModule(
     'paramiko',
     tar='paramiko-1.14.0.tgz',
     default=False)
+
+pillow = env.addModule(
+    'Pillow',
+    tar='Pillow-2.5.1.tgz',
+    targets=['Pillow-2.5.1*'],
+    deps=[setuptools, jpeg])
 
 winpdb = env.addModule(
     'winpdb',
@@ -290,5 +320,138 @@ cythongsl = env.addModule(
     deps=[cython])
 # TODO: add checks for dependencies: GSL
 
+sklearn = env.addModule(
+    'sklearn',
+    tar='scikit-learn-0.17.tar.gz',
+    default=False,
+    deps=[scipy, numpy, cython])
+
+
+
+#  ************************************************************************
+#  *                                                                      *
+#  *                       External (EM) Packages                         *
+#  *                                                                      *
+#  ************************************************************************
+
+# 'commands' is a list of (command, [targets]) to run after installation.
+
+
+env.addPackage('bsoft-1.8.8',
+               tar='bsoft1_8_8_Fedora_12.tgz',
+               default=False)
+
+env.addPackage('bsoft-1.9.0',
+               tar='bsoft1_9_0_Fedora_20.tgz',
+               default=False)
+
+env.addPackage('ctffind',
+               tar='ctffind_V3.5.tgz',
+               default=False)
+
+env.addPackage('ctffind4',
+               tar='ctffind_V4.0.15.tgz',
+               default=False)
+
+env.addPackage('summovie',
+               tar='summovie_1.0.2.tgz',
+               default=False)
+
+env.addPackage('unblur',
+               tar='unblur_1.0_150529.tgz',
+               default=False)
+
+env.addPackage('eman2.11',
+               tar='eman2.11.linux64.tgz',
+               commands=[('./eman2-installer', 
+                          'eman2.bashrc')],
+               default=False)
+
+env.addPackage('eman2.12',
+               tar='eman2.12.linux64.tgz',
+               commands=[('./eman2-installer', 
+                          'eman2.bashrc')],
+               default=False)
+
+env.addPackage('frealign',
+               tar='frealign_v9.07.tgz',
+               default=False)
+
+env.addPackage('relion-1.4',
+               tar='relion-1.4.tgz',
+               commands=[('./INSTALL.sh -j %d' % env.getProcessors(),
+                          ['relion_build.log',
+                           'bin/relion'])],
+               default=False)
+
+env.addPackage('relion-1.4_float',
+               tar='relion-1.4_float.tgz',
+               commands=[('./INSTALL.sh -j %d' % env.getProcessors(),
+                          ['relion_build.log',
+                           'bin/relion'])],
+               default=False)
+
+env.addPackage('relion-1.3',
+               tar='relion-1.3.tgz',
+               commands=[('./INSTALL.sh -j %d' % env.getProcessors(),
+                          ['relion_build.log',
+                           'bin/relion'])],
+               default=False)
+
+env.addPackage('resmap',
+               tar='resmap-1.1.5-s2.tgz',
+               deps=['scipy'],
+               default=False)
+
+env.addPackage('spider',
+               tar='spider-web-21.13.tgz',
+               neededProgs=['csh'],
+               default=False)
+
+env.addPackage('motioncorr',
+               tar='motioncorr_v2.1.tgz',
+               default=False)
+
+env.addPackage('simple',
+               tar='simple2.tgz',
+               default=False)
+
+env.addPackage('chimera',
+               tar='chimera-1.10.1-linux_x86_64.tgz',
+               targetDir='chimera-1.10.1',
+               commands=[('./scipion_installer','bin/chimera')],
+               default=False)
+
+env.addPackage('dogpicker',
+               tar='dogpicker-0.2.1.tgz',
+               default=False)
+
+env.addPackage('nma',
+               tar='nma.tgz',
+               commands=[('cd ElNemo; make; mv nma_* ..', 'nma_elnemo_pdbmat'),
+                         ('cd NMA_cart; LDFLAGS=-L%s/lib make; mv nma_* ..' %
+                          os.environ['SCIPION_SOFTWARE'], 'nma_diag_arpack')],
+               deps=['arpack'],
+               default=False)
+
+cryoem = env.addPackage(
+                'cryoem',
+                tar='cryoem-1.0.tgz',
+                default=False,
+                pythonMod=True,
+                numpyIncludes=True,
+                deps=[numpy, scipy, matplotlib, cythongsl])
+
+env.addPackage('gEMpicker_v1.1',
+               tar='gEMpicker_v1.1.tgz',
+               default=False)
+
+env.addPackage('Gctf_v0.50',
+               tar='Gctf_v0.50.tgz',
+               default=False)
+
+env.addPackage('Gautomatch_v0.50',
+               tar='Gautomatch_v0.50.tgz',
+               default=False)
 
 env.execute()
