@@ -158,7 +158,6 @@ try:
     LD_LIBRARY_PATH = os.pathsep.join(
         [join(SCIPION_SOFTWARE, 'lib'),
          BUILD['MPI_LIBDIR'],
-         BUILD['CUDA'],
          os.environ.get('LD_LIBRARY_PATH', '')]
     )
     PYTHONPATH = os.pathsep.join(
@@ -374,7 +373,31 @@ Arguments:
                     sys.stdout.write("  Creating folder %s ...\n" % path)
                     os.makedirs(path)
 
-        if not ('--help' in args or '-h' in args or '-H' in args
+        def build(args):
+            # Just importing the script will launch the install actions
+            import install.script as script
+            # Remove targets names from environment, that are
+            # not recognized by Scons.
+            # TODO: think more deeply in a way to separate
+            # options for scons and our own install script
+            sconsArgs = [a for a in args if not script.env.hasTarget(a)]
+
+            return 0
+
+        if args and args[0] == '--binary':
+            assert 'LDFLAGS' not in os.environ, "LDFLAGS already set. Refusing."
+            os.environ['LDFLAGS'] = '-Wl,-rpath,REPLACE_ME_WITH_FUNNY_'
+            # Install external libraries and compile Xmipp
+            ret = build(args[1:]) # ignore the --binary argument
+            if ret == 0:
+                ret = os.system(
+                    'scripts/change_rpath.py %(ss)s/bin %(ss)s/lib %(ss)s/em'
+                    % {'ss': SCIPION_SOFTWARE})
+        else:
+            # Install external libraries and compile Xmipp
+            ret = build(args)
+
+        if ret == 0 and not ('--help' in args or '-h' in args or '-H' in args
                              or'-c' in args):
             open(join(VARS['SCIPION_SOFTWARE'], 'log',
                       'success.log'), 'w').write('Yes :)')
@@ -386,7 +409,7 @@ Arguments:
   ************************************************************************
 """)
         os.chdir(cwd) # Go back to original folder
-        sys.exit(0)
+        sys.exit(ret)
 
     elif mode == MODE_CONFIG:
         runApp('pw_config.py', sys.argv[2:])
