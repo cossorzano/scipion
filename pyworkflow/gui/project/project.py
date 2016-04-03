@@ -47,7 +47,6 @@ from pyworkflow.gui.text import _open_cmd
 import SocketServer
 
 # Import possible Object commands to be handled
-from pyworkflow.em.showj import OBJCMD_NMA_PLOTDIST, OBJCMD_NMA_VMD, OBJCMD_MOVIE_ALIGNCARTESIAN, OBJCMD_CTFFIND4
 from base import ProjectBaseWindow, VIEW_PROTOCOLS, VIEW_PROJECTS
 
 
@@ -199,25 +198,6 @@ class ProjectWindow(ProjectBaseWindow):
                 inputId = int(inputStrId)
                 inputObj = project.mapper.selectById(inputId)
             #Plotter.setBackend('TkAgg')
-            if cmd == OBJCMD_NMA_PLOTDIST:
-                self.enqueue(lambda: createDistanceProfilePlot(inputObj, modeNumber=objId).show())
-    
-            elif cmd == OBJCMD_NMA_VMD:
-                vmd = createVmdView(inputObj, modeNumber=objId)
-                vmd.show()
-    
-    #         elif cmd == OBJCMD_MOVIE_ALIGNPOLAR:
-    #             self.enqueue(lambda: createPlots(PLOT_POLAR, inputObj, objId))
-    
-            elif cmd == OBJCMD_MOVIE_ALIGNCARTESIAN:
-                self.enqueue(lambda: createPlots(PLOT_CART, inputObj, objId))
-    
-            #elif cmd == OBJCMD_MOVIE_ALIGNPOLARCARTESIAN:
-            #    self.enqueue(lambda: createPlots(PLOT_POLARCART, inputObj, objId))
-            
-            elif cmd == OBJCMD_CTFFIND4:
-                from pyworkflow.em.packages.grigoriefflab.viewer import createCtfPlot
-                self.enqueue(lambda: createCtfPlot(inputObj, objId))
         except Exception, ex:
             print "There was an error executing object command !!!:"
             print  ex
