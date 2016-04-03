@@ -49,8 +49,6 @@ import metadata as md
 import xmipp
 from data import PdbFile
 
-from viewer_fsc import FscViewer
-
 #------------------------ Some common Views ------------------
 
 class DataView(View):

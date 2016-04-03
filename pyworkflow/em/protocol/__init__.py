@@ -30,4 +30,3 @@ each EM-software package.
 """
 from protocol import *
 from protocol_import import *
-from protocol_batch import *
