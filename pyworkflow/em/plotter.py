@@ -31,8 +31,6 @@ from itertools import izip
 import matplotlib.pyplot as plt
 
 from pyworkflow.gui.plotter import Plotter
-import metadata as md
-
 
 
 class EmPlotter(Plotter):
@@ -57,26 +55,6 @@ class EmPlotter(Plotter):
             for r, t in izip(rot, tilt):
                 a.plot(r, t, markerfacecolor=color, marker='.', markersize=10)
                 
-    def plotAngularDistributionFromMd(self, mdFile, title, **kwargs):
-        """ Read the values of rot, tilt and weights from
-        the medata and plot the angular distribution.
-        ANGLES are in DEGREES
-        In the metadata:
-            rot: MDL_ANGLE_ROT
-            tilt: MDL_ANGLE_TILT
-            weight: MDL_WEIGHT
-        """
-
-        angMd = md.MetaData(mdFile)
-        rot = []
-        tilt = []
-        weight = []
-        
-        for row in md.iterRows(angMd):
-            rot.append(radians(row.getValue(md.MDL_ANGLE_ROT)))
-            tilt.append(row.getValue(md.MDL_ANGLE_TILT))
-            weight.append(row.getValue(md.MDL_WEIGHT))
-        return self.plotAngularDistribution(title, rot, tilt, weight, **kwargs)
         
     def plotHist(self, yValues, nbins, color='blue', **kwargs):
         """ Create an histogram. """
@@ -177,17 +155,6 @@ class PlotData():
                   for obj in self._table.iterItems(orderBy=self._orderColumn, 
                                                    direction=self._orderDirection)]
         
-    def _loadMd(self, fileName, tableName):
-        label = md.str2Label(self._orderColumn)
-        tableMd = md.MetaData('%s@%s' % (tableName, fileName))
-        tableMd.sort(label)#FIXME: use order direction 
-        #TODO: sort metadata by self._orderColumn
-        return tableMd
-    
-    def _getValuesFromMd(self, columnName):
-        label = md.str2Label(columnName)
-        return [self._table.getValue(label, objId) for objId in self._table]
-    
     def _getValue(self, obj, column):
         if column == 'id':
             return obj.getObjId()

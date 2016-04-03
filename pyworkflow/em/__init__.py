@@ -32,7 +32,6 @@ import sys
 import pyworkflow as pw
 from pyworkflow.utils.reflection import getSubclassesFromModules, getSubclasses, getModules
 from data import *
-from data_tiltpairs import *
 from protocol import *
 from constants import *
 from convert import *
