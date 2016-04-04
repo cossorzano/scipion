@@ -1,0 +1,66 @@
+# **************************************************************************
+# *
+# * Authors:     Carlos Oscar Sorzano (coss@cnb.csic.es)
+# *
+# * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
+# *
+# * This program is free software; you can redistribute it and/or modify
+# * it under the terms of the GNU General Public License as published by
+# * the Free Software Foundation; either version 2 of the License, or
+# * (at your option) any later version.
+# *
+# * This program is distributed in the hope that it will be useful,
+# * but WITHOUT ANY WARRANTY; without even the implied warranty of
+# * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# * GNU General Public License for more details.
+# *
+# * You should have received a copy of the GNU General Public License
+# * along with this program; if not, write to the Free Software
+# * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+# * 02111-1307  USA
+# *
+# *  All comments concerning this program package may be sent to the
+# *  e-mail address 'coss@cnb.csic.es'
+# *
+# **************************************************************************
+
+"""
+Import experiment
+"""
+from base import ProtImportFiles
+import pyworkflow.protocol.params as params
+
+class ProtImportExperiment(ProtImportFiles):
+    """ Protocol to import an PKPD experiment """
+    _label = 'import experiment'
+    IMPORT_FROM_FILES = 1 
+    
+    def __init__(self, **args):
+        ProtImportFiles.__init__(self, **args)
+       
+    def _defineParams(self, form):
+        form.addSection(label='Input')
+        form.addParam('inputFile', params.PathParam,
+                      label="File path", allowsNull=False,
+                      help='Specify a path to desired experiment file.')
+         
+    def _insertAllSteps(self):
+        self._insertFunctionStep('createOutputStep', self.inputFile.get())
+        
+    def createOutputStep(self, inputPath):
+        baseName = basename(inputPath)
+        localPath = self._getExtraPath(inputPath)
+        copyFile(pdbPath, localPath)
+#        pdb = PdbFile()
+#        pdb.setFileName(localPath)
+#        self._defineOutputs(outputPdb=pdb)
+
+    def _summary(self):
+        summary = ['Experiment imported from file: *%s*' % self.inputFile]
+        return summary
+    
+    def _validate(self):
+        errors = []
+        if (not exists(self.inputFile.get())):
+            errors.append("Experiment not found at *%s*" % self.inputFile.get())
+        return errors

@@ -29,4 +29,4 @@ Sub-packages containing different sub-modules to import different type
 of objects.
 """
 
-from base import ProtImport
+from import_experiment import ProtImportExperiment
