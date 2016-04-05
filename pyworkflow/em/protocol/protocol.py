@@ -66,9 +66,6 @@ class EMProtocol(Protocol):
         return self.getObjLabel()
     
     def allowsDelete(self, obj):
-        if (isinstance(obj, SetOfCoordinates) or
-            isinstance(obj, CoordinatesTiltPair)):
-            return True
         return False
         
     
