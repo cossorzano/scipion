@@ -88,3 +88,18 @@ class Matrix(Scalar):
         """
         self.setMatrix(np.copy(other.getMatrix()))
         self._objValue = other._objValue
+
+class PKPDExperiment(EMObject):
+    def __init__(self, **args):
+        EMObject.__init__(self, **args)
+        self.general = None
+        self.variables = None
+        self.samples = None
+        self.dose = None
+        self.measurements = None
+
+    def load(self, fnExperiment):
+        print("Reading ", fnExperiment)
+
+    def write(self, fnExperiment):
+        pass

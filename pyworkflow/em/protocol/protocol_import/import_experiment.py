@@ -29,6 +29,9 @@ Import experiment
 """
 from base import ProtImportFiles
 import pyworkflow.protocol.params as params
+from pyworkflow.em.data import PKPDExperiment
+from os.path import exists, basename
+from pyworkflow.utils.path import copyFile
 
 class ProtImportExperiment(ProtImportFiles):
     """ Protocol to import an PKPD experiment """
@@ -37,7 +40,7 @@ class ProtImportExperiment(ProtImportFiles):
     
     def __init__(self, **args):
         ProtImportFiles.__init__(self, **args)
-       
+
     def _defineParams(self, form):
         form.addSection(label='Input')
         form.addParam('inputFile', params.PathParam,
@@ -48,12 +51,11 @@ class ProtImportExperiment(ProtImportFiles):
         self._insertFunctionStep('createOutputStep', self.inputFile.get())
         
     def createOutputStep(self, inputPath):
-        baseName = basename(inputPath)
-        localPath = self._getExtraPath(inputPath)
-        copyFile(pdbPath, localPath)
-#        pdb = PdbFile()
-#        pdb.setFileName(localPath)
-#        self._defineOutputs(outputPdb=pdb)
+        localPath = self._getExtraPath(basename(inputPath))
+        copyFile(inputPath, localPath)
+        experiment = PKPDExperiment()
+        experiment.load(localPath)
+        self._defineOutputs(outputExperiment=experiment)
 
     def _summary(self):
         summary = ['Experiment imported from file: *%s*' % self.inputFile]
