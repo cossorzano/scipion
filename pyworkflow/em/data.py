@@ -131,6 +131,15 @@ class PKPDUnit:
     def __init__(self,unitString=""):
         self.unit = self._fromString(unitString)
 
+    def isTime(self):
+        return self.unit>=1 and self.unit<=9
+
+    def isConcentration(self):
+        return self.unit>=10 and self.unit<=99
+
+    def isWeight(self):
+        return self.unit>=100 and self.unit<=109
+
     def _fromString(self, unitString):
         if unitString =="":
             return None
@@ -146,7 +155,6 @@ class PKPDUnit:
             return ""
 
 class PKPDVariable:
-
     TYPE_NUMERIC = 1000
     TYPE_TEXT = 1001
 
@@ -219,29 +227,153 @@ class PKPDVariable:
         fh.write("%s ; %s ; %s[%s] ; %s ; %s\n"%(self.varName,self.units._toString(),
                                                typeString,displayString,roleString,self.comment))
 
+class PKPDDose:
+    TYPE_BOLUS = 1
+    TYPE_INFUSION = 2
+
+    def __init__(self,tokens):
+        # Dose1; bolus t=0 d=60; mg; dose*weight/1000
+        # Dose1; infusion t=0...59 d=1; mg; dose*weight/1000
+
+        # Get name
+        self.varName = tokens[0].strip()
+
+        # Get type
+        doseString = tokens[1].strip()
+        doseTokens = doseString.split(' ')
+        if len(doseTokens)!=3:
+            raise Exception("Unrecognized dose type %s"%doseString)
+        doseTypeString = doseTokens[0].strip().lower()
+        timeString = doseTokens[1].strip().lower().split("=")[1]
+        if doseTypeString=="bolus":
+            self.doseType = PKPDDose.TYPE_BOLUS
+            self.t0 = float(timeString)
+        elif doseTypeString=="infusion":
+            self.doseType = PKPDDose.TYPE_INFUSION
+            timeTokens = timeString.split("...")
+            self.t0 = float(timeTokens[0])
+            self.tF = float(timeTokens[1])
+        else:
+            raise Exception("Unrecognized dose type %s"%doseTypeString)
+        self.doseAmount = float(doseTokens[2].strip().lower().split("=")[1])
+
+        # Get units
+        unitString = tokens[2].strip()
+        self.units = PKPDUnit(unitString)
+        if not self.units.unit:
+            raise Exception("Unrecognized unit: %s"%unitString)
+        if not self.units.isWeight():
+            raise Exception("After normalization, the dose must be a weight")
+
+        # Get normalization
+        self.normalization = tokens[3].strip()
+
+    def _printToStream(self,fh):
+        doseString = ""
+        if self.doseType == PKPDDose.TYPE_BOLUS:
+            doseString = "bolus t=%f"%self.t0
+        elif self.doseType == PKPDDose.TYPE_INFUSION:
+            doseString = "infusion t=%f...%f"%(self.t0,self.tF)
+        fh.write("%s ; %s d=%f; %s ; %s\n"%\
+                 (self.varName,doseString, self.doseAmount, self.units._toString(), self.normalization))
+
+class PKPDSample:
+    def __init__(self,tokens,variableDict,doseDict):
+        # FemaleRat1; dose=Dose1; weight=207
+
+        # Keep a pointer to variableDict and doseDict
+        self.variableDictPtr = variableDict
+        self.doseDictPtr = doseDict
+
+        # Get name
+        self.varName = tokens[0].strip()
+
+        # Get dose
+        doseName = tokens[1].split('=')[1].strip()
+        if doseName in doseDict:
+            self.dose = doseDict[doseName]
+        else:
+            raise Exception("Unrecognized dose %s"%doseName)
+
+        # Get rest of variables
+        self.descriptors = {}
+        for n in range(2,len(tokens)):
+            varTokens = tokens[n].split('=')
+            varName  = varTokens[0].strip()
+            varValue = varTokens[1].strip()
+            if varName in variableDict:
+                varPtr = variableDict[varName]
+                if varPtr.role != PKPDVariable.ROLE_LABEL:
+                    raise Exception("Samples can only use role variables")
+                self.descriptors[varName] = varValue
+
+    def addMeasurementPattern(self,tokens):
+        self.measurementPattern = []
+        for n in range(1,len(tokens)):
+            varName = tokens[n].strip()
+            if varName in self.variableDictPtr:
+                self.measurementPattern.append(varName)
+                setattr(self,"measurement_%s"%varName,[])
+            else:
+                raise Exception("Unrocgnized variable %s"%varName)
+
+    def addMeasurement(self,line):
+        tokens = line.split()
+        if len(tokens)!=len(self.measurementPattern):
+            raise Exception("Not enough values to fill measurement pattern")
+        for n in range(0,len(tokens)):
+            eval("self.measurement_%s.append('%s')"%(self.measurementPattern[n],tokens[n]))
+
+    def _printToStream(self,fh):
+        descriptorString = ""
+        for key, value in self.descriptors.iteritems():
+            descriptorString +="; %s=%s"%(key,value)
+        fh.write("%s; dose=%s %s\n"%(self.varName,self.dose.varName,descriptorString))
+
+    def _printMeasurements(self,fh):
+        patternString = ""
+        for n in range(0,len(self.measurementPattern)):
+            patternString += "; %s"%self.measurementPattern[n]
+        fh.write("%s %s\n"%(self.varName,patternString))
+        if len(self.measurementPattern)>0:
+            aux=getattr(self,"measurement_%s"%self.measurementPattern[0])
+            N = len(aux)
+        for i in range(0,N):
+            lineString = ""
+            for n in range(0,len(self.measurementPattern)):
+                aux=getattr(self,"measurement_%s"%self.measurementPattern[n])
+                lineString += aux[i]+" "
+            fh.write("%s\n"%lineString)
+        fh.write("\n")
+
 class PKPDExperiment(EMObject):
     READING_GENERAL = 1
     READING_VARIABLES = 2
     READING_DOSES = 3
     READING_SAMPLES = 4
     READING_MEASUREMENTS = 5
+    READING_A_MEASUREMENT = 6
 
     def __init__(self, **args):
         EMObject.__init__(self, **args)
+        self.fnPKPD = String()
         self.general = {}
         self.variables = {}
         self.samples = {}
-        self.dose = {}
+        self.doses = {}
         self.measurements = {}
 
     def load(self, fnExperiment):
         fh=open(fnExperiment,'r')
+        self.fnPKPD.set(fnExperiment)
         if not fh:
             raise Exception("Cannot open the file "+fnExperiment)
 
         for line in fh.readlines():
             line=line.strip()
             if line=="":
+                if state==PKPDExperiment.READING_A_MEASUREMENT:
+                    state=PKPDExperiment.READING_MEASUREMENTS
                 continue
             if line[0]=='[':
                 section = line.split('=')[0].strip().lower()
@@ -267,10 +399,40 @@ class PKPDExperiment(EMObject):
             elif state==PKPDExperiment.READING_VARIABLES:
                 tokens = line.split(';')
                 if len(tokens)!=5:
-                    print("Skipping: ",line)
+                    print("Skipping variable: ",line)
                     continue
                 varname = tokens[0].strip()
                 self.variables[varname] = PKPDVariable(tokens)
+
+            elif state==PKPDExperiment.READING_DOSES:
+                tokens = line.split(';')
+                if len(tokens)!=4:
+                    print("Skipping dose: ",line)
+                    continue
+                dosename = tokens[0].strip()
+                self.doses[dosename] = PKPDDose(tokens)
+
+            elif state==PKPDExperiment.READING_SAMPLES:
+                tokens = line.split(';')
+                if len(tokens)<2:
+                    print("Skipping sample: ",line)
+                    continue
+                samplename = tokens[0].strip()
+                self.samples[samplename] = PKPDSample(tokens,self.variables, self.doses)
+
+            elif state==PKPDExperiment.READING_MEASUREMENTS:
+                tokens = line.split(';')
+                if len(tokens)<3:
+                    print("Skipping measurement: ",line)
+                    continue
+                samplename = tokens[0].strip()
+                if samplename in self.samples:
+                    self.samples[samplename].addMeasurementPattern(tokens)
+                    state=PKPDExperiment.READING_A_MEASUREMENT
+                else:
+                    print("Skipping measurement: %s"%line)
+            elif state==PKPDExperiment.READING_A_MEASUREMENT:
+                self.samples[samplename].addMeasurement(line)
 
         fh.close()
         self._printToStream(sys.stdout)
@@ -289,4 +451,19 @@ class PKPDExperiment(EMObject):
         fh.write("[VARIABLES] ============================\n")
         for key, value in self.variables.iteritems():
             value._printToStream(fh)
+        fh.write("\n")
+
+        fh.write("[DOSES] ================================\n")
+        for key, value in self.doses.iteritems():
+            value._printToStream(fh)
+        fh.write("\n")
+
+        fh.write("[SAMPLES] ================================\n")
+        for key, value in self.samples.iteritems():
+            value._printToStream(fh)
+        fh.write("\n")
+
+        fh.write("[MEASUREMENTS] ===========================\n")
+        for key, value in self.samples.iteritems():
+            value._printMeasurements(fh)
         fh.write("\n")
