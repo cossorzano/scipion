@@ -31,6 +31,7 @@ from base import ProtImportFiles
 import pyworkflow.protocol.params as params
 from pyworkflow.em.data import PKPDExperiment
 from os.path import exists, basename
+import sys
 from pyworkflow.utils.path import copyFile
 
 class ProtImportExperiment(ProtImportFiles):
@@ -55,6 +56,7 @@ class ProtImportExperiment(ProtImportFiles):
         copyFile(inputPath, localPath)
         experiment = PKPDExperiment()
         experiment.load(localPath)
+        experiment._printToStream(sys.stdout)
         self._defineOutputs(outputExperiment=experiment)
 
     def _summary(self):
