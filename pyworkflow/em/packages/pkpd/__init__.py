@@ -28,4 +28,4 @@ PKPD functions
 """
 
 from protocol_pkpd_nca import ProtPKPDNCA
-
+from protocol_pkpd_filter_samples import ProtPKPDFilterSamples

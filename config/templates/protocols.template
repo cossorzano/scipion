@@ -12,6 +12,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtImportExperiment",
 		"text": "import experiment"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDFilterSamples",
+		"text": "filter samples"
 	}]
     },
     {
