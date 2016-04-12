@@ -363,11 +363,12 @@ class PKPDExperiment(EMObject):
         self.doses = {}
         self.measurements = {}
 
-    def load(self, fnExperiment):
-        fh=open(fnExperiment,'r')
-        self.fnPKPD.set(fnExperiment)
+    def load(self, fnExperiment=""):
+        if fnExperiment!="":
+            self.fnPKPD.set(fnExperiment)
+        fh=open(self.fnPKPD.get(),'r')
         if not fh:
-            raise Exception("Cannot open the file "+fnExperiment)
+            raise Exception("Cannot open the file "+self.fnPKPD)
 
         for line in fh.readlines():
             line=line.strip()
@@ -435,7 +436,6 @@ class PKPDExperiment(EMObject):
                 self.samples[samplename].addMeasurement(line)
 
         fh.close()
-        self._printToStream(sys.stdout)
 
     def write(self, fnExperiment):
         fh=open(fnExperiment,'w')
