@@ -45,23 +45,35 @@ class ProtPKPDFilterSamples(ProtPKPD):
         form.addParam('filterType', params.EnumParam, choices=["Exclude","Keep"], label="Filter mode", default=0,
                       help='Exclude or keep samples meeting the following condition')
         form.addParam('condition', params.TextParam, label="Condition",
-                      help='Examples $weight<100 and $sex=="female"')
+                      help='Example: $(weight)<200 and $(sex)=="female"')
 
     #--------------------------- INSERT steps functions --------------------------------------------
 
     def _insertAllSteps(self):
-        self._insertFunctionStep('runNCA',self.inputExperiment.get().getObjId())
-        # self._insertFunctionStep('createOutputStep')
+        self._insertFunctionStep('runFilter',self.inputExperiment.get().getObjId(), self.filterType.get(), \
+                                 self.condition.get())
+        self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
-    def runNCA(self, objId):
+    def runFilter(self, objId, filterType, condition):
+        import copy
         experiment = PKPDExperiment()
         experiment.load(self.inputExperiment.get().fnPKPD)
         print("Reading %s"%self.inputExperiment.get().fnPKPD)
         experiment._printToStream(sys.stdout)
+        print("**********************************************************************************************")
+        print("Filtering")
+        print("**********************************************************************************************")
+        if self.filterType.get()==0:
+            filterType="exclude"
+        else:
+            filterType="keep"
+        self.experiment = experiment.filterSamples(self.condition.get(),filterType)
+        self.experiment._printToStream(sys.stdout)
+        self.experiment.write(self._getPath("experiment.pkpd"))
 
     def createOutputStep(self):
-        pass
-        # self._defineSourceRelation(self.inputClasses, vol)
+        self._defineOutputs(outputExperiment=self.experiment)
+        self._defineSourceRelation(self.inputExperiment, self.experiment)
 
     #--------------------------- INFO functions --------------------------------------------
