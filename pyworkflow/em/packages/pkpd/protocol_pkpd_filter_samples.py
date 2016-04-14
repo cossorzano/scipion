@@ -59,7 +59,9 @@ class ProtPKPDFilterSamples(ProtPKPD):
         import copy
         experiment = PKPDExperiment()
         experiment.load(self.inputExperiment.get().fnPKPD)
+        print("**********************************************************************************************")
         print("Reading %s"%self.inputExperiment.get().fnPKPD)
+        print("**********************************************************************************************")
         experiment._printToStream(sys.stdout)
         print("**********************************************************************************************")
         print("Filtering")
