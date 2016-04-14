@@ -329,7 +329,7 @@ class PKPDSample:
         descriptorString = ""
         for key, value in self.descriptors.iteritems():
             descriptorString +="; %s=%s"%(key,value)
-        fh.write("%s; dose=%s %s\n"%(self.varName,self.dose.varName,descriptorString))
+        fh.write("%s; dose=%s %s\n"%(self.varName,self.doseName,descriptorString))
 
     def _printMeasurements(self,fh):
         patternString = ""
