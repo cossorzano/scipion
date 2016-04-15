@@ -468,39 +468,3 @@ class PKPDExperiment(EMObject):
         for key, value in self.samples.iteritems():
             value._printMeasurements(fh)
         fh.write("\n")
-
-    def filterSamples(self, condition, filterType):
-        import copy
-        filteredExperiment = PKPDExperiment()
-        filteredExperiment.general = copy.copy(self.general)
-        filteredExperiment.variables = copy.copy(self.variables)
-        filteredExperiment.samples = {}
-        filteredExperiment.doses = {}
-
-        # http://stackoverflow.com/questions/701802/how-do-i-execute-a-string-containing-python-code-in-python
-        safe_list = ['descriptors']
-        safe_dict = dict([ (k, locals().get(k, None)) for k in safe_list ])
-        usedDoses = []
-        for sampleKey, sample in self.samples.iteritems():
-            ok = False
-            try:
-                conditionPython = copy.copy(condition)
-                for key, variable in self.variables.iteritems():
-                    if key in sample.descriptors:
-                        if variable.varType == PKPDVariable.TYPE_NUMERIC:
-                            conditionPython = conditionPython.replace("$(%s)"%key,"%f"%float(sample.descriptors[key]))
-                        else:
-                            conditionPython = conditionPython.replace("$(%s)"%key,"'%s'"%sample.descriptors[key])
-                ok=eval(conditionPython, {"__builtins__" : None }, {})
-            except:
-                pass
-            if (ok and filterType=="keep") or (not ok and filterType=="exclude"):
-                filteredExperiment.samples[sampleKey] = copy.copy(sample)
-                usedDoses.append(sample.doseName)
-
-        if len(usedDoses)>0:
-            for doseName in usedDoses:
-                filteredExperiment.doses[doseName] = copy.copy(self.doses[doseName])
-
-        return filteredExperiment
-

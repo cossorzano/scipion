@@ -28,7 +28,7 @@ import sys
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment
+from pyworkflow.em.data import PKPDExperiment, PKPDVariable
 
 
 class ProtPKPDFilterSamples(ProtPKPD):
@@ -42,7 +42,7 @@ class ProtPKPDFilterSamples(ProtPKPD):
         form.addParam('inputExperiment', params.PointerParam, label="Input experiment", important=True,
                       pointerClass='PKPDExperiment',
                       help='Select an experiment with samples')
-        form.addParam('filterType', params.EnumParam, choices=["Exclude","Keep"], label="Filter mode", default=0,
+        form.addParam('filterType', params.EnumParam, choices=["Exclude","Keep","Remove NA"], label="Filter mode", default=0,
                       help='Exclude or keep samples meeting the following condition')
         form.addParam('condition', params.TextParam, label="Condition",
                       help='Example: $(weight)<200 and $(sex)=="female"')
@@ -70,7 +70,39 @@ class ProtPKPDFilterSamples(ProtPKPD):
             filterType="exclude"
         else:
             filterType="keep"
-        self.experiment = experiment.filterSamples(self.condition.get(),filterType)
+
+        filteredExperiment = PKPDExperiment()
+        filteredExperiment.general = copy.copy(experiment.general)
+        filteredExperiment.variables = copy.copy(experiment.variables)
+        filteredExperiment.samples = {}
+        filteredExperiment.doses = {}
+
+        # http://stackoverflow.com/questions/701802/how-do-i-execute-a-string-containing-python-code-in-python
+        safe_list = ['descriptors']
+        safe_dict = dict([ (k, locals().get(k, None)) for k in safe_list ])
+        usedDoses = []
+        for sampleKey, sample in experiment.samples.iteritems():
+            ok = False
+            try:
+                conditionPython = copy.copy(condition)
+                for key, variable in experiment.variables.iteritems():
+                    if key in sample.descriptors:
+                        if variable.varType == PKPDVariable.TYPE_NUMERIC:
+                            conditionPython = conditionPython.replace("$(%s)"%key,"%f"%float(sample.descriptors[key]))
+                        else:
+                            conditionPython = conditionPython.replace("$(%s)"%key,"'%s'"%sample.descriptors[key])
+                ok=eval(conditionPython, {"__builtins__" : None }, {})
+            except:
+                pass
+            if (ok and filterType=="keep") or (not ok and filterType=="exclude"):
+                filteredExperiment.samples[sampleKey] = copy.copy(sample)
+                usedDoses.append(sample.doseName)
+
+        if len(usedDoses)>0:
+            for doseName in usedDoses:
+                filteredExperiment.doses[doseName] = copy.copy(experiment.doses[doseName])
+
+        self.experiment = filteredExperiment
         self.experiment._printToStream(sys.stdout)
         self.experiment.write(self._getPath("experiment.pkpd"))
 
