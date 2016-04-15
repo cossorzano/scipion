@@ -43,8 +43,9 @@ class ProtPKPDFilterSamples(ProtPKPD):
                       pointerClass='PKPDExperiment',
                       help='Select an experiment with samples')
         form.addParam('filterType', params.EnumParam, choices=["Exclude","Keep","Remove NA"], label="Filter mode", default=0,
-                      help='Exclude or keep samples meeting the following condition')
-        form.addParam('condition', params.TextParam, label="Condition",
+                      help='Exclude or keep samples meeting the following condition\n'\
+                           "NA values are excluded in keep filters, and kept in exclude filters")
+        form.addParam('condition', params.TextParam, label="Condition", condition="filterType!=2",
                       help='Example: $(weight)<200 and $(sex)=="female"')
 
     #--------------------------- INSERT steps functions --------------------------------------------
@@ -68,8 +69,10 @@ class ProtPKPDFilterSamples(ProtPKPD):
         print("**********************************************************************************************")
         if self.filterType.get()==0:
             filterType="exclude"
-        else:
+        elif self.filterType.get()==1:
             filterType="keep"
+        else:
+            filterType="rmNA"
 
         filteredExperiment = PKPDExperiment()
         filteredExperiment.general = copy.copy(experiment.general)
@@ -82,19 +85,28 @@ class ProtPKPDFilterSamples(ProtPKPD):
         safe_dict = dict([ (k, locals().get(k, None)) for k in safe_list ])
         usedDoses = []
         for sampleKey, sample in experiment.samples.iteritems():
-            ok = False
+            ok = filterType=="rmNA"
             try:
-                conditionPython = copy.copy(condition)
+                if filterType == "rmNA":
+                    conditionPython = "True"
+                else:
+                    conditionPython = copy.copy(condition)
                 for key, variable in experiment.variables.iteritems():
                     if key in sample.descriptors:
-                        if variable.varType == PKPDVariable.TYPE_NUMERIC:
-                            conditionPython = conditionPython.replace("$(%s)"%key,"%f"%float(sample.descriptors[key]))
+                        value = sample.descriptors[key]
+                        if value=="NA":
+                            conditionPython="False"
                         else:
-                            conditionPython = conditionPython.replace("$(%s)"%key,"'%s'"%sample.descriptors[key])
-                ok=eval(conditionPython, {"__builtins__" : None }, {})
+                            if filterType!="rmNA":
+                                if variable.varType == PKPDVariable.TYPE_NUMERIC:
+                                    conditionPython = conditionPython.replace("$(%s)"%key,"%f"%float(sample.descriptors[key]))
+                                else:
+                                    conditionPython = conditionPython.replace("$(%s)"%key,"'%s'"%sample.descriptors[key])
+                ok=eval(conditionPython, {"__builtins__" : {"True": True, "False": False} }, {})
             except:
+                print sys.exc_info()[0]
                 pass
-            if (ok and filterType=="keep") or (not ok and filterType=="exclude"):
+            if (ok and (filterType=="keep" or filterType=="rmNA")) or (not ok and filterType=="exclude"):
                 filteredExperiment.samples[sampleKey] = copy.copy(sample)
                 usedDoses.append(sample.doseName)
 
@@ -111,3 +123,12 @@ class ProtPKPDFilterSamples(ProtPKPD):
         self._defineSourceRelation(self.inputExperiment, self.experiment)
 
     #--------------------------- INFO functions --------------------------------------------
+    def _summary(self):
+        msg=[]
+        if self.filterType.get()==0:
+            msg.append("Exclude %s"%self.condition.get())
+        elif self.filterType.get()==1:
+            msg.append("Keep %s"%self.condition.get())
+        elif self.filterType.get()==2:
+            msg.append("Remove NA")
+        return msg
