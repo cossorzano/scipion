@@ -25,6 +25,7 @@
 # **************************************************************************
 
 import json
+import math
 
 from pyworkflow.object import *
 
@@ -351,6 +352,22 @@ class PKPDSample:
             fh.write("%s\n"%lineString)
         fh.write("\n")
 
+    def getRange(self, varName):
+        if varName not in self.measurementPattern:
+            return [None, None]
+        else:
+            aux = getattr(self,"measurement_%s"%varName)
+            aux = [x for x in aux if x != "NA"]
+            x = np.array(aux, dtype='|S4')
+            y = x.astype(np.float)
+            return [y.min(),y.max()]
+
+    def getValues(self, varName):
+        if varName not in self.measurementPattern:
+            return None
+        else:
+            return getattr(self,"measurement_%s"%varName)
+
 class PKPDExperiment(EMObject):
     READING_GENERAL = 1
     READING_VARIABLES = 2
@@ -473,3 +490,149 @@ class PKPDExperiment(EMObject):
         for key, value in self.samples.iteritems():
             value._printMeasurements(fh)
         fh.write("\n")
+
+    def getRange(self,varName):
+        vmin = None
+        vmax = None
+        for key, value in self.samples.iteritems():
+            vmini, vmaxi = value.getRange(varName)
+            if vmin==None or vmini<vmin:
+                vmin = vmini
+            if vmax==None or vmaxi>vmax:
+                vmax = vmaxi
+        return [vmin,vmax]
+
+class PKPDModel:
+    def __init__(self):
+        self.fnExperiment = None
+
+    def setExperiment(self, experiment):
+        self.experiment = experiment
+        self.fnExperiment = experiment.fnPKPD
+
+    def setXVar(self, x):
+        if not x in self.experiment.variables:
+            raise Exception("Cannot find %s as a variable in the experiment"%x)
+        self.xName = x
+        self.xRange = self.experiment.getRange(x)
+
+    def setX(self, xString):
+        self.xString = xString
+
+    def setY(self, yString):
+        self.yString = yString
+
+    def setYVar(self, y):
+        if not y in self.experiment.variables:
+            raise Exception("Cannot find %s as a variable in the experiment"%x)
+        self.yName = y
+        self.yRange = self.experiment.getRange(y)
+
+    def xyToFloat(self):
+        if len(self.xString)!=len(self.yString):
+            raise Exception("Cannot model with different X and Y lengths")
+        self.x = []
+        self.y = []
+        for n in range(0,len(self.xString)):
+            if self.xString[n]!="NA" and self.yString[n]!="NA":
+                self.x.append(float(self.xString[n]))
+                self.y.append(float(self.yString[n]))
+
+    def forwardModel(self):
+        pass
+
+    def getNumberOfParameters(self):
+        pass
+
+    def printSetup(self):
+        pass
+
+class PKPDExponentialModel(PKPDModel):
+    def forwardModel(self, parameters):
+        self.yPredicted = []
+        for x in self.x:
+            y = 0
+            for k in range(0,self.Nexp):
+                ck = parameters[2*k]
+                lk = parameters[2*k+1]
+                y += ck*math.exp(-lk*x)
+            self.yPredicted.append(y)
+        return self.yPredicted
+
+    def setNexp(self, Nexp):
+        self.Nexp = Nexp
+
+    def getNumberOfParameters(self):
+        return 2*self.Nexp
+
+    def parseBounds(self,inputString,msg):
+        if ';' in inputString:
+            tokens=inputString.split(';')
+            if len(tokens)!=self.Nexp:
+                raise Exception("The number of intervals for %s does not match the number of exponential terms"%msg)
+        else:
+            tokens = [inputString]*self.Nexp
+        return eval("["+",".join(tokens)+"]")
+
+    def setBounds(self, cBounds, lambdaBounds):
+        y0=self.yRange[1]
+        yF=self.yRange[0]
+        t0=self.xRange[0]
+        tF=self.xRange[1]
+        # y0 = c * exp(-lambda*t0)
+        # yF = c * exp(-lambda*tF)
+        meanLambda = math.log(yF/y0)/(t0-tF)
+        meanC = y0*math.exp(meanLambda*t0)
+
+        if lambdaBounds=="" or lambdaBounds is None:
+            self.lambdaBounds = [(0.2*meanLambda,5*meanLambda)]*self.Nexp
+        else:
+            self.lambdaBounds=self.parseBounds(lambdaBounds,"lambda")
+
+        if cBounds=="" or cBounds is None:
+            self.cBounds = [(0.2*meanC,5*meanC)]*self.Nexp
+        else:
+            self.cBounds=self.parseBounds(cBounds,"amplitude")
+
+    def getBounds(self):
+        bounds = []
+        for i in range(0,self.Nexp):
+            bounds.append(self.cBounds[i])
+            bounds.append(self.lambdaBounds[i])
+        return bounds
+
+    def printSetup(self):
+        print("Model: y=sum_i c_i*exp(-lambda_i * x)")
+        print("Number of exponentials: "+str(self.Nexp))
+        print("Amplitude (c) bounds: "+str(self.cBounds))
+        print("Lambda bounds: "+str(self.lambdaBounds))
+
+class PKPDDEOptimizer:
+    def __init__(self,model,fitType,goalFunction="RMSE"):
+        self.model = model
+
+        self.yTarget = np.array(model.y, dtype=np.float32)
+        if fitType=="linear":
+            self.takeYLogs = False
+        elif fitType=="log":
+            self.yTarget = np.log10(self.yTarget)
+            self.takeYLogs = True
+
+        if goalFunction=="RMSE":
+            self.goalFunction = self.goalRMSE
+        else:
+            raise Exception("Unknown goal function")
+
+    def goalRMSE(self,parameters):
+        yPredicted = np.array(self.model.forwardModel(parameters),dtype=np.float32)
+        if self.takeYLogs:
+            yPredicted = np.log10(yPredicted)
+        rmse = math.sqrt(((self.yTarget - yPredicted) ** 2).mean())
+        print(rmse)
+        return rmse
+
+    def optimize(self):
+        from scipy.optimize import differential_evolution
+        self.optimum = differential_evolution(self.goalFunction, self.model.getBounds())
+        return self.optimum
+
