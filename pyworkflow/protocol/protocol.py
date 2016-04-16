@@ -600,6 +600,9 @@ class Protocol(Step):
     def _getLogsPath(self, *paths):
         return self._getPath("logs", *paths)   
     
+    def _getDocsPath(self, *paths):
+        return self._getPath("docs", *paths)
+
     def _getRelPath(self, *path):
         """ Return a relative path from the workingDir. """
         return os.path.relpath(self._getPath(*path), self.workingDir.get())
@@ -902,7 +905,7 @@ class Protocol(Step):
         if in RESTART mode. 
         """
         # Clean working path if in RESTART mode
-        paths = [self._getPath(), self._getExtraPath(), self._getTmpPath(), self._getLogsPath()]
+        paths = [self._getPath(), self._getExtraPath(), self._getTmpPath(), self._getLogsPath(), self._getDocsPath()]
         
         if self.runMode == MODE_RESTART:
             cleanPath(*paths)
