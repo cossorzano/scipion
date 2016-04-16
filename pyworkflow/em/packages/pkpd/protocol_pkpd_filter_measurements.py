@@ -26,7 +26,7 @@
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDSample
+from pyworkflow.em.data import PKPDExperiment, PKPDSample, PKPDVariable
 
 
 class ProtPKPDFilterMeasurements(ProtPKPD):
@@ -92,20 +92,37 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
 
             # Create empty output variables
             Nvar = len(sample.measurementPattern)
+            convertToFloat = []
             for i in range(0,Nvar):
                 exec("candidateSample.measurement_%s = []"%sample.measurementPattern[i])
+                convertToFloat.append(sample.variableDictPtr[sample.measurementPattern[i]].varType == PKPDVariable.TYPE_NUMERIC)
 
             for n in range(0,N):
                 toAdd = []
                 okToAddTimePoint = True
+                conditionPython = copy.copy(condition)
                 for i in range(0,Nvar):
                     exec("aux=sample.measurement_%s[%d]"%(sample.measurementPattern[i],n))
-                    # aux=getattr(sample,"measurement_%s"%sample.measurementPattern[i])
                     if filterType=="rmNA":
                         if aux=="NA":
                             okToAddTimePoint = False
                         else:
                             toAdd.append(aux)
+                    else:
+                        toAdd.append(aux)
+                        varString = "$(%s)"%sample.measurementPattern[i]
+                        if varString in conditionPython:
+                            if aux=="NA":
+                                okToAddTimePoint = False
+                            else:
+                                if convertToFloat[i]:
+                                    conditionPython = conditionPython.replace(varString,"%f"%float(aux))
+                                else:
+                                    conditionPython = conditionPython.replace(varString,"'%s'"%aux)
+                if filterType!="rmNA" and okToAddTimePoint:
+                    okToAddTimePoint = eval(conditionPython, {"__builtins__" : None }, {})
+                    if filterType=="exclude":
+                        okToAddTimePoint = not okToAddTimePoint
                 if okToAddTimePoint:
                     for i in range(0,Nvar):
                         exec("candidateSample.measurement_%s.append('%s')"%(sample.measurementPattern[i],toAdd[i]))
