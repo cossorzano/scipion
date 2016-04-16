@@ -26,7 +26,7 @@
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDSample, PKPDVariable
+from pyworkflow.em.data import PKPDExperiment, PKPDExponentialModel, PKPDDEOptimizer
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
 
@@ -38,117 +38,62 @@ class ProtPKPDExponentialFit(ProtPKPD):
 
     def _defineParams(self, form):
         form.addSection('Input')
+        form.addParam('inputExperiment', params.PointerParam, label="Input experiment",
+                      pointerClass='PKPDExperiment',
+                      help='Select an experiment with samples')
         form.addParam('predictor', params.StringParam, label="Predictor variable (X)", default="t",
                       help='Y is predicted as an exponential function of X, Y=sum_{i=1}^N c_i exp(-lambda_i * X)')
         form.addParam('predicted', params.StringParam, label="Predicted variable (Y)", default="Cp",
                       help='Y is predicted as an exponential function of X, Y=sum_{i=1}^N c_i exp(-lambda_i * X)')
-        form.addParam('inputExperiment', params.PointerParam, label="Input experiment",
-                      pointerClass='PKPDExperiment',
-                      help='Select an experiment with samples')
         form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic"], label="Fit mode", default=0,
                       help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2')
         form.addParam('Nexp', params.IntParam, label="Number of exponentials", default=1,
                       help='Number of exponentials to fit')
         form.addParam('cBounds', params.StringParam, label="Amplitude bounds", default="", expertLevel=LEVEL_ADVANCED,
-                      help='Bounds for the c_i amplitudes.\nExample 1: [0,10]\nExample 2: [0,10];[1,5]')
+                      help='Bounds for the c_i amplitudes.\nExample 1: (0,10)\nExample 2: (0,10);(1,5)')
         form.addParam('lambdaBounds', params.StringParam, label="Time constant bounds", default="", expertLevel=LEVEL_ADVANCED,
-                      help='Bounds for the lambda_i time constants.\nExample 1: [0,0.01]\nExample 2: [0,1e-2];[0,1e-1]')
+                      help='Bounds for the lambda_i time constants.\nExample 1: (0,0.01)\nExample 2: (0,1e-2);(0,1e-1)')
         form.addParam('reportTime', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
                       help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: -10:5:10')
 
     #--------------------------- INSERT steps functions --------------------------------------------
 
     def _insertAllSteps(self):
-        pass
-        # self._insertFunctionStep('runFilter',self.inputExperiment.get().getObjId(), self.filterType.get(), \
-                                 # self.condition.get())
+        self._insertFunctionStep('runFit',self.inputExperiment.get().getObjId(), self.predictor.get(), \
+                                 self.predicted.get(), self.fitType.get(), self.Nexp.get(), self.cBounds.get(), \
+                                 self.lambdaBounds.get())
         # self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
-    def runFilter(self, objId, filterType, condition):
-        import copy
+    def runFit(self, objId, X, Y, fitType, Nexp, cBounds, lambdaBounds):
         experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
 
-        self.printSection("Filtering")
-        if self.filterType.get()==0:
-            filterType="exclude"
-        elif self.filterType.get()==1:
-            filterType="keep"
-        else:
-            filterType="rmNA"
+        # Setup model
+        self.printSection("Model setup")
+        model = PKPDExponentialModel()
+        model.setExperiment(experiment)
+        model.setXVar(self.predictor.get())
+        model.setYVar(self.predicted.get())
+        model.setNexp(self.Nexp.get())
+        model.setBounds(self.cBounds.get(),self.lambdaBounds.get())
+        model.printSetup()
 
-        filteredExperiment = PKPDExperiment()
-        filteredExperiment.general = copy.copy(experiment.general)
-        filteredExperiment.variables = copy.copy(experiment.variables)
-        filteredExperiment.samples = {}
-        filteredExperiment.doses = {}
+        # Actual fitting
+        if self.fitType.get()==0:
+            fitType = "linear"
+        elif self.fitType.get()==1:
+            fitType = "log"
 
-        usedDoses = []
-        for sampleKey, sample in experiment.samples.iteritems():
-            candidateSample = PKPDSample()
-            candidateSample.variableDictPtr    = copy.copy(sample.variableDictPtr)
-            candidateSample.doseDictPtr        = copy.copy(sample.doseDictPtr)
-            candidateSample.varName            = copy.copy(sample.varName)
-            candidateSample.doseName           = copy.copy(sample.doseName)
-            candidateSample.dose               = copy.copy(sample.dose)
-            candidateSample.descriptors        = copy.copy(sample.descriptors)
-            candidateSample.measurementPattern = copy.copy(sample.measurementPattern)
+        for sampleName, sample in experiment.samples.iteritems():
+            self.printSection("Fitting "+sampleName)
+            model.setX(sample.getValues(self.predictor.get()))
+            model.setY(sample.getValues(self.predicted.get()))
+            model.xyToFloat()
+            print("X: "+str(model.x))
+            print("Y: "+str(model.y))
 
-            N = 0 # Number of initial measurements
-            if len(sample.measurementPattern)>0:
-                aux=getattr(sample,"measurement_%s"%sample.measurementPattern[0])
-                N = len(aux)
-            if N==0:
-                continue
-
-            # Create empty output variables
-            Nvar = len(sample.measurementPattern)
-            convertToFloat = []
-            for i in range(0,Nvar):
-                exec("candidateSample.measurement_%s = []"%sample.measurementPattern[i])
-                convertToFloat.append(sample.variableDictPtr[sample.measurementPattern[i]].varType == PKPDVariable.TYPE_NUMERIC)
-
-            for n in range(0,N):
-                toAdd = []
-                okToAddTimePoint = True
-                conditionPython = copy.copy(condition)
-                for i in range(0,Nvar):
-                    exec("aux=sample.measurement_%s[%d]"%(sample.measurementPattern[i],n))
-                    if filterType=="rmNA":
-                        if aux=="NA":
-                            okToAddTimePoint = False
-                        else:
-                            toAdd.append(aux)
-                    else:
-                        toAdd.append(aux)
-                        varString = "$(%s)"%sample.measurementPattern[i]
-                        if varString in conditionPython:
-                            if aux=="NA":
-                                okToAddTimePoint = False
-                            else:
-                                if convertToFloat[i]:
-                                    conditionPython = conditionPython.replace(varString,"%f"%float(aux))
-                                else:
-                                    conditionPython = conditionPython.replace(varString,"'%s'"%aux)
-                if filterType!="rmNA" and okToAddTimePoint:
-                    okToAddTimePoint = eval(conditionPython, {"__builtins__" : None }, {})
-                    if filterType=="exclude":
-                        okToAddTimePoint = not okToAddTimePoint
-                if okToAddTimePoint:
-                    for i in range(0,Nvar):
-                        exec("candidateSample.measurement_%s.append('%s')"%(sample.measurementPattern[i],toAdd[i]))
-
-            N = len(getattr(sample,"measurement_%s"%sample.measurementPattern[0])) # Number of final measurements
-            if N!=0:
-                filteredExperiment.samples[candidateSample.varName] = candidateSample
-                usedDoses.append(candidateSample.doseName)
-
-        if len(usedDoses)>0:
-            for doseName in usedDoses:
-                filteredExperiment.doses[doseName] = copy.copy(experiment.doses[doseName])
-
-        self.writeExperiment(filteredExperiment,self._getPath("experiment.pkpd"))
-        self.experiment = filteredExperiment
+            optimizer1 = PKPDDEOptimizer(model,fitType)
+            optimizer1.optimize()
 
     def createOutputStep(self):
         self._defineOutputs(outputExperiment=self.experiment)
@@ -158,3 +103,14 @@ class ProtPKPDExponentialFit(ProtPKPD):
     def _summary(self):
         msg=[]
         return msg
+
+    def _validate(self):
+        errors=[]
+        experiment = self.readExperiment(self.inputExperiment.get().fnPKPD, False)
+        if not self.predictor.get() in experiment.variables:
+            errors.append("Cannot find %s as variable"%self.predictor.get())
+        if not self.predicted.get() in experiment.variables:
+            errors.append("Cannot find %s as variable"%self.predicted.get())
+        if self.Nexp.get()<1:
+            errors.append("The number of exponentials has to be larger than 0")
+        return errors
