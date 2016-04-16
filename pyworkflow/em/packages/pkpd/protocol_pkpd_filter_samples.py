@@ -1,8 +1,8 @@
 # **************************************************************************
 # *
-# * Authors:     Carlos Oscar S. Sorzano (coss@cnb.csic.es)
+# * Authors:     Carlos Oscar Sorzano (info@kinestat.com)
 # *
-# * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
+# * Kinestat Pharma
 # *
 # * This program is free software; you can redistribute it and/or modify
 # * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 # * 02111-1307  USA
 # *
 # *  All comments concerning this program package may be sent to the
-# *  e-mail address 'coss@cnb.csic.es'
+# *  e-mail address 'info@kinestat.com'
 # *
 # **************************************************************************
 
@@ -58,15 +58,9 @@ class ProtPKPDFilterSamples(ProtPKPD):
     #--------------------------- STEPS functions --------------------------------------------
     def runFilter(self, objId, filterType, condition):
         import copy
-        experiment = PKPDExperiment()
-        experiment.load(self.inputExperiment.get().fnPKPD)
-        print("**********************************************************************************************")
-        print("Reading %s"%self.inputExperiment.get().fnPKPD)
-        print("**********************************************************************************************")
-        experiment._printToStream(sys.stdout)
-        print("**********************************************************************************************")
-        print("Filtering")
-        print("**********************************************************************************************")
+        experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
+
+        self.printSection("Filtering")
         if self.filterType.get()==0:
             filterType="exclude"
         elif self.filterType.get()==1:
@@ -114,9 +108,8 @@ class ProtPKPDFilterSamples(ProtPKPD):
             for doseName in usedDoses:
                 filteredExperiment.doses[doseName] = copy.copy(experiment.doses[doseName])
 
+        self.writeExperiment(filteredExperiment,self._getPath("experiment.pkpd"))
         self.experiment = filteredExperiment
-        self.experiment._printToStream(sys.stdout)
-        self.experiment.write(self._getPath("experiment.pkpd"))
 
     def createOutputStep(self):
         self._defineOutputs(outputExperiment=self.experiment)

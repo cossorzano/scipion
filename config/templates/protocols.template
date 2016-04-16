@@ -20,6 +20,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDJoinSamples",
 		"text": "join samples"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDFilterMeasurements",
+		"text": "filter measurements"
 	}]
     },
     {

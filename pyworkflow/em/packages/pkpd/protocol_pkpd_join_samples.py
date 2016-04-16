@@ -1,8 +1,8 @@
 # **************************************************************************
 # *
-# * Authors:     Carlos Oscar S. Sorzano (coss@cnb.csic.es)
+# * Authors:     Carlos Oscar Sorzano (info@kinestat.com)
 # *
-# * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
+# * Kinestat Pharma
 # *
 # * This program is free software; you can redistribute it and/or modify
 # * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 # * 02111-1307  USA
 # *
 # *  All comments concerning this program package may be sent to the
-# *  e-mail address 'coss@cnb.csic.es'
+# *  e-mail address 'info@kinestat.com'
 # *
 # **************************************************************************
 
@@ -64,21 +64,9 @@ class ProtPKPDJoinSamples(ProtPKPD):
 
     #--------------------------- STEPS functions --------------------------------------------
     def runJoin(self, objId1, objId2, prefix1, prefix2):
-        print("**********************************************************************************************")
-        print("Reading %s"%self.inputExperiment1.get().fnPKPD)
-        print("**********************************************************************************************")
-        experiment1 = PKPDExperiment()
-        experiment1.load(self.inputExperiment1.get().fnPKPD)
-        experiment1._printToStream(sys.stdout)
-        print("**********************************************************************************************")
-        print("Reading %s"%self.inputExperiment2.get().fnPKPD)
-        print("**********************************************************************************************")
-        experiment2 = PKPDExperiment()
-        experiment2.load(self.inputExperiment2.get().fnPKPD)
-        experiment2._printToStream(sys.stdout)
-        print("**********************************************************************************************")
-        print("Joining")
-        print("**********************************************************************************************")
+        experiment1 = self.readExperiment(self.inputExperiment1.get().fnPKPD)
+        experiment2 = self.readExperiment(self.inputExperiment2.get().fnPKPD)
+        self.printSection("Joining")
 
         self.experiment = PKPDExperiment()
 
@@ -125,8 +113,7 @@ class ProtPKPDJoinSamples(ProtPKPD):
             self.experiment.samples[sample.varName] = sample
 
         # Print and save
-        self.experiment._printToStream(sys.stdout)
-        self.experiment.write(self._getPath("experiment.pkpd"))
+        self.writeExperiment(self.experiment,self._getPath("experiment.pkpd"))
 
     def createOutputStep(self):
         self._defineOutputs(outputExperiment=self.experiment)

@@ -1,8 +1,8 @@
 # **************************************************************************
 # *
-# * Authors:     Carlos Oscar Sorzano (coss@cnb.csic.es)
+# * Authors:     Carlos Oscar Sorzano (info@kinestat.com)
 # *
-# * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
+# * Kinestat Pharma
 # *
 # * This program is free software; you can redistribute it and/or modify
 # * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 # * 02111-1307  USA
 # *
 # *  All comments concerning this program package may be sent to the
-# *  e-mail address 'coss@cnb.csic.es'
+# *  e-mail address 'info@kinestat.com'
 # *
 # **************************************************************************
 """
@@ -30,3 +30,4 @@ PKPD functions
 from protocol_pkpd_nca import ProtPKPDNCA
 from protocol_pkpd_filter_samples import ProtPKPDFilterSamples
 from protocol_pkpd_join_samples import ProtPKPDJoinSamples
+from protocol_pkpd_filter_measurements import ProtPKPDFilterMeasurements

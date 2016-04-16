@@ -31,9 +31,9 @@ from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDExperiment
 
 
-class ProtPKPDNCA(ProtPKPD):
-    """ Non-compartmental analysis """
-    _label = 'non-compartmental'
+class ProtPKPDFilterMeasurements(ProtPKPD):
+    """ Filter measurements """
+    _label = 'filter measurements'
 
     #--------------------------- DEFINE param functions --------------------------------------------
 
@@ -42,22 +42,33 @@ class ProtPKPDNCA(ProtPKPD):
         form.addParam('inputExperiment', params.PointerParam, label="Input experiment", important=True,
                       pointerClass='PKPDExperiment',
                       help='Select an experiment with samples')
+        form.addParam('filterType', params.EnumParam, choices=["Exclude","Keep","Remove NA"], label="Filter mode", default=0,
+                      help='Exclude or keep measurements meeting the following condition.\n"\
+                           "NA values are excluded in keep filters, and kept in exclude filters')
+        form.addParam('condition', params.TextParam, label="Condition",
+                      help='Example: $(t)<200\n $(Cp)>=1000 and $(Cp)<=2000"')
 
     #--------------------------- INSERT steps functions --------------------------------------------
 
     def _insertAllSteps(self):
-        self._insertFunctionStep('runNCA',self.inputExperiment.get().getObjId())
-        # self._insertFunctionStep('createOutputStep')
+        self._insertFunctionStep('runFilter',self.inputExperiment.get().getObjId(), self.filterType.get(), \
+                                 self.condition.get())
+        self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
-    def runNCA(self, objId):
-        experiment = PKPDExperiment()
-        experiment.load(self.inputExperiment.get().fnPKPD)
-        print("Reading %s"%self.inputExperiment.get().fnPKPD)
-        experiment._printToStream(sys.stdout)
+    def runFilter(self, objId, filterType, condition):
+        experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
+        self.printSection("Filtering")
+        if self.filterType.get()==0:
+            filterType="exclude"
+        else:
+            filterType="keep"
+        self.experiment = experiment.filterSamples(self.condition.get(),filterType)
+        self.experiment._printToStream(sys.stdout)
+        self.experiment.write(self._getPath("experiment.pkpd"))
 
     def createOutputStep(self):
-        pass
-        # self._defineSourceRelation(self.inputClasses, vol)
+        self._defineOutputs(outputExperiment=self.experiment)
+        self._defineSourceRelation(self.inputExperiment, self.experiment)
 
     #--------------------------- INFO functions --------------------------------------------
