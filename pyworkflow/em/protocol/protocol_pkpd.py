@@ -38,11 +38,12 @@ class ProtPKPD(EMProtocol):
         print(msg)
         print("**********************************************************************************************")
 
-    def readExperiment(self,fnIn):
+    def readExperiment(self,fnIn, show=True):
         experiment = PKPDExperiment()
         experiment.load(fnIn)
-        self.printSection("Reading %s"%fnIn)
-        experiment._printToStream(sys.stdout)
+        if show:
+            self.printSection("Reading %s"%fnIn)
+            experiment._printToStream(sys.stdout)
         return experiment
 
     def writeExperiment(self, experiment, fnOut):
