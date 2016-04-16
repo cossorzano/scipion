@@ -273,7 +273,7 @@ class PKPDDose:
                  (self.varName,doseString, self.doseAmount, self.units._toString(), self.normalization))
 
 class PKPDSample:
-    def __init__(self,tokens,variableDict,doseDict):
+    def parseLine(self,tokens,variableDict,doseDict):
         # FemaleRat1; dose=Dose1; weight=207
 
         # Keep a pointer to variableDict and doseDict
@@ -423,7 +423,8 @@ class PKPDExperiment(EMObject):
                     print("Skipping sample: ",line)
                     continue
                 samplename = tokens[0].strip()
-                self.samples[samplename] = PKPDSample(tokens,self.variables, self.doses)
+                self.samples[samplename] = PKPDSample()
+                self.samples[samplename].parseLine(tokens,self.variables, self.doses)
 
             elif state==PKPDExperiment.READING_MEASUREMENTS:
                 tokens = line.split(';')
