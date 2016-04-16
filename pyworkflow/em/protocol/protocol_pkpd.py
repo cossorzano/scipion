@@ -27,6 +27,8 @@
 In this module are protocol base classes related to PKPD
 
 """
+import sys
+
 from pyworkflow.em.protocol import *
 from pyworkflow.em.data import PKPDExperiment
 
@@ -36,10 +38,10 @@ class ProtPKPD(EMProtocol):
         print(msg)
         print("**********************************************************************************************")
 
-    def readExperiment(self):
+    def readExperiment(self,fnIn):
         experiment = PKPDExperiment()
-        experiment.load(self.inputExperiment.get().fnPKPD)
-        self.printSection("Reading %s"%self.inputExperiment.get().fnPKPD)
+        experiment.load(fnIn)
+        self.printSection("Reading %s"%fnIn)
         experiment._printToStream(sys.stdout)
         return experiment
 
