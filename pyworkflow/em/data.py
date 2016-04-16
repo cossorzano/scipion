@@ -303,6 +303,8 @@ class PKPDSample:
                     raise Exception("Samples can only use role variables")
                 self.descriptors[varName] = varValue
 
+        self.measurementPattern = []
+
     def addMeasurementPattern(self,tokens):
         self.measurementPattern = []
         for n in range(1,len(tokens)):
@@ -318,7 +320,14 @@ class PKPDSample:
         if len(tokens)!=len(self.measurementPattern):
             raise Exception("Not enough values to fill measurement pattern")
         for n in range(0,len(tokens)):
-            eval("self.measurement_%s.append('%s')"%(self.measurementPattern[n],tokens[n]))
+            ok=True
+            varName = self.measurementPattern[n]
+            if tokens[n]=="NA":
+                ok = (self.variableDictPtr[varName].role != PKPDVariable.ROLE_TIME)
+            if ok:
+                exec("self.measurement_%s.append('%s')"%(varName,tokens[n]))
+            else:
+                raise Exception("Time measurements cannot be NA")
 
     def _printToStream(self,fh):
         descriptorString = ""
