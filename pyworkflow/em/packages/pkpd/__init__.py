@@ -31,3 +31,4 @@ from protocol_pkpd_nca import ProtPKPDNCA
 from protocol_pkpd_filter_samples import ProtPKPDFilterSamples
 from protocol_pkpd_join_samples import ProtPKPDJoinSamples
 from protocol_pkpd_filter_measurements import ProtPKPDFilterMeasurements
+from protocol_pkpd_exponential_fit import ProtPKPDExponentialFit

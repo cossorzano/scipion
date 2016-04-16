@@ -32,6 +32,11 @@ Protocols = [{
 	"icon": "bookmark.png",
 	"children": [{
 		"tag": "protocol",
+		"value": "ProtPKPDExponentialFit",
+		"text": "fit exponentials"
+	},{
+
+		"tag": "protocol",
 		"value": "ProtPKPDNCA",
 		"text": "non-compartmental analysis"
 	}]
