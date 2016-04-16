@@ -144,3 +144,12 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
         self._defineSourceRelation(self.inputExperiment, self.experiment)
 
     #--------------------------- INFO functions --------------------------------------------
+    def _summary(self):
+        msg=[]
+        if self.filterType.get()==0:
+            msg.append("Exclude %s"%self.condition.get())
+        elif self.filterType.get()==1:
+            msg.append("Keep %s"%self.condition.get())
+        elif self.filterType.get()==2:
+            msg.append("Remove NA")
+        return msg
