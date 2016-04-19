@@ -78,26 +78,25 @@ class DosesTreeProvider(TreeProvider):
 
     def getObjectActions(self, obj):
         return []
-    
+
 
 class SamplesTreeProvider(TreeProvider):
     def __init__(self, experiment):
         self.experiment = experiment
+        sample = self.experiment.samples.values()[0]
+        self.columns = [(key, 60) for key, _ in sample.descriptors.iteritems()]
 
     def getColumns(self):
-        return [('Name', 60), ('Dose', 60), ('Amount', 60),
-                ('Unit', 60), ('Norm.', 60)]
+        return [('Name', 60), ('Dose', 60)] + self.columns
 
     def getObjects(self):
-        return self.experiment.doses.values()
+        return self.experiment.samples.values()
 
     def getObjectInfo(self, obj):
         key = obj.varName
+        values = [obj.doseName] + [obj.descriptors[k] for k, _ in self.columns]
         return {'key': key, 'text': key,
-                'values': (obj.getDoseString(),
-                           obj.doseAmount,
-                           obj.getUnitsString(),
-                           obj.normalization)
+                'values': tuple(values)
                 }
 
     def getObjectActions(self, obj):
@@ -159,19 +158,10 @@ class ExperimentWindow(gui.Window):
         commentText.setText(self.experiment.general['comment'])
         commentText.grid(row=1, column=1, sticky='nw', padx=5, pady=(5, 0))
 
-        lfVariables = addLabelFrame('Variables', 0, 1)
-        self.variablesTree = BoundTree(lfVariables,
-                                       VariablesTreeProvider(self.experiment),
-                                       height=5)
-        self.variablesTree.grid(row=0, column=0, sticky='news')
-        gui.configureWeigths(lfVariables)
-
+        lfVars = addLabelFrame('Variables', 0, 1)
+        self.varsTree = self._addBoundTree(lfVars, VariablesTreeProvider, 5)
         lfDoses = addLabelFrame('Doses', 1, 1)
-        self.dosesTree = BoundTree(lfDoses,
-                                   DosesTreeProvider(self.experiment),
-                                   height=5)
-        self.dosesTree.grid(row=0, column=0, sticky='news')
-        gui.configureWeigths(lfDoses)
+        self.dosesTree = self._addBoundTree(lfDoses, DosesTreeProvider, 5)
 
         frame.grid(row=0, column=0, sticky='new', padx=5, pady=(10, 5))
 
@@ -181,12 +171,7 @@ class ExperimentWindow(gui.Window):
         lfSamples = tk.LabelFrame(frame, text='Samples')
         gui.configureWeigths(frame)
         lfSamples.grid(row=0, column=0, sticky='news', padx=5, pady=5)
-        self.samplesTree = BoundTree(lfSamples,
-                                     VariablesTreeProvider(self.experiment),
-                                     height=10)
-        self.variablesTree.grid(row=0, column=0, sticky='news')
-        gui.configureWeigths(lfSamples)
-
+        self.samplesTree = self._addBoundTree(lfSamples, SamplesTreeProvider, 10)
         frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
 
     def _createButtonsFrame(self, content):
@@ -197,6 +182,12 @@ class ExperimentWindow(gui.Window):
         label = tk.Label(parent, text=text, font=self.fontBold)
         label.grid(row=r, column=c, padx=5, pady=5, sticky='ne')
         return label
+
+    def _addBoundTree(self, parent, ProviderClass, height):
+        bt = BoundTree(parent, ProviderClass(self.experiment), height=height)
+        bt.grid(row=0, column=0, sticky='news', padx=5, pady=5)
+        gui.configureWeigths(parent)
+        return bt
 
     def _createFigureBox(self, content):
         frame = tk.LabelFrame(content, text='Figure')
