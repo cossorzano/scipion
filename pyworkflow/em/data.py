@@ -386,6 +386,13 @@ class PKPDSample:
         else:
             return getattr(self,"measurement_%s"%varName)
 
+    def getNonEmptyValues(self, varName):
+        aux = getattr(self,"measurement_%s"%varName)
+        aux = [x for x in aux if x != "NA"]
+        x = np.array(aux, dtype='|S4')
+        y = x.astype(np.float)
+        return y
+
 class PKPDExperiment(EMObject):
     READING_GENERAL = 1
     READING_VARIABLES = 2
