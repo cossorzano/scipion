@@ -26,6 +26,7 @@
 
 from os.path import basename
 import Tkinter as tk
+import ttk
 
 import pyworkflow.gui as gui
 from pyworkflow.gui.widgets import Button, HotButton, ComboBox
@@ -113,6 +114,7 @@ class ExperimentWindow(gui.Window):
         self._createContent(content)
         content.grid(row=0, column=0, sticky='news')
         content.columnconfigure(0, weight=1)
+        self.plotter = None
 
     def _createContent(self, content):
         # Create and fill the frame containing the Experiment
@@ -126,13 +128,17 @@ class ExperimentWindow(gui.Window):
 
     def _createTopFrame(self, content):
         frame = tk.Frame(content)
+        frame.columnconfigure(0, weight=1)
+        tab = ttk.Notebook(frame)
+        tab.grid(row=0, column=0, sticky='news', padx=5, pady=5)
         #frame = tk.LabelFrame(content, text='General')
         def addLabelFrame(label, row, col, rowspan=1):
-            lf = tk.LabelFrame(frame, text=label)
-            frame.columnconfigure(col, minsize=250)
-            frame.columnconfigure(col, weight=1)#, minsize=30)
-            lf.grid(row=row, column=col, sticky='news', padx=5, pady=5,
-                    rowspan=rowspan)
+            lf = tk.Frame(tab)
+            #frame.columnconfigure(col, minsize=250)
+            #frame.columnconfigure(col, weight=1)#, minsize=30)
+            tab.add(lf, text=label)
+            #lf.grid(row=row, column=col, sticky='news', padx=5, pady=5,
+            #        rowspan=rowspan)
             return lf
 
         lfGeneral = addLabelFrame('General', 0, 0, rowspan=2)
@@ -163,6 +169,7 @@ class ExperimentWindow(gui.Window):
         lfSamples.grid(row=0, column=0, sticky='news', padx=5, pady=5)
         self.samplesTree = self._addBoundTree(lfSamples, SamplesTreeProvider, 10)
         self.samplesTree.itemDoubleClick = self._onSampleDoubleClick
+        self.samplesTree.itemClick = self._onSampleClick
 
         plotFrame = tk.Frame(lfSamples)
         plotFrame.grid(row=1, column=0, sticky='ws', padx=5, pady=5)
@@ -217,7 +224,6 @@ class ExperimentWindow(gui.Window):
 
         frame.grid(row=2, column=0, sticky='news', padx=5, pady=5)
 
-
     def _addLabel(self, parent, text, r, c):
         label = tk.Label(parent, text=text, font=self.fontBold)
         label.grid(row=r, column=c, padx=5, pady=5, sticky='ne')
@@ -235,15 +241,28 @@ class ExperimentWindow(gui.Window):
             samples = [self.experiment.samples[k] for k in sampleKeys]
             timeVarName = self.timeWidget[0].getText()
             measureVarName = self.measureWidget[0].getText()
-            plotter = EmPlotter()
-            ax = plotter.createSubPlot("Plot", timeVarName, measureVarName)
+
+            if self.plotter is None or self.plotter.isClosed():
+                self.plotter = EmPlotter()
+                doShow = True
+                ax = self.plotter.createSubPlot("Plot", timeVarName, measureVarName)
+                self.plotDict = {}
+            else:
+                doShow = False
+                ax = self.plotter.getLastSubPlot()
+
 
             for s in samples:
-                x = s.getNonEmptyValues(timeVarName)
-                y = s.getNonEmptyValues(measureVarName)
-                ax.plot(x, y, label=s.varName)
+                if not s.varName in self.plotDict:
+                    x, y = s.getXYValues(timeVarName, measureVarName)
+                    ax.plot(x, y, label=s.varName)
+                    self.plotDict[s.varName] = True
             ax.legend()
-            plotter.show()
+
+            if doShow:
+                self.plotter.show()
+            else:
+                self.plotter.draw()
         else:
             self.showInfo("Please select some sample(s) to plot.")
 
@@ -256,6 +275,10 @@ class ExperimentWindow(gui.Window):
         else:
             self.showInfo("Please select some sample(s) to create a "
                           "new experiment.")
+
+    def _onSampleClick(self, obj):
+        if not (self.plotter is None or self.plotter.isClosed()):
+            self._onPlotClick()
 
     def _onSampleDoubleClick(self, obj):
         MeasureWindow(masterWindow=self, experiment=self.experiment).show()
