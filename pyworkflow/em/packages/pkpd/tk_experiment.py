@@ -28,8 +28,9 @@ from os.path import basename
 import Tkinter as tk
 
 import pyworkflow.gui as gui
-from pyworkflow.gui.widgets import Button, HotButton
+from pyworkflow.gui.widgets import Button, HotButton, ComboBox
 from pyworkflow.gui.tree import TreeProvider, BoundTree
+from pyworkflow.em.plotter import EmPlotter
 
 
 class VariablesTreeProvider(TreeProvider):
@@ -52,9 +53,6 @@ class VariablesTreeProvider(TreeProvider):
                            obj.getRoleString(),
                            obj.comment)}
 
-    def getObjectActions(self, obj):
-        return []
-
 
 class DosesTreeProvider(TreeProvider):
     def __init__(self, experiment):
@@ -76,9 +74,6 @@ class DosesTreeProvider(TreeProvider):
                            obj.normalization)
                 }
 
-    def getObjectActions(self, obj):
-        return []
-
 
 class SamplesTreeProvider(TreeProvider):
     def __init__(self, experiment):
@@ -99,9 +94,6 @@ class SamplesTreeProvider(TreeProvider):
                 'values': tuple(values)
                 }
 
-    def getObjectActions(self, obj):
-        return []
-
 
 class ExperimentWindow(gui.Window):
     """ This class creates a Window that will display some Point's
@@ -117,9 +109,6 @@ class ExperimentWindow(gui.Window):
         gui.Window.__init__(self,  minsize=(420, 200), **kwargs)
         self.experiment = kwargs.get('experiment')
         self.callback = kwargs.get('callback', None)
-        self.plotter = None
-        self.dim = 4 # FIXME
-
         content = tk.Frame(self.root)
         self._createContent(content)
         content.grid(row=0, column=0, sticky='news')
@@ -157,6 +146,7 @@ class ExperimentWindow(gui.Window):
         commentText = gui.text.Text(lfGeneral, width=30, height=3, bg='white')
         commentText.setText(self.experiment.general['comment'])
         commentText.grid(row=1, column=1, sticky='nw', padx=5, pady=(5, 0))
+        self._commentText = commentText
 
         lfVars = addLabelFrame('Variables', 0, 1)
         self.varsTree = self._addBoundTree(lfVars, VariablesTreeProvider, 5)
@@ -172,10 +162,60 @@ class ExperimentWindow(gui.Window):
         gui.configureWeigths(frame)
         lfSamples.grid(row=0, column=0, sticky='news', padx=5, pady=5)
         self.samplesTree = self._addBoundTree(lfSamples, SamplesTreeProvider, 10)
+        self.samplesTree.itemDoubleClick = self._onSampleDoubleClick
+
+        plotFrame = tk.Frame(lfSamples)
+        plotFrame.grid(row=1, column=0, sticky='ws', padx=5, pady=5)
+
+        # Add a combobox with the variable for time
+        timeVars = [v.varName for v in self.experiment.variables.values()
+                    if v.role == v.ROLE_TIME]
+
+        measureVars = [v.varName for v in self.experiment.variables.values()
+                    if v.role == v.ROLE_MEASUREMENT]
+
+        def addVar(text, col, choices):
+            varFrame = tk.Frame(plotFrame)
+            varFrame.grid(row=0, column=col, sticky='new')
+            label = tk.Label(varFrame, text=text, font=self.fontBold)
+            label.grid(row=0, column=0, padx=5, pady=2, sticky='nw')
+            combo = ComboBox(varFrame, choices, width=10)
+            combo.grid(row=0, column=1, sticky='nw', padx=5, pady=5)
+            radioVar = tk.IntVar()
+            radio = tk.Checkbutton(varFrame, text='Log', variable=radioVar)
+            radio.grid(row=0, column=2, sticky='nw', padx=5, pady=5)
+            return combo, radio, radioVar
+
+        self.timeWidget = addVar('Time variable', 0, timeVars)
+        self.measureWidget = addVar('Measure variable', 1, measureVars)
+
+        self.plotButton = Button(plotFrame, '   Plot   ', font=self.fontBold,
+                                 command=self._onPlotClick,
+                                 tooltip='Select one or more samples to plot '
+                                         'theirs measures of the selected '
+                                         'variables (optionally in log).')
+
+        self.plotButton.grid(row=0, column=2, sticky='ne', padx=5)
+
         frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
 
     def _createButtonsFrame(self, content):
-        pass
+        frame = tk.Frame(content)
+        gui.configureWeigths(frame)
+        buttonsFrame = tk.Frame(frame)
+        buttonsFrame.grid(row=0, column=0, sticky='ne')
+        closeButton = Button(buttonsFrame, 'Close', command=self.close,
+                             imagePath='fa-times.png')
+        closeButton.grid(row=0, column=0, sticky='ne', padx=5)
+        self.newButton = HotButton(buttonsFrame, '   New Experiment   ',
+                                   command=self._onCreateClick,
+                                   tooltip='Create a new experiment with the '
+                                            'selected samples. You can also edit'
+                                            'title and comment.')
+
+        self.newButton.grid(row=0, column=1, sticky='ne', padx=5)
+
+        frame.grid(row=2, column=0, sticky='news', padx=5, pady=5)
 
 
     def _addLabel(self, parent, text, r, c):
@@ -189,160 +229,79 @@ class ExperimentWindow(gui.Window):
         gui.configureWeigths(parent)
         return bt
 
-    def _createFigureBox(self, content):
-        frame = tk.LabelFrame(content, text='Figure')
-        frame.columnconfigure(0, minsize=50)
-        frame.columnconfigure(1, weight=1)#, minsize=30)
-        # Create the 'Axes' label
-        self._addLabel(frame, 'Axes', 0, 0)
+    def _onPlotClick(self, e=None):
+        sampleKeys = self.samplesTree.selection()
+        if sampleKeys:
+            samples = [self.experiment.samples[k] for k in sampleKeys]
+            timeVarName = self.timeWidget[0].getText()
+            measureVarName = self.measureWidget[0].getText()
+            plotter = EmPlotter()
+            ax = plotter.createSubPlot("Plot", timeVarName, measureVarName)
 
-        frame.grid(row=0, column=0, sticky='new', padx=5, pady=(10, 5))
-
-        # Create a listbox with x1, x2 ...
-        listbox = tk.Listbox(frame, height=5,
-                             selectmode=tk.MULTIPLE, bg='white')
-        for var in self.experiment.variables.keys():
-            listbox.insert(tk.END, var)
-        listbox.grid(row=0, column=1, padx=5, pady=5, sticky='nw')
-        self.listbox = listbox
-
-        # Selection controls
-        self._addLabel(frame, 'Selection', 1, 0)
-        # Selection label
-        self.selectionVar = tk.StringVar()
-        self.clusterLabel = tk.Label(frame, textvariable=self.selectionVar)
-        self.clusterLabel.grid(row=1, column=1, sticky='nw', padx=5, pady=(10, 5))
-
-        # --- Expression
-        expressionFrame = tk.Frame(frame)
-        expressionFrame.grid(row=2, column=1, sticky='news')
-        tk.Label(expressionFrame, text='Expression').grid(row=0, column=0, sticky='ne')
-        self.expressionVar = tk.StringVar()
-        expressionEntry = tk.Entry(expressionFrame, textvariable=self.expressionVar,
-                                   width=30, bg='white')
-        expressionEntry.grid(row=0, column=1, sticky='nw')
-        helpText = 'e.g. x1>0 and x1<100 or x3>20'
-        tk.Label(expressionFrame, text=helpText).grid(row=1, column=1, sticky='nw')
-
-        # Buttons
-        buttonFrame = tk.Frame(frame)
-        buttonFrame.grid(row=5, column=1, sticky='sew', pady=(10, 5))
-        buttonFrame.columnconfigure(0, weight=1)
-        resetBtn = Button(buttonFrame, text='Reset', command=self._onResetClick)
-        resetBtn.grid(row=0, column=0, sticky='ne', padx=(5, 0))
-        updateBtn = Button(buttonFrame, text='Update Plot', imagePath='fa-refresh.png',
-                           command=self._onUpdateClick)
-        updateBtn.grid(row=0, column=1, sticky='ne', padx=5)
-
-        frame.grid(row=0, column=0, sticky='new', padx=5, pady=(10, 5))
-
-    def _createClusteringBox(self, content):
-        frame = tk.LabelFrame(content, text='Cluster')
-        frame.columnconfigure(0, minsize=50)
-        frame.columnconfigure(1, weight=1)#, minsize=30)
-
-        # Cluster line
-        self._addLabel(frame, 'Cluster name', 0, 0)
-        self.clusterVar = tk.StringVar()
-        clusterEntry = tk.Entry(frame, textvariable=self.clusterVar,
-                                   width=30, bg='white')
-        clusterEntry.grid(row=0, column=1, sticky='nw', pady=5)
-
-        buttonsFrame = tk.Frame(frame, bg='green')
-        buttonsFrame.grid(row=1, column=1,
-                          sticky='se', padx=5, pady=5)
-        buttonsFrame.columnconfigure(0, weight=1)
-
-        self.createBtn = HotButton(buttonsFrame, text='Create Cluster',
-                                   tooltip="Select some points to create the cluster",
-                                   imagePath='fa-plus-circle.png', command=self._onCreateClick)
-        self.createBtn.grid(row=0, column=1)
-
-        frame.grid(row=1, column=0, sticky='new', padx=5, pady=(5, 10))
-
-    def _onResetClick(self, e=None):
-        """ Clean the expression and the current selection. """
-        self.expressionVar.set('')
-        for point in self.data:
-            point.setState(Point.NORMAL)
-        self._onUpdateClick()
+            for s in samples:
+                x = s.getNonEmptyValues(timeVarName)
+                y = s.getNonEmptyValues(measureVarName)
+                ax.plot(x, y, label=s.varName)
+            ax.legend()
+            plotter.show()
+        else:
+            self.showInfo("Please select some sample(s) to plot.")
 
     def _onCreateClick(self, e=None):
-        if self.callback:
-            self.callback()
-
-    def _evalExpression(self):
-        """ Evaluate the input expression and add
-        matching points to the selection.
-        """
-        value = self.expressionVar.get().strip()
-        if value:
-            for point in self.data:
-                if point.eval(value):
-                    point.setState(Point.SELECTED)
-
-    def _onUpdateClick(self, e=None):
-        components = self.listbox.curselection()
-        dim = len(components)
-
-        if not dim:
-            self.showWarning("Please select some Axis before update plots.")
+        sampleKeys = self.samplesTree.selection()
+        if sampleKeys:
+            print "samples: ", len(sampleKeys)
+            print "title: ", self._titleVar.get()
+            print "comment: ", self._commentText.getText()
         else:
-            modeList = components
-            modeNameList = ['x%d' % (m+1) for m in components]
-            missingList = []
+            self.showInfo("Please select some sample(s) to create a "
+                          "new experiment.")
 
-            if missingList:
-                return [self.errorMessage("Invalid mode(s) *%s*\n." % (', '.join(missingList)),
-                              title="Invalid input")]
-
-            if self.plotter is None or self.plotter.isClosed():
-                self.plotter = XmippNmaPlotter(data=self.data)
-                doShow = True
-            else:
-                self.plotter.clear()
-                doShow = False
-
-            # Actually plot
-            baseList = [basename(n) for n in modeNameList]
-
-            self.data.XIND = modeList[0]
-
-            if dim == 1:
-                self.plotter.plotArray1D("Histogram for %s" % baseList[0],
-                                    "Deformation value", "Number of images")
-            else:
-                self.data.YIND = modeList[1]
-                if dim == 2:
-                    self._evalExpression()
-                    self._updateSelectionLabel()
-                    ax = self.plotter.createSubPlot("Click and drag to add points to the Cluster",
-                                                    *baseList)
-                    self.ps = PointSelector(ax, self.data, callback=self._updateSelectionLabel)
-                elif dim == 3:
-                    del self.ps # Remove PointSelector
-                    self.data.ZIND = modeList[2]
-                    self.plotter.plotArray3D("%s %s %s" % tuple(baseList), *baseList)
-
-            if doShow:
-                self.plotter.show()
-            else:
-                self.plotter.draw()
-
-    def _updateSelectionLabel(self):
-        selected = self.data.getSelectedSize()
-        self.selectionVar.set('%d / %d points' % (selected, self.data.getSize()))
-
-        if selected:
-            self.createBtn.config(state=tk.NORMAL)
-        else:
-            self.createBtn.config(state=tk.DISABLED)
-
-    def getClusterName(self):
-        return self.clusterVar.get().strip()
+    def _onSampleDoubleClick(self, obj):
+        MeasureWindow(masterWindow=self, experiment=self.experiment).show()
 
     def _onClosing(self):
         if self.plotter:
             self.plotter.close()
         gui.Window._onClosing(self)
+
+
+class MeasureWindow(gui.Window):
+    def __init__(self, **kwargs):
+        gui.Window.__init__(self,  minsize=(420, 200), **kwargs)
+        self.experiment = kwargs.get('experiment')
+        content = tk.Frame(self.root)
+        self._createContent(content)
+        content.grid(row=0, column=0, sticky='news')
+        content.columnconfigure(0, weight=1)
+
+    def _createContent(self, content):
+        self._createMeasurementFrame(content)
+        self._createButtonsFrame(content)
+
+    def _createMeasurementFrame(self, content):
+        frame = tk.Frame(content)
+        #frame = tk.LabelFrame(content, text='General')
+        lfSamples = tk.LabelFrame(frame, text='Measurement')
+        gui.configureWeigths(frame)
+        lfSamples.grid(row=0, column=0, sticky='news', padx=5, pady=5)
+        self.samplesTree = self._addBoundTree(lfSamples, SamplesTreeProvider, 10)
+
+        frame.grid(row=0, column=0, sticky='news', padx=5, pady=5)
+
+    def _createButtonsFrame(self, content):
+        frame = tk.Frame(content)
+        gui.configureWeigths(frame)
+        buttonsFrame = tk.Frame(frame)
+        buttonsFrame.grid(row=0, column=0, sticky='ne')
+        closeButton = Button(buttonsFrame, 'Close', command=self.close,
+                             imagePath='fa-times.png')
+
+        frame.grid(row=2, column=0, sticky='news', padx=5, pady=5)
+
+    def _addBoundTree(self, parent, ProviderClass, height):
+        bt = BoundTree(parent, ProviderClass(self.experiment), height=height)
+        bt.grid(row=0, column=0, sticky='news', padx=5, pady=5)
+        gui.configureWeigths(parent)
+        return bt
 

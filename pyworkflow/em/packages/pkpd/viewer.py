@@ -54,14 +54,14 @@ class PKPDExperimentViewer(Viewer):
     def __init__(self, **kwargs):
         Viewer.__init__(self, **kwargs)
 
-    def _visualize(self, obj, **kwargs):
+    def visualize(self, obj, **kwargs):
         obj.load()
         self.clusterWindow = self.tkWindow(ExperimentWindow,
                                            title='Experiment Viewer',
                                            experiment=obj,
                                            callback=self._createExperiment
                                            )
-        return [self.clusterWindow]
+        self.clusterWindow.show()
 
     def _createExperiment(self):
         """ Create a new experiment after manipulation of
