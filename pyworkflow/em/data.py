@@ -368,6 +368,17 @@ class PKPDSample:
         else:
             return getattr(self,"measurement_%s"%varName)
 
+    def getXYValues(self,varNameX,varNameY):
+        x = []
+        y = []
+        xString = self.getValues(varNameX)
+        yString = self.getValues(varNameY)
+        for n in range(0,len(xString)):
+            if xString[n]!="NA" and yString[n]!="NA":
+                x.append(float(xString[n]))
+                y.append(float(yString[n]))
+        return (x,y)
+
 class PKPDExperiment(EMObject):
     READING_GENERAL = 1
     READING_VARIABLES = 2
@@ -516,27 +527,16 @@ class PKPDModel:
         self.xName = x
         self.xRange = self.experiment.getRange(x)
 
-    def setX(self, xString):
-        self.xString = xString
-
-    def setY(self, yString):
-        self.yString = yString
-
     def setYVar(self, y):
         if not y in self.experiment.variables:
             raise Exception("Cannot find %s as a variable in the experiment"%x)
         self.yName = y
         self.yRange = self.experiment.getRange(y)
 
-    def xyToFloat(self):
-        if len(self.xString)!=len(self.yString):
-            raise Exception("Cannot model with different X and Y lengths")
-        self.x = []
-        self.y = []
-        for n in range(0,len(self.xString)):
-            if self.xString[n]!="NA" and self.yString[n]!="NA":
-                self.x.append(float(self.xString[n]))
-                self.y.append(float(self.yString[n]))
+    def setXYValues(self, x, y):
+        self.x = np.array(x)
+        self.y = np.array(y)
+        self.ylog = np.log(self.y)
 
     def forwardModel(self):
         pass
@@ -544,19 +544,19 @@ class PKPDModel:
     def getNumberOfParameters(self):
         pass
 
+    def prepare(self):
+        pass
+
     def printSetup(self):
         pass
 
 class PKPDExponentialModel(PKPDModel):
     def forwardModel(self, parameters):
-        self.yPredicted = []
-        for x in self.x:
-            y = 0
-            for k in range(0,self.Nexp):
-                ck = parameters[2*k]
-                lk = parameters[2*k+1]
-                y += ck*math.exp(-lk*x)
-            self.yPredicted.append(y)
+        self.yPredicted = np.zeros(self.y.shape[0])
+        for k in range(0,self.Nexp):
+            ck = parameters[2*k]
+            lk = parameters[2*k+1]
+            self.yPredicted += ck*np.exp(-lk*self.x)
         return self.yPredicted
 
     def setNexp(self, Nexp):
@@ -575,24 +575,27 @@ class PKPDExponentialModel(PKPDModel):
         return eval("["+",".join(tokens)+"]")
 
     def setBounds(self, cBounds, lambdaBounds):
-        y0=self.yRange[1]
-        yF=self.yRange[0]
-        t0=self.xRange[0]
-        tF=self.xRange[1]
-        # y0 = c * exp(-lambda*t0)
-        # yF = c * exp(-lambda*tF)
-        meanLambda = math.log(yF/y0)/(t0-tF)
-        meanC = y0*math.exp(meanLambda*t0)
-
         if lambdaBounds=="" or lambdaBounds is None:
-            self.lambdaBounds = [(0.2*meanLambda,5*meanLambda)]*self.Nexp
+            self.lambdaBounds = None
         else:
-            self.lambdaBounds=self.parseBounds(lambdaBounds,"lambda")
+            self.lambdaBounds = self.parseBounds(lambdaBounds,"lambda")
 
         if cBounds=="" or cBounds is None:
-            self.cBounds = [(0.2*meanC,5*meanC)]*self.Nexp
+            self.cBounds = None
         else:
-            self.cBounds=self.parseBounds(cBounds,"amplitude")
+            self.cBounds = self.parseBounds(cBounds,"amplitude")
+
+    def prepare(self):
+        if self.cBounds == None and self.lambdaBounds == None:
+            print("First estimate of 1 exponential term: ")
+            p = np.polyfit(self.x,self.ylog,1)
+            self.cBounds=[(math.exp(p[1])*0.01,math.exp(p[1])*100.0)]*self.Nexp
+            self.lambdaBounds=[(-p[0]*0.01,-p[0]*100.0)]*self.Nexp
+            print("Y=%f*exp(-%f*X)"%(math.exp(p[1]),-p[0]))
+        elif self.cBounds == None or self.lambdaBounds == None:
+            raise Exception("Either give c and lambda bounds or none of them")
+        print("Amplitude (c) bounds: "+str(self.cBounds))
+        print("Lambda bounds: "+str(self.lambdaBounds))
 
     def getBounds(self):
         bounds = []
@@ -604,8 +607,6 @@ class PKPDExponentialModel(PKPDModel):
     def printSetup(self):
         print("Model: y=sum_i c_i*exp(-lambda_i * x)")
         print("Number of exponentials: "+str(self.Nexp))
-        print("Amplitude (c) bounds: "+str(self.cBounds))
-        print("Lambda bounds: "+str(self.lambdaBounds))
 
 class PKPDDEOptimizer:
     def __init__(self,model,fitType,goalFunction="RMSE"):
@@ -626,13 +627,18 @@ class PKPDDEOptimizer:
     def goalRMSE(self,parameters):
         yPredicted = np.array(self.model.forwardModel(parameters),dtype=np.float32)
         if self.takeYLogs:
-            yPredicted = np.log10(yPredicted)
+            idx = yPredicted>=1e-20
+            nonIdx = yPredicted<1e-20
+            yPredicted[idx] = np.log10(yPredicted[idx])
+            yPredicted[nonIdx] = -100
         rmse = math.sqrt(((self.yTarget - yPredicted) ** 2).mean())
-        print(rmse)
         return rmse
 
     def optimize(self):
         from scipy.optimize import differential_evolution
+        print("Optimizing with Differential Evolution, a global optimizer")
         self.optimum = differential_evolution(self.goalFunction, self.model.getBounds())
+        print("Best function value: "+str(self.optimum.fun))
+        print("Best parameters: "+str(self.optimum.x))
         return self.optimum
 

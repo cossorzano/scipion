@@ -75,7 +75,6 @@ class ProtPKPDExponentialFit(ProtPKPD):
         model.setXVar(self.predictor.get())
         model.setYVar(self.predicted.get())
         model.setNexp(self.Nexp.get())
-        model.setBounds(self.cBounds.get(),self.lambdaBounds.get())
         model.printSetup()
 
         # Actual fitting
@@ -86,11 +85,13 @@ class ProtPKPDExponentialFit(ProtPKPD):
 
         for sampleName, sample in experiment.samples.iteritems():
             self.printSection("Fitting "+sampleName)
-            model.setX(sample.getValues(self.predictor.get()))
-            model.setY(sample.getValues(self.predicted.get()))
-            model.xyToFloat()
-            print("X: "+str(model.x))
-            print("Y: "+str(model.y))
+            x, y = sample.getXYValues(self.predictor.get(),self.predicted.get())
+            print("X: "+str(x))
+            print("Y: "+str(y))
+            model.setBounds(self.cBounds.get(),self.lambdaBounds.get())
+            model.setXYValues(x, y)
+            model.prepare()
+
 
             optimizer1 = PKPDDEOptimizer(model,fitType)
             optimizer1.optimize()
