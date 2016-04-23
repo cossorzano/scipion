@@ -26,7 +26,7 @@
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDExponentialModel, PKPDDEOptimizer
+from pyworkflow.em.data import PKPDExperiment, PKPDExponentialModel, PKPDDEOptimizer, PKPDLSOptimizer
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
 
@@ -45,7 +45,7 @@ class ProtPKPDExponentialFit(ProtPKPD):
                       help='Y is predicted as an exponential function of X, Y=sum_{i=1}^N c_i exp(-lambda_i * X)')
         form.addParam('predicted', params.StringParam, label="Predicted variable (Y)", default="Cp",
                       help='Y is predicted as an exponential function of X, Y=sum_{i=1}^N c_i exp(-lambda_i * X)')
-        form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic"], label="Fit mode", default=0,
+        form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic"], label="Fit mode", default=1,
                       help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2')
         form.addParam('Nexp', params.IntParam, label="Number of exponentials", default=1,
                       help='Number of exponentials to fit')
@@ -53,6 +53,8 @@ class ProtPKPDExponentialFit(ProtPKPD):
                       help='Bounds for the c_i amplitudes.\nExample 1: (0,10)\nExample 2: (0,10);(1,5)')
         form.addParam('lambdaBounds', params.StringParam, label="Time constant bounds", default="", expertLevel=LEVEL_ADVANCED,
                       help='Bounds for the lambda_i time constants.\nExample 1: (0,0.01)\nExample 2: (0,1e-2);(0,1e-1)')
+        form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
+                      help='Confidence interval for the fitted parameters')
         form.addParam('reportTime', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
                       help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: -10:5:10')
 
@@ -86,15 +88,19 @@ class ProtPKPDExponentialFit(ProtPKPD):
         for sampleName, sample in experiment.samples.iteritems():
             self.printSection("Fitting "+sampleName)
             x, y = sample.getXYValues(self.predictor.get(),self.predicted.get())
-            print("X: "+str(x))
-            print("Y: "+str(y))
+            print("X= "+str(x))
+            print("Y= "+str(y))
+            print(" ")
             model.setBounds(self.cBounds.get(),self.lambdaBounds.get())
             model.setXYValues(x, y)
             model.prepare()
-
+            print(" ")
 
             optimizer1 = PKPDDEOptimizer(model,fitType)
             optimizer1.optimize()
+            optimizer2 = PKPDLSOptimizer(model,fitType)
+            optimizer2.optimize()
+            optimizer2.setConfidenceInterval(self.confidenceInterval.get())
 
     def createOutputStep(self):
         self._defineOutputs(outputExperiment=self.experiment)
