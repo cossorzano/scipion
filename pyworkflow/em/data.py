@@ -158,7 +158,14 @@ class PKPDVariable:
     ROLE_MEASUREMENT = 1011
     ROLE_LABEL = 1012
 
-    def __init__(self,tokens):
+    def __init__(self):
+        self.varName = None
+        self.varType = None
+        self.displayString = ""
+        self.role = None
+        self.comment = ""
+
+    def parseTokens(self,tokens):
         # t ; h ; numeric[%f] ; time ;
 
         # Get name
@@ -227,7 +234,16 @@ class PKPDDose:
     TYPE_BOLUS = 1
     TYPE_INFUSION = 2
 
-    def __init__(self,tokens):
+    def __init__(self):
+        self.varName = None
+        self.doseType = None
+        self.doseAmount = None
+        self.t0 = None
+        self.tF = None
+        self.units = None
+        self.normalization = ""
+
+    def parseTokens(self,tokens):
         # Dose1; bolus t=0 d=60; mg; dose*weight/1000
         # Dose1; infusion t=0...59 d=1; mg; dose*weight/1000
 
@@ -274,7 +290,15 @@ class PKPDDose:
                  (self.varName,doseString, self.doseAmount, self.units._toString(), self.normalization))
 
 class PKPDSample:
-    def parseLine(self,tokens,variableDict,doseDict):
+    def __init__(self):
+        self.varName = ""
+        self.variableDictPtr = None
+        self.doseDictPtr = None
+        self.doseName = ""
+        self.descriptors = None
+        self.measurementPattern = None
+
+    def parseTokens(self,tokens,variableDict,doseDict):
         # FemaleRat1; dose=Dose1; weight=207
 
         # Keep a pointer to variableDict and doseDict
@@ -435,7 +459,8 @@ class PKPDExperiment(EMObject):
                     print("Skipping variable: ",line)
                     continue
                 varname = tokens[0].strip()
-                self.variables[varname] = PKPDVariable(tokens)
+                self.variables[varname] = PKPDVariable()
+                self.variables[varname].parseTokens(tokens)
 
             elif state==PKPDExperiment.READING_DOSES:
                 tokens = line.split(';')
@@ -443,7 +468,8 @@ class PKPDExperiment(EMObject):
                     print("Skipping dose: ",line)
                     continue
                 dosename = tokens[0].strip()
-                self.doses[dosename] = PKPDDose(tokens)
+                self.doses[dosename] = PKPDDose()
+                self.doses[dosename].parseTokens(tokens)
 
             elif state==PKPDExperiment.READING_SAMPLES:
                 tokens = line.split(';')
@@ -452,7 +478,7 @@ class PKPDExperiment(EMObject):
                     continue
                 samplename = tokens[0].strip()
                 self.samples[samplename] = PKPDSample()
-                self.samples[samplename].parseLine(tokens,self.variables, self.doses)
+                self.samples[samplename].parseTokens(tokens,self.variables, self.doses)
 
             elif state==PKPDExperiment.READING_MEASUREMENTS:
                 tokens = line.split(';')
@@ -550,6 +576,13 @@ class PKPDModel:
     def printSetup(self):
         pass
 
+    def printModel(self):
+        pass
+
+    def setParameters(self, parameters):
+        self.parameters = parameters
+
+
 class PKPDExponentialModel(PKPDModel):
     def forwardModel(self, parameters):
         self.yPredicted = np.zeros(self.y.shape[0])
@@ -608,15 +641,22 @@ class PKPDExponentialModel(PKPDModel):
         print("Model: y=sum_i c_i*exp(-lambda_i * x)")
         print("Number of exponentials: "+str(self.Nexp))
 
-class PKPDDEOptimizer:
+    def printModel(self):
+        toPrint="Model: Y="
+        for i in range(self.Nexp):
+            toPrint+= "+[%f*exp(-%f*X)]"%(self.parameters[2*i],self.parameters[2*i+1])
+        print(toPrint)
+
+class PKPDOptimizer:
     def __init__(self,model,fitType,goalFunction="RMSE"):
         self.model = model
 
         self.yTarget = np.array(model.y, dtype=np.float32)
+        self.yTargetLogs = np.log10(self.yTarget)
         if fitType=="linear":
             self.takeYLogs = False
         elif fitType=="log":
-            self.yTarget = np.log10(self.yTarget)
+            self.yTarget = self.yTargetLogs
             self.takeYLogs = True
 
         if goalFunction=="RMSE":
@@ -624,21 +664,77 @@ class PKPDDEOptimizer:
         else:
             raise Exception("Unknown goal function")
 
-    def goalRMSE(self,parameters):
+    def getResiduals(self,parameters):
         yPredicted = np.array(self.model.forwardModel(parameters),dtype=np.float32)
         if self.takeYLogs:
             idx = yPredicted>=1e-20
             nonIdx = yPredicted<1e-20
             yPredicted[idx] = np.log10(yPredicted[idx])
             yPredicted[nonIdx] = -100
-        rmse = math.sqrt(((self.yTarget - yPredicted) ** 2).mean())
+        return self.yTarget - yPredicted
+
+    def goalRMSE(self,parameters):
+        rmse = math.sqrt((self.getResiduals(parameters) ** 2).mean())
         return rmse
 
+    def _printFitting(self, x, y, yp):
+        for n in range(0,x.shape[0]):
+            print("%f %f %f %f"%(x[n],y[n],yp[n],y[n]-yp[n]))
+        e = y-yp
+        print("------------------------")
+        print("Mean error = %f"%np.mean(e))
+        print("Std error = %f"%np.std(e))
+        print("R2 = %f"%(1-np.var(e)/np.var(y)))
+        print("------------------------")
+
+    def printFitting(self):
+        yPredicted = np.array(self.model.forwardModel(self.model.parameters),dtype=np.float32)
+        print("==========================================")
+        print("X     Y    Ypredicted  Error=Y-Ypredicted ")
+        print("==========================================")
+        self._printFitting(self.model.x, self.model.y, yPredicted)
+        print("==================================================================")
+        print("X    log10(Y)  log10(Ypredicted)  Error=log10(Y)-log10(Ypredicted)")
+        print("==================================================================")
+        self._printFitting(self.model.x, np.log10(self.model.y), np.log10(yPredicted))
+
+class PKPDDEOptimizer(PKPDOptimizer):
     def optimize(self):
         from scipy.optimize import differential_evolution
-        print("Optimizing with Differential Evolution, a global optimizer")
+        print("Optimizing with Differential Evolution (DE), a global optimizer")
         self.optimum = differential_evolution(self.goalFunction, self.model.getBounds())
-        print("Best function value: "+str(self.optimum.fun))
-        print("Best parameters: "+str(self.optimum.x))
+        print("Best DE function value: "+str(self.optimum.fun))
+        print("Best DE parameters: "+str(self.optimum.x))
+        self.model.setParameters(self.optimum.x)
+        self.model.printModel()
+        self.printFitting()
+        print(" ")
         return self.optimum
 
+class PKPDLSOptimizer(PKPDOptimizer):
+    def optimize(self):
+        from scipy.optimize import leastsq
+        print("Optimizing with Least Squares (LS), a local optimizer")
+        print("Initial parameters: "+str(self.model.parameters))
+        self.optimum, self.cov_x, self.info, _, _ = leastsq(self.getResiduals, self.model.parameters, full_output=True)
+        print("Best LS function value: "+str(self.goalFunction(self.optimum)))
+        print("Best LS parameters: "+str(self.optimum))
+        self.cov_x *= np.var(self.info["fvec"])
+
+        print("Covariance matrix:")
+        print(np.array_str(self.cov_x,max_line_width=120))
+        self.model.setParameters(self.optimum)
+        self.model.printModel()
+        self.printFitting()
+        print(" ")
+        return self.optimum
+
+    def setConfidenceInterval(self,confidenceInterval):
+        from scipy.stats import norm
+        nstd = norm.ppf(1-(1-confidenceInterval/100)/2)
+        perr = np.sqrt(np.diag(self.cov_x))
+        lower_bound = self.optimum-nstd*perr
+        upper_bound = self.optimum+nstd*perr
+        print("Confidence intervals %f%% --------------------------"%confidenceInterval)
+        for n in range(0,len(self.optimum)):
+            print("%f [%f,%f]"%(self.optimum[n],lower_bound[n],upper_bound[n]))
