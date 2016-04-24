@@ -583,6 +583,13 @@ class PKPDModel:
     def setParameters(self, parameters):
         self.parameters = parameters
 
+    def areParametersSignificant(self, lowerBound, upperBound):
+        """
+        :param lowerBound and upperBound: a numpy array of parameters
+        :return: a list of string with "True", "False", "NA", "Suspicious"
+        """
+        pass
+
 
 class PKPDExponentialModel(PKPDModel):
     def forwardModel(self, parameters, x=None):
@@ -649,6 +656,32 @@ class PKPDExponentialModel(PKPDModel):
         for i in range(self.Nexp):
             toPrint+= "+[%f*exp(-%f*X)]"%(self.parameters[2*i],self.parameters[2*i+1])
         print(toPrint)
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        for i in range(self.Nexp):
+            cLower = lowerBound[2*i]
+            cUpper = lowerBound[2*i+1]
+            if cLower<0 and cUpper>0:
+                retval.append("False")
+            elif cLower>0:
+                retval.append("True")
+            elif cUpper<0:
+                retval.append("Suspicious, this term may be negative")
+            else:
+                retval.append("NA")
+
+            decayLower = lowerBound[2*i+1]
+            decayUpper = lowerBound[2*i+1]
+            if decayLower<0 and decayUpper>0:
+                retval.append("Suspicious, looks like a constant")
+            elif decayLower<0:
+                retval.append("Suspicious, this term may be unstable")
+            elif decayLower>0:
+                retval.append("True")
+            else:
+                retval.append("NA")
+        return retval
 
 class PKPDOptimizer:
     def __init__(self,model,fitType,goalFunction="RMSE"):
@@ -738,6 +771,9 @@ class PKPDLSOptimizer(PKPDOptimizer):
         perr = np.sqrt(np.diag(self.cov_x))
         lower_bound = self.optimum-nstd*perr
         upper_bound = self.optimum+nstd*perr
+
+        significance = self.model.areParametersSignificant(lower_bound,upper_bound)
         print("Confidence intervals %f%% --------------------------"%confidenceInterval)
+        print("ParameterValue   ParameterConfidenceInterval  IsStatisticallySignificant")
         for n in range(0,len(self.optimum)):
-            print("%f [%f,%f]"%(self.optimum[n],lower_bound[n],upper_bound[n]))
+            print("%f [%f,%f] %s"%(self.optimum[n],lower_bound[n],upper_bound[n],significance[n]))
