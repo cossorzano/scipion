@@ -542,6 +542,7 @@ class PKPDExperiment(EMObject):
 class PKPDModel:
     def __init__(self):
         self.fnExperiment = None
+        self.parameters = None
 
     def setExperiment(self, experiment):
         self.experiment = experiment
@@ -564,7 +565,7 @@ class PKPDModel:
         self.y = np.array(y)
         self.ylog = np.log(self.y)
 
-    def forwardModel(self):
+    def forwardModel(self, parameters, x=None):
         pass
 
     def getNumberOfParameters(self):
@@ -584,12 +585,14 @@ class PKPDModel:
 
 
 class PKPDExponentialModel(PKPDModel):
-    def forwardModel(self, parameters):
-        self.yPredicted = np.zeros(self.y.shape[0])
+    def forwardModel(self, parameters, x=None):
+        if x==None:
+            x=self.x
+        self.yPredicted = np.zeros(x.shape[0])
         for k in range(0,self.Nexp):
             ck = parameters[2*k]
             lk = parameters[2*k+1]
-            self.yPredicted += ck*np.exp(-lk*self.x)
+            self.yPredicted += ck*np.exp(-lk*x)
         return self.yPredicted
 
     def setNexp(self, Nexp):
