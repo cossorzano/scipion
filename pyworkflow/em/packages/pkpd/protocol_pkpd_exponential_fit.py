@@ -29,12 +29,15 @@ import math
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDExponentialModel, PKPDDEOptimizer, PKPDLSOptimizer
+from pyworkflow.em.data import PKPDExperiment, PKPDExponentialModel, PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, \
+                               PKPDSampleFit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
 
 class ProtPKPDExponentialFit(ProtPKPD):
-    """ Fit a set of exponentials. The observed measurement is modelled as Y=sum_{i=1}^N c_i exp(-lambda_i * X)"""
+    """ Fit a set of exponentials. The observed measurement is modelled as Y=sum_{i=1}^N c_i exp(-lambda_i * X).
+        Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
+        are independent, which are not. Use Bootstrap estimates instead. """
     _label = 'fit exponentials'
 
     #--------------------------- DEFINE param functions --------------------------------------------
@@ -67,7 +70,7 @@ class ProtPKPDExponentialFit(ProtPKPD):
         self._insertFunctionStep('runFit',self.inputExperiment.get().getObjId(), self.predictor.get(), \
                                  self.predicted.get(), self.fitType.get(), self.Nexp.get(), self.cBounds.get(), \
                                  self.lambdaBounds.get())
-        # self._insertFunctionStep('createOutputStep')
+        self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
     def getReportTime(self):
@@ -102,6 +105,13 @@ class ProtPKPDExponentialFit(ProtPKPD):
         model.setNexp(self.Nexp.get())
         model.printSetup()
 
+        # Create output object
+        self.fitting = PKPDFitting()
+        self.fitting.fnExperiment.set(self.inputExperiment.get().fnPKPD.get())
+        self.fitting.predictor=experiment.variables[self.predictor.get()]
+        self.fitting.predicted=experiment.variables[self.predicted.get()]
+        self.fitting.modelDescription=model.getDescription()
+
         # Actual fitting
         if self.fitType.get()==0:
             fitType = "linear"
@@ -134,9 +144,26 @@ class ProtPKPDExponentialFit(ProtPKPD):
                     print("%f %f %f"%(reportTime[n],yReportTime[n],math.log10(yReportTime[n])))
                 print(' ')
 
+            # Keep this result
+            sampleFit = PKPDSampleFit()
+            sampleFit.sampleName = sample.varName
+            sampleFit.x = x
+            sampleFit.y = y
+            sampleFit.yp = model.yPredicted
+            sampleFit.yl = model.yPredictedLower
+            sampleFit.yu = model.yPredictedUpper
+            sampleFit.parameters = model.parameters
+            sampleFit.significance = optimizer2.significance
+            sampleFit.modelEquation = model.getEquation()
+            sampleFit.R2 = optimizer2.R2
+            sampleFit.lowerBound = optimizer2.lowerBound
+            sampleFit.upperBound = optimizer2.upperBound
+            self.fitting.sampleFits.append(sampleFit)
+            self.fitting.write(self._getPath("fitting.pkpd"))
+
     def createOutputStep(self):
-        self._defineOutputs(outputExperiment=self.experiment)
-        self._defineSourceRelation(self.inputExperiment, self.experiment)
+        self._defineOutputs(outputFitting=self.fitting)
+        self._defineSourceRelation(self.inputExperiment, self.fitting)
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
