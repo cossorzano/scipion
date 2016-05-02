@@ -184,11 +184,6 @@ class ProjectWindow(ProjectBaseWindow):
 
     def runObjectCommand(self, cmd, inputStrId, objStrId):
         try:
-            
-            from pyworkflow.em.packages.xmipp3.nma.viewer_nma import createDistanceProfilePlot
-            from pyworkflow.em.packages.xmipp3.protocol_movie_alignment import createPlots 
-            from pyworkflow.em.protocol.protocol_movies import PLOT_CART
-            from pyworkflow.em.packages.xmipp3.nma.viewer_nma import createVmdView
             objId = int(objStrId)
             project = self.project
             if os.path.isfile(inputStrId) and os.path.exists(inputStrId):
@@ -201,30 +196,6 @@ class ProjectWindow(ProjectBaseWindow):
         except Exception, ex:
             print "There was an error executing object command !!!:"
             print  ex
-    
-    def recalculateCTF(self, inputObjId, sqliteFile):
-        """ Load the project and launch the protocol to
-        create the subset.
-        """
-        # Retrieve project, input protocol and object from db
-        project = self.project
-        inputObj = project.mapper.selectById(int(inputObjId))
-        parentProtId = inputObj.getObjParentId()
-        parentProt = project.mapper.selectById(parentProtId)
-        protDep = project._getProtocolsDependencies([parentProt])
-        if protDep:
-            prot = project.copyProtocol(parentProt)
-            prot.continueRun.set(parentProt)
-        else:
-            prot = parentProt
-            prot.isFirstTime.set(True)
-        
-        # Define the input params of the new protocol
-        prot.recalculate.set(True)
-        prot.sqliteFile.set(sqliteFile)
-        # Launch the protocol
-        self.getViewWidget().executeProtocol(prot)
-
 
 class ProjectManagerWindow(ProjectBaseWindow):
     """ Windows to manage all projects. """
