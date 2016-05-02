@@ -24,7 +24,7 @@
 # *
 # **************************************************************************
 """
-This module implement the classes to create plots on xmipp.
+This module implement the classes to create plots on scipion.
 """
 from math import radians
 from itertools import izip

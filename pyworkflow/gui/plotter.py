@@ -24,7 +24,7 @@
 # *
 # **************************************************************************
 """
-This module implement the classes to create plots on xmipp.
+This module implement the classes to create plots on scipion.
 """
 
 import matplotlib.pyplot as plt
