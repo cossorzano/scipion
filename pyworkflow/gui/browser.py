@@ -36,7 +36,6 @@ import stat
 
 import Tkinter as tk
 
-import xmipp
 from pyworkflow.utils.properties import Icon
 import gui
 from pyworkflow.utils import dirname, getHomePath, prettySize, getExt, dateStr

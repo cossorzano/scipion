@@ -3,7 +3,6 @@
 from pyworkflow.em.viewer import ChimeraClient, ChimeraProjectionClient
 import os, sys
 import argparse
-import xmipp
 
 def main():
     commonParser = argparse.ArgumentParser(add_help=False, prog='Chimera Client')
@@ -29,9 +28,6 @@ def main():
     projectorParser.add_argument('--showjPort', help='Port to link projections to chimera', type=int)
 
 
-    splineDegreeDict = {'NEAREST': xmipp.NEAREST, 'LINEAR': xmipp.LINEAR,
-                        'BSPLINE2': xmipp.BSPLINE2, 'BSPLINE3': xmipp.BSPLINE3, 'BSPLINE4': xmipp.BSPLINE4}
-
     args = parentParser.parse_args()
     #print args
     volfile = args.input
@@ -43,24 +39,6 @@ def main():
 
     if args.cmd == 'viewer':
         ChimeraClient(volfile, angularDistFile=angularDistFile, spheresColor=spheresColor, spheresDistance=spheresDistance, spheresMaxRadius=spheresMaxRadius, voxelSize=voxelSize)
-    else:
-        projectionSize = args.projectionSize if hasattr(args, 'projectionSize') else None
-        showjPort = args.showjPort if hasattr(args, 'showjPort') else None
-        splineDegree = splineDegreeDict.get(args.splineDegree)
-        paddingFactor= args.paddingFactor
-        maxFreq = args.maxFreq
-        ChimeraProjectionClient(volfile,
-                                angularDistFile=angularDistFile,
-                                spheresColor=spheresColor,
-                                spheresDistance=spheresDistance,
-                                spheresMaxRadius=spheresMaxRadius,
-                                size=projectionSize,
-                                paddingFactor=paddingFactor,
-                                maxFreq=maxFreq,
-                                splineDegree=splineDegree,
-                                voxelSize=voxelSize, showjPort=showjPort)
-
-    
     
 if __name__ == '__main__':
     main()
