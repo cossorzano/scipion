@@ -460,13 +460,5 @@ class FileBrowserWindow(BrowserWindow):
                                              '.txt', '.log', '.out', '.err', '.stdout', '.stderr', '.emx', '.json', '.xml', '.pam')
         FileTreeProvider.registerFileHandler(TextFileHandler('file_python.gif'), '.py')
         FileTreeProvider.registerFileHandler(TextFileHandler('file_java.gif'), '.java')
-        FileTreeProvider.registerFileHandler(MdFileHandler(), '.xmd', '.star', '.pos', '.ctfparam', '.doc')
         FileTreeProvider.registerFileHandler(SqlFileHandler(), '.sqlite', '.db')
-        FileTreeProvider.registerFileHandler(ParticleFileHandler(), '.xmp', '.tif', '.tiff', '.spi', '.mrc', 
-                                             '.map', '.raw', '.inf', '.dm3', '.em', '.pif', '.psd', '.spe', 
-                                             '.ser', '.img', '.hed', 
-                                             *STANDARD_IMAGE_EXTENSIONS)
-        FileTreeProvider.registerFileHandler(VolFileHandler(), '.vol')
-        FileTreeProvider.registerFileHandler(StackHandler(), '.stk', '.mrcs', '.st', '.pif')
-        FileTreeProvider.registerFileHandler(ChimeraHandler(), '.bild')
     
