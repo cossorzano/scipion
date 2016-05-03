@@ -102,7 +102,7 @@ class PKPDUnit:
     UNIT_WEIGHT_ug= 102
     UNIT_WEIGHT_ng= 103
 
-    unitDictionary = {\
+    unitDictionary = {
         UNIT_TIME_H: "h",
         UNIT_TIME_MIN: "min",
         UNIT_TIME_SEC: "s",
@@ -153,10 +153,15 @@ class PKPDUnit:
 class PKPDVariable:
     TYPE_NUMERIC = 1000
     TYPE_TEXT = 1001
+    TYPE_NAMES = {TYPE_NUMERIC: 'numeric',
+                  TYPE_TEXT: 'text'}
 
     ROLE_TIME = 1010
     ROLE_MEASUREMENT = 1011
     ROLE_LABEL = 1012
+    ROLE_NAMES = {ROLE_TIME: 'time',
+                  ROLE_MEASUREMENT: 'measurement',
+                  ROLE_LABEL: 'label'}
 
     def __init__(self):
         self.varName = None
@@ -212,23 +217,24 @@ class PKPDVariable:
         self.comment = tokens[4].strip()
 
     def _printToStream(self,fh):
-        typeString = ""
-        if self.varType == PKPDVariable.TYPE_NUMERIC:
-            typeString = "numeric"
-        elif self.varType == PKPDVariable.TYPE_TEXT:
-            typeString = "text"
+        displayString = self.displayString.replace("%%","%%%%")
 
-        displayString=self.displayString.replace("%%","%%%%")
+        fh.write("%s ; %s ; %s[%s] ; %s ; %s\n" % (self.varName,
+                                                   self.getUnitsString(),
+                                                   self.getTypeString(),
+                                                   displayString,
+                                                   self.getRoleString(),
+                                                   self.comment))
 
-        roleString = ""
-        if self.role == PKPDVariable.ROLE_TIME:
-            roleString = "time"
-        elif self.role == PKPDVariable.ROLE_MEASUREMENT:
-            roleString = "measurement"
-        elif self.role == PKPDVariable.ROLE_LABEL:
-            roleString = "label"
-        fh.write("%s ; %s ; %s[%s] ; %s ; %s\n"%(self.varName,self.units._toString(),
-                                               typeString,displayString,roleString,self.comment))
+    def getTypeString(self):
+        return self.TYPE_NAMES.get(self.varType, '')
+
+    def getRoleString(self):
+        return self.ROLE_NAMES.get(self.role, '')
+
+    def getUnitsString(self):
+        return self.units._toString()
+
 
 class PKPDDose:
     TYPE_BOLUS = 1
@@ -281,13 +287,25 @@ class PKPDDose:
         self.normalization = tokens[3].strip()
 
     def _printToStream(self,fh):
-        doseString = ""
+        fh.write("%s ; %s d=%f; %s ; %s\n" % (self.varName,
+                                              self.getDoseString(),
+                                              self.doseAmount,
+                                              self.getUnitsString(),
+                                              self.normalization))
+
+    def getDoseString(self):
         if self.doseType == PKPDDose.TYPE_BOLUS:
-            doseString = "bolus t=%f"%self.t0
+            doseString = "bolus t=%f" % self.t0
         elif self.doseType == PKPDDose.TYPE_INFUSION:
-            doseString = "infusion t=%f...%f"%(self.t0,self.tF)
-        fh.write("%s ; %s d=%f; %s ; %s\n"%\
-                 (self.varName,doseString, self.doseAmount, self.units._toString(), self.normalization))
+            doseString = "infusion t=%f...%f" % (self.t0, self.tF)
+        else:
+            doseString = ""
+
+        return doseString
+
+    def getUnitsString(self):
+        return self.units._toString()
+
 
 class PKPDSample:
     def __init__(self):
@@ -393,15 +411,15 @@ class PKPDSample:
             return getattr(self,"measurement_%s"%varName)
 
     def getXYValues(self,varNameX,varNameY):
-        x = []
-        y = []
-        xString = self.getValues(varNameX)
-        yString = self.getValues(varNameY)
-        for n in range(0,len(xString)):
-            if xString[n]!="NA" and yString[n]!="NA":
-                x.append(float(xString[n]))
-                y.append(float(yString[n]))
-        return (x,y)
+        xl = []
+        yl = []
+        xs = self.getValues(varNameX)
+        ys = self.getValues(varNameY)
+        for x, y in izip(xs, ys):
+            if x != "NA" and y != "NA":
+                xl.append(float(x))
+                yl.append(float(y))
+        return xl, yl
 
 class PKPDExperiment(EMObject):
     READING_GENERAL = 1
