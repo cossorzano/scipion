@@ -35,7 +35,10 @@ Protocols = [{
 		"value": "ProtPKPDExponentialFit",
 		"text": "fit exponentials"
 	},{
-
+		"tag": "protocol",
+		"value": "ProtPKPDEliminationRate",
+		"text": "elimination rate"
+	},{
 		"tag": "protocol",
 		"value": "ProtPKPDNCA",
 		"text": "non-compartmental analysis"

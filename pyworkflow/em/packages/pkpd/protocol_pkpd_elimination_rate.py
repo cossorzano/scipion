@@ -23,15 +23,13 @@
 # *  e-mail address 'info@kinestat.com'
 # *
 # **************************************************************************
-"""
-PKPD functions
-"""
 
-from protocol_pkpd_nca import ProtPKPDNCA
-from protocol_pkpd_filter_samples import ProtPKPDFilterSamples
-from protocol_pkpd_join_samples import ProtPKPDJoinSamples
-from protocol_pkpd_filter_measurements import ProtPKPDFilterMeasurements
-from protocol_pkpd_exponential_fit import ProtPKPDExponentialFit
-from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
+from pyworkflow.em.packages.pkpd.protocol_pkpd_exponential_fit import ProtPKPDExponentialFit
 
-from viewer import PKPDExperimentViewer
+
+class ProtPKPDEliminationRate(ProtPKPDExponentialFit):
+    """ Fit a single exponential to the input data. """
+    _label = 'elimination rate'
+
+    def _defineParams(self, form):
+        ProtPKPDExponentialFit._defineParams(self, form, fullForm=False)

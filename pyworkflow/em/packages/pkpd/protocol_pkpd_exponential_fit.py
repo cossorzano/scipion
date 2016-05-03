@@ -32,6 +32,7 @@ from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDExperiment, PKPDExponentialModel, PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, \
                                PKPDSampleFit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
+from pyworkflow.object import String, Integer
 
 
 class ProtPKPDExponentialFit(ProtPKPD):
@@ -42,7 +43,7 @@ class ProtPKPDExponentialFit(ProtPKPD):
 
     #--------------------------- DEFINE param functions --------------------------------------------
 
-    def _defineParams(self, form):
+    def _defineParams(self, form, fullForm=True):
         form.addSection('Input')
         form.addParam('inputExperiment', params.PointerParam, label="Input experiment",
                       pointerClass='PKPDExperiment',
@@ -51,18 +52,28 @@ class ProtPKPDExponentialFit(ProtPKPD):
                       help='Y is predicted as an exponential function of X, Y=sum_{i=1}^N c_i exp(-lambda_i * X)')
         form.addParam('predicted', params.StringParam, label="Predicted variable (Y)", default="Cp",
                       help='Y is predicted as an exponential function of X, Y=sum_{i=1}^N c_i exp(-lambda_i * X)')
-        form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic"], label="Fit mode", default=1,
-                      help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2')
-        form.addParam('Nexp', params.IntParam, label="Number of exponentials", default=1,
-                      help='Number of exponentials to fit')
+        if fullForm:
+            form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic"], label="Fit mode", default=1,
+                          help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2')
+            form.addParam('Nexp', params.IntParam, label="Number of exponentials", default=1,
+                          help='Number of exponentials to fit')
+        else:
+            self.fitType=Integer()
+            self.fitType.set(1)
+            self.Nexp=Integer()
+            self.Nexp.set(1)
         form.addParam('cBounds', params.StringParam, label="Amplitude bounds", default="", expertLevel=LEVEL_ADVANCED,
                       help='Bounds for the c_i amplitudes.\nExample 1: (0,10)\nExample 2: (0,10);(1,5)')
         form.addParam('lambdaBounds', params.StringParam, label="Time constant bounds", default="", expertLevel=LEVEL_ADVANCED,
                       help='Bounds for the lambda_i time constants.\nExample 1: (0,0.01)\nExample 2: (0,1e-2);(0,1e-1)')
         form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
-        form.addParam('reportTime', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
-                      help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: -10:5:10, from -10 to 10 in steps of 5')
+        if fullForm:
+            form.addParam('reportTime', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
+                          help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: -10:5:10, from -10 to 10 in steps of 5')
+        else:
+            self.reportTime=String()
+            self.reportTime.set("")
 
     #--------------------------- INSERT steps functions --------------------------------------------
 
