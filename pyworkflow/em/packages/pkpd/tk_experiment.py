@@ -24,9 +24,9 @@
 # *
 # **************************************************************************
 
-from os.path import basename
 import Tkinter as tk
 import ttk
+import math
 
 import pyworkflow.gui as gui
 from pyworkflow.gui.widgets import Button, HotButton, ComboBox
@@ -255,6 +255,10 @@ class ExperimentWindow(gui.Window):
             for s in samples:
                 if not s.varName in self.plotDict:
                     x, y = s.getXYValues(timeVarName, measureVarName)
+                    if self.timeWidget[2].get():
+                        x = [math.log(v) for v in x]
+                    if self.measureWidget[2].get():
+                        y = [math.log(v) for v in y]
                     ax.plot(x, y, label=s.varName)
                     self.plotDict[s.varName] = True
             ax.legend()
@@ -269,6 +273,7 @@ class ExperimentWindow(gui.Window):
     def _onCreateClick(self, e=None):
         sampleKeys = self.samplesTree.selection()
         if sampleKeys:
+            print "Info to create a new Experiment: "
             print "samples: ", len(sampleKeys)
             print "title: ", self._titleVar.get()
             print "comment: ", self._commentText.getText()
