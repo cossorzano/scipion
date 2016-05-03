@@ -43,7 +43,6 @@ from pyworkflow.tests import GTestResult
 
 
 PATH_PATTERN = {'model': ('model em/data', 'test*.py'),
-                'xmipp': ('em/workflows', 'test*xmipp*.py'),
                 'mixed': ('em/workflows', 'test*mixed*.py'),
                 'protocols': ('em/protocols', 'test_protocols*.py'),
                 'programs': ('em/programs', 'test_program*py')}
@@ -62,7 +61,7 @@ class Tester():
         
         add = parser.add_argument  # shortcut
         
-        add('--case', choices=['model', 'xmipp', 'mixed', 'protocols'],
+        add('--case', choices=['model', 'mixed', 'protocols'],
             help='get pre-defined paths and patterns for the specified case')
         add('--paths', default='.',
             help='space-separated list of paths where the tests are searched')

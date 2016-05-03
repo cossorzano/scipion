@@ -43,8 +43,6 @@ from pyworkflow.object import PointerList
 from pyworkflow.em.convert import ImageHandler
 
 
-import xmipp
-
 #===============================================================================
 #    Wizard EM base class
 #===============================================================================

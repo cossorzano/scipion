@@ -163,7 +163,14 @@ class PKPDVariable:
                   ROLE_MEASUREMENT: 'measurement',
                   ROLE_LABEL: 'label'}
 
-    def __init__(self,tokens):
+    def __init__(self):
+        self.varName = None
+        self.varType = None
+        self.displayString = ""
+        self.role = None
+        self.comment = ""
+
+    def parseTokens(self,tokens):
         # t ; h ; numeric[%f] ; time ;
 
         # Get name
@@ -233,7 +240,16 @@ class PKPDDose:
     TYPE_BOLUS = 1
     TYPE_INFUSION = 2
 
-    def __init__(self,tokens):
+    def __init__(self):
+        self.varName = None
+        self.doseType = None
+        self.doseAmount = None
+        self.t0 = None
+        self.tF = None
+        self.units = None
+        self.normalization = ""
+
+    def parseTokens(self,tokens):
         # Dose1; bolus t=0 d=60; mg; dose*weight/1000
         # Dose1; infusion t=0...59 d=1; mg; dose*weight/1000
 
@@ -292,7 +308,15 @@ class PKPDDose:
 
 
 class PKPDSample:
-    def parseLine(self,tokens,variableDict,doseDict):
+    def __init__(self):
+        self.varName = ""
+        self.variableDictPtr = None
+        self.doseDictPtr = None
+        self.doseName = ""
+        self.descriptors = None
+        self.measurementPattern = None
+
+    def parseTokens(self,tokens,variableDict,doseDict):
         # FemaleRat1; dose=Dose1; weight=207
 
         # Keep a pointer to variableDict and doseDict
@@ -453,7 +477,8 @@ class PKPDExperiment(EMObject):
                     print("Skipping variable: ",line)
                     continue
                 varname = tokens[0].strip()
-                self.variables[varname] = PKPDVariable(tokens)
+                self.variables[varname] = PKPDVariable()
+                self.variables[varname].parseTokens(tokens)
 
             elif state==PKPDExperiment.READING_DOSES:
                 tokens = line.split(';')
@@ -461,7 +486,8 @@ class PKPDExperiment(EMObject):
                     print("Skipping dose: ",line)
                     continue
                 dosename = tokens[0].strip()
-                self.doses[dosename] = PKPDDose(tokens)
+                self.doses[dosename] = PKPDDose()
+                self.doses[dosename].parseTokens(tokens)
 
             elif state==PKPDExperiment.READING_SAMPLES:
                 tokens = line.split(';')
@@ -470,7 +496,7 @@ class PKPDExperiment(EMObject):
                     continue
                 samplename = tokens[0].strip()
                 self.samples[samplename] = PKPDSample()
-                self.samples[samplename].parseLine(tokens,self.variables, self.doses)
+                self.samples[samplename].parseTokens(tokens,self.variables, self.doses)
 
             elif state==PKPDExperiment.READING_MEASUREMENTS:
                 tokens = line.split(';')
@@ -534,6 +560,7 @@ class PKPDExperiment(EMObject):
 class PKPDModel:
     def __init__(self):
         self.fnExperiment = None
+        self.parameters = None
 
     def setExperiment(self, experiment):
         self.experiment = experiment
@@ -556,7 +583,7 @@ class PKPDModel:
         self.y = np.array(y)
         self.ylog = np.log(self.y)
 
-    def forwardModel(self):
+    def forwardModel(self, parameters, x=None):
         pass
 
     def getNumberOfParameters(self):
@@ -568,13 +595,44 @@ class PKPDModel:
     def printSetup(self):
         pass
 
+    def getEquation(self):
+        pass
+
+    def getDescription(self):
+        pass
+
+    def setParameters(self, parameters):
+        self.parameters = parameters
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        """
+        :param lowerBound and upperBound: a numpy array of parameters
+        :return: a list of string with "True", "False", "NA", "Suspicious"
+        """
+        pass
+
+    def setConfidenceInterval(self,lowerBound,upperBound):
+        pass
+
+
 class PKPDExponentialModel(PKPDModel):
-    def forwardModel(self, parameters):
-        self.yPredicted = np.zeros(self.y.shape[0])
-        for k in range(0,self.Nexp):
+    def forwardModel(self, parameters, x=None):
+        if x==None:
+            x=self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        proceed=True
+        for k in range(1,self.Nexp):
             ck = parameters[2*k]
-            lk = parameters[2*k+1]
-            self.yPredicted += ck*np.exp(-lk*self.x)
+            ck_1 = parameters[2*(k-1)]
+            if ck_1<ck:
+                proceed=False
+                self.yPredicted = -1000*np.ones(x.shape[0])
+                break
+        if proceed:
+            for k in range(0,self.Nexp):
+                ck = parameters[2*k]
+                lk = parameters[2*k+1]
+                self.yPredicted += ck*np.exp(-lk*x)
         return self.yPredicted
 
     def setNexp(self, Nexp):
@@ -582,6 +640,9 @@ class PKPDExponentialModel(PKPDModel):
 
     def getNumberOfParameters(self):
         return 2*self.Nexp
+
+    def getDescription(self):
+        return "Sum of exponentials (%s)"%self.__class__.__name__
 
     def parseBounds(self,inputString,msg):
         if ';' in inputString:
@@ -626,15 +687,69 @@ class PKPDExponentialModel(PKPDModel):
         print("Model: y=sum_i c_i*exp(-lambda_i * x)")
         print("Number of exponentials: "+str(self.Nexp))
 
-class PKPDDEOptimizer:
+    def getEquation(self):
+        toPrint="Y="
+        for i in range(self.Nexp):
+            toPrint+= "+[%f*exp(-%f*X)]"%(self.parameters[2*i],self.parameters[2*i+1])
+        return toPrint
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        for i in range(self.Nexp):
+            cLower = lowerBound[2*i]
+            cUpper = lowerBound[2*i+1]
+            if cLower<0 and cUpper>0:
+                retval.append("False")
+            elif cLower>0:
+                retval.append("True")
+            elif cUpper<0:
+                retval.append("Suspicious, this term may be negative")
+            else:
+                retval.append("NA")
+
+            decayLower = lowerBound[2*i+1]
+            decayUpper = lowerBound[2*i+1]
+            if decayLower<0 and decayUpper>0:
+                retval.append("Suspicious, looks like a constant")
+            elif decayLower<0:
+                retval.append("Suspicious, this term may be unstable")
+            elif decayLower>0:
+                retval.append("True")
+            else:
+                retval.append("NA")
+        return retval
+
+    def setConfidenceInterval(self,lowerBound,upperBound):
+        yPredictedBackup = self.yPredicted.copy()
+        self.yPredictedUpper = self.yPredicted.copy()
+        self.yPredictedLower = self.yPredicted.copy()
+        for i in range(0,int(math.pow(2,2*self.Nexp))):
+            pattern = ("{0:0%db}"%(2*self.Nexp)).format(i)
+            p = np.where(np.array(list(pattern))=="1",upperBound,lowerBound)
+            p = p.astype(np.float)
+            if np.sum(p<0)!=0:
+                continue
+            y = self.forwardModel(p)
+            for n in range(len(y)):
+                if y[n]<self.yPredictedLower[n]:
+                    if y[n]<0:
+                        self.yPredictedLower[n]=0
+                    else:
+                        self.yPredictedLower[n]=y[n]
+                if y[n]>self.yPredictedUpper[n]:
+                    self.yPredictedUpper[n]=y[n]
+        self.yPredicted = yPredictedBackup.copy()
+
+class PKPDOptimizer:
     def __init__(self,model,fitType,goalFunction="RMSE"):
         self.model = model
 
         self.yTarget = np.array(model.y, dtype=np.float32)
+        self.yTargetLogs = np.log10(self.yTarget)
         if fitType=="linear":
             self.takeYLogs = False
         elif fitType=="log":
-            self.yTarget = np.log10(self.yTarget)
+            self.yTarget = self.yTargetLogs
             self.takeYLogs = True
 
         if goalFunction=="RMSE":
@@ -642,21 +757,259 @@ class PKPDDEOptimizer:
         else:
             raise Exception("Unknown goal function")
 
-    def goalRMSE(self,parameters):
+    def getResiduals(self,parameters):
         yPredicted = np.array(self.model.forwardModel(parameters),dtype=np.float32)
         if self.takeYLogs:
             idx = yPredicted>=1e-20
             nonIdx = yPredicted<1e-20
             yPredicted[idx] = np.log10(yPredicted[idx])
             yPredicted[nonIdx] = -100
-        rmse = math.sqrt(((self.yTarget - yPredicted) ** 2).mean())
+        return self.yTarget - yPredicted
+
+    def goalRMSE(self,parameters):
+        rmse = math.sqrt((self.getResiduals(parameters) ** 2).mean())
         return rmse
 
+    def _printFitting(self, x, y, yp):
+        for n in range(0,x.shape[0]):
+            print("%f %f %f %f"%(x[n],y[n],yp[n],y[n]-yp[n]))
+        e = y-yp
+        print("------------------------")
+        print("Mean error = %f"%np.mean(e))
+        print("Std error = %f"%np.std(e))
+        self.R2 = (1-np.var(e)/np.var(y))
+        print("R2 = %f"%self.R2)
+        print("------------------------")
+
+    def printFitting(self):
+        yPredicted = np.array(self.model.forwardModel(self.model.parameters),dtype=np.float32)
+        print("==========================================")
+        print("X     Y    Ypredicted  Error=Y-Ypredicted ")
+        print("==========================================")
+        self._printFitting(self.model.x, self.model.y, yPredicted)
+        print("==================================================================")
+        print("X    log10(Y)  log10(Ypredicted)  Error=log10(Y)-log10(Ypredicted)")
+        print("==================================================================")
+        self._printFitting(self.model.x, np.log10(self.model.y), np.log10(yPredicted))
+
+class PKPDDEOptimizer(PKPDOptimizer):
     def optimize(self):
         from scipy.optimize import differential_evolution
-        print("Optimizing with Differential Evolution, a global optimizer")
+        print("Optimizing with Differential Evolution (DE), a global optimizer")
         self.optimum = differential_evolution(self.goalFunction, self.model.getBounds())
-        print("Best function value: "+str(self.optimum.fun))
-        print("Best parameters: "+str(self.optimum.x))
+        print("Best DE function value: "+str(self.optimum.fun))
+        print("Best DE parameters: "+str(self.optimum.x))
+        self.model.setParameters(self.optimum.x)
+        print(self.model.getEquation())
+        self.printFitting()
+        print(" ")
         return self.optimum
 
+class PKPDLSOptimizer(PKPDOptimizer):
+    def optimize(self):
+        from scipy.optimize import leastsq
+        print("Optimizing with Least Squares (LS), a local optimizer")
+        print("Initial parameters: "+str(self.model.parameters))
+        self.optimum, self.cov_x, self.info, _, _ = leastsq(self.getResiduals, self.model.parameters, full_output=True)
+        print("Best LS function value: "+str(self.goalFunction(self.optimum)))
+        print("Best LS parameters: "+str(self.optimum))
+        self.cov_x *= np.var(self.info["fvec"])
+
+        print("Covariance matrix:")
+        print(np.array_str(self.cov_x,max_line_width=120))
+        self.model.setParameters(self.optimum)
+        print(self.model.getEquation())
+        self.printFitting()
+        print(" ")
+        return self.optimum
+
+    def setConfidenceInterval(self,confidenceInterval):
+        from scipy.stats import norm
+        nstd = norm.ppf(1-(1-confidenceInterval/100)/2)
+        perr = np.sqrt(np.diag(self.cov_x))
+        self.lowerBound = self.optimum-nstd*perr
+        self.upperBound = self.optimum+nstd*perr
+
+        self.significance = self.model.areParametersSignificant(self.lowerBound,self.upperBound)
+        print("Confidence intervals %f%% --------------------------"%confidenceInterval)
+        print("ParameterValue   ParameterConfidenceInterval  IsStatisticallySignificant")
+        for n in range(0,len(self.optimum)):
+            print("%f [%f,%f] %s"%(self.optimum[n],self.lowerBound[n],self.upperBound[n],self.significance[n]))
+
+        self.model.setConfidenceInterval(self.lowerBound,self.upperBound)
+
+class PKPDSampleFit:
+    def __init__(self):
+        self.sampleName = ""
+        self.x = None
+        self.y = None
+        self.yp = None
+        self.yl = None
+        self.yu = None
+        self.modelEquation = ""
+        self.R2 = 0
+        self.parameters = None
+        self.lowerBound = None
+        self.upperBound = None
+        self.significance = None
+
+    def _printToStream(self,fh):
+        if self.significance == None:
+            self.significance = ["Undetermined"]*len(self.parameters)
+        fh.write("Sample name: %s\n"%self.sampleName)
+        fh.write("Model: %s\n"%self.modelEquation)
+        fh.write("R2: %f\n"%self.R2)
+        fh.write("Parameter lowerBound upperBound IsStatisticallySignificant -------\n")
+        for parameter, lower, upper, significance in izip(self.parameters,self.lowerBound,self.upperBound,\
+                                                          self.significance):
+            fh.write("%f [%f,%f] %s\n"%(parameter,lower,upper,significance))
+        fh.write("X   Y   Ypredicted [Ylower,Yupper] -------\n")
+        for x,y,yp,yl,yu in izip(self.x,self.y,self.yp,self.yl,self.yu):
+            fh.write("%f %f %f [%f,%f]\n"%(x,y,yp,yl,yu))
+        fh.write("\n")
+
+class PKPDFitting(EMObject):
+    READING_FITTING_EXPERIMENT = 1
+    READING_FITTING_PREDICTOR = 2
+    READING_FITTING_PREDICTED = 3
+    READING_FITTING_MODEL = 4
+    READING_POPULATION = 5
+    READING_SAMPLEFITTINGS_NAME = 6
+    READING_SAMPLEFITTINGS_MODELEQ = 7
+    READING_SAMPLEFITTINGS_R2 = 8
+    READING_SAMPLEFITTINGS_PARAMETER_BOUNDS = 9
+    READING_SAMPLEFITTINGS_SAMPLE_VALUES = 10
+
+    def __init__(self, **args):
+        EMObject.__init__(self, **args)
+        self.fnFitting = String()
+        self.fnExperiment = String()
+        self.predictor = None
+        self.predicted = None
+        self.modelDescription = ""
+        self.sampleFits = []
+
+    def write(self, fnFitting):
+        fh=open(fnFitting,'w')
+        self._printToStream(fh)
+        fh.close()
+        self.fnFitting.set(fnFitting)
+
+    def _printToStream(self,fh):
+        fh.write("[FITTING] ===========================\n")
+        fh.write("Experiment: %s\n"%self.fnExperiment.get())
+        fh.write("Predictor (X): ")
+        self.predictor._printToStream(fh)
+        fh.write("Predicted (Y): ")
+        self.predicted._printToStream(fh)
+        fh.write("Model: %s\n"%self.modelDescription)
+        fh.write("\n")
+
+        fh.write("[POPULATION PARAMETERS] =============\n")
+        for sampleFitting in self.sampleFits:
+            outputStr = ""
+            for parameter in sampleFitting.parameters:
+                outputStr += "%f "%parameter
+            fh.write(outputStr+"\n")
+        fh.write("\n")
+
+        fh.write("[SAMPLE FITTINGS] ===================\n")
+        for sampleFitting in self.sampleFits:
+            sampleFitting._printToStream(fh)
+
+    def load(self,fnFitting):
+        fh=open(fnFitting)
+        if not fh:
+            raise Exception("Cannot open %s"%fnFitting)
+        self.fnFitting.set(fnFitting)
+
+        for line in fh.readlines():
+            line=line.strip()
+            if line=="":
+                if state==PKPDFitting.READING_SAMPLEFITTINGS_SAMPLE_VALUES:
+                     state=PKPDFitting.READING_SAMPLEFITTINGS_NAME
+                continue
+            if line[0]=='[':
+                section = line.split('=')[0].strip().lower()
+                if section=="[fitting]":
+                    state=PKPDFitting.READING_FITTING_EXPERIMENT
+                elif section=="[population parameters]":
+                    state=PKPDFitting.READING_POPULATION
+                elif section=="[sample fittings]":
+                    state=PKPDFitting.READING_SAMPLEFITTINGS_NAME
+                else:
+                    print("Skipping: ",line)
+
+            elif state==PKPDFitting.READING_FITTING_EXPERIMENT:
+                tokens = line.split(':')
+                self.fnExperiment.set(tokens[1].strip())
+                state = PKPDFitting.READING_FITTING_PREDICTOR
+
+            elif state==PKPDFitting.READING_FITTING_PREDICTOR:
+                tokens = line.split(':')
+                self.predictor = PKPDVariable()
+                self.predictor.parseTokens(tokens[1].split(';'))
+                state = PKPDFitting.READING_FITTING_PREDICTED
+
+            elif state==PKPDFitting.READING_FITTING_PREDICTED:
+                tokens = line.split(':')
+                self.predicted = PKPDVariable()
+                self.predicted.parseTokens(tokens[1].split(';'))
+                state = PKPDFitting.READING_FITTING_MODEL
+
+            elif state==PKPDFitting.READING_FITTING_MODEL:
+                tokens = line.split(':')
+                self.modelDescription = tokens[1].strip()
+                state = PKPDFitting.READING_POPULATION
+
+            elif state==PKPDFitting.READING_POPULATION:
+                continue
+
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_NAME:
+                tokens = line.split(':')
+                self.sampleFits.append(PKPDSampleFit())
+                self.sampleFits[-1].sampleName = tokens[1].strip()
+                state = PKPDFitting.READING_SAMPLEFITTINGS_MODELEQ
+
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_MODELEQ:
+                print("Model line=====",line)
+                tokens = line.split(':')
+                self.sampleFits[-1].modelEquation = tokens[1].strip()
+                state = PKPDFitting.READING_SAMPLEFITTINGS_R2
+
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_R2:
+                tokens = line.split(':')
+                self.sampleFits[-1].R2 = float(tokens[1])
+                state = PKPDFitting.READING_SAMPLEFITTINGS_PARAMETER_BOUNDS
+
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_PARAMETER_BOUNDS:
+                if line.startswith("Parameter lowerBound upperBound"):
+                    self.sampleFits[-1].parameters=[]
+                    self.sampleFits[-1].lowerBound=[]
+                    self.sampleFits[-1].upperBound=[]
+                    self.sampleFits[-1].significance=[]
+                elif line.startswith("X   Y   Ypredicted"):
+                    state=PKPDFitting.READING_SAMPLEFITTINGS_SAMPLE_VALUES
+                    self.sampleFits[-1].x=[]
+                    self.sampleFits[-1].y=[]
+                    self.sampleFits[-1].yp=[]
+                    self.sampleFits[-1].yl=[]
+                    self.sampleFits[-1].yu=[]
+                else:
+                    tokens=line.split()
+                    self.sampleFits[-1].parameters.append(float(tokens[0]))
+                    self.sampleFits[-1].significance.append(tokens[2])
+                    tokens=(tokens[1])[1:-1].split(',')
+                    self.sampleFits[-1].lowerBound.append(float(tokens[0]))
+                    self.sampleFits[-1].upperBound.append(float(tokens[1]))
+
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_SAMPLE_VALUES:
+                tokens=line.split()
+                self.sampleFits[-1].x.append(float(tokens[0]))
+                self.sampleFits[-1].y.append(float(tokens[1]))
+                self.sampleFits[-1].yp.append(float(tokens[2]))
+                tokens=(tokens[3])[1:-1].split(',')
+                self.sampleFits[-1].yl.append(float(tokens[0]))
+                self.sampleFits[-1].yu.append(float(tokens[1]))
+
+        fh.close()

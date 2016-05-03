@@ -24,14 +24,20 @@
 # *
 # **************************************************************************
 
+import numpy as np
+import math
+
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDExponentialModel, PKPDDEOptimizer
+from pyworkflow.em.data import PKPDExperiment, PKPDExponentialModel, PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, \
+                               PKPDSampleFit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
 
 class ProtPKPDExponentialFit(ProtPKPD):
-    """ Fit a set of exponentials. The observed measurement is modelled as Y=sum_{i=1}^N c_i exp(-lambda_i * X)"""
+    """ Fit a set of exponentials. The observed measurement is modelled as Y=sum_{i=1}^N c_i exp(-lambda_i * X).
+        Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
+        are independent, which are not. Use Bootstrap estimates instead. """
     _label = 'fit exponentials'
 
     #--------------------------- DEFINE param functions --------------------------------------------
@@ -45,7 +51,7 @@ class ProtPKPDExponentialFit(ProtPKPD):
                       help='Y is predicted as an exponential function of X, Y=sum_{i=1}^N c_i exp(-lambda_i * X)')
         form.addParam('predicted', params.StringParam, label="Predicted variable (Y)", default="Cp",
                       help='Y is predicted as an exponential function of X, Y=sum_{i=1}^N c_i exp(-lambda_i * X)')
-        form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic"], label="Fit mode", default=0,
+        form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic"], label="Fit mode", default=1,
                       help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2')
         form.addParam('Nexp', params.IntParam, label="Number of exponentials", default=1,
                       help='Number of exponentials to fit')
@@ -53,8 +59,10 @@ class ProtPKPDExponentialFit(ProtPKPD):
                       help='Bounds for the c_i amplitudes.\nExample 1: (0,10)\nExample 2: (0,10);(1,5)')
         form.addParam('lambdaBounds', params.StringParam, label="Time constant bounds", default="", expertLevel=LEVEL_ADVANCED,
                       help='Bounds for the lambda_i time constants.\nExample 1: (0,0.01)\nExample 2: (0,1e-2);(0,1e-1)')
+        form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
+                      help='Confidence interval for the fitted parameters')
         form.addParam('reportTime', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
-                      help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: -10:5:10')
+                      help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: -10:5:10, from -10 to 10 in steps of 5')
 
     #--------------------------- INSERT steps functions --------------------------------------------
 
@@ -62,10 +70,30 @@ class ProtPKPDExponentialFit(ProtPKPD):
         self._insertFunctionStep('runFit',self.inputExperiment.get().getObjId(), self.predictor.get(), \
                                  self.predicted.get(), self.fitType.get(), self.Nexp.get(), self.cBounds.get(), \
                                  self.lambdaBounds.get())
-        # self._insertFunctionStep('createOutputStep')
+        self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
+    def getReportTime(self):
+        auxString = self.reportTime.get()
+        if auxString=="":
+            return None
+        elif auxString.startswith('['):
+            auxString=auxString.replace('[','')
+            auxString=auxString.replace(']','')
+            tokens=auxString.split(',')
+            auxArray = np.array(tokens, dtype='|S4')
+            return auxArray.astype(np.float)
+        elif ':' in auxString:
+            tokens=auxString.split(':')
+            if len(tokens)!=3:
+                raise Exception("The X evaluation string is not well formatted: %s"%auxString)
+            fromValue = float(tokens[0])
+            step= float(tokens[1])
+            toValue = float(tokens[2])
+            return np.arange(fromValue,toValue,step)
+
     def runFit(self, objId, X, Y, fitType, Nexp, cBounds, lambdaBounds):
+        reportTime = self.getReportTime()
         experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
 
         # Setup model
@@ -77,6 +105,13 @@ class ProtPKPDExponentialFit(ProtPKPD):
         model.setNexp(self.Nexp.get())
         model.printSetup()
 
+        # Create output object
+        self.fitting = PKPDFitting()
+        self.fitting.fnExperiment.set(self.inputExperiment.get().fnPKPD.get())
+        self.fitting.predictor=experiment.variables[self.predictor.get()]
+        self.fitting.predicted=experiment.variables[self.predicted.get()]
+        self.fitting.modelDescription=model.getDescription()
+
         # Actual fitting
         if self.fitType.get()==0:
             fitType = "linear"
@@ -86,19 +121,49 @@ class ProtPKPDExponentialFit(ProtPKPD):
         for sampleName, sample in experiment.samples.iteritems():
             self.printSection("Fitting "+sampleName)
             x, y = sample.getXYValues(self.predictor.get(),self.predicted.get())
-            print("X: "+str(x))
-            print("Y: "+str(y))
+            print("X= "+str(x))
+            print("Y= "+str(y))
+            print(" ")
             model.setBounds(self.cBounds.get(),self.lambdaBounds.get())
             model.setXYValues(x, y)
             model.prepare()
-
+            print(" ")
 
             optimizer1 = PKPDDEOptimizer(model,fitType)
             optimizer1.optimize()
+            optimizer2 = PKPDLSOptimizer(model,fitType)
+            optimizer2.optimize()
+            optimizer2.setConfidenceInterval(self.confidenceInterval.get())
+            if reportTime!=None:
+                print("Evaluation of the model at specified time points")
+                yReportTime = model.forwardModel(model.parameters, reportTime)
+                print("==========================================")
+                print("X     Ypredicted     log10(Ypredicted)")
+                print("==========================================")
+                for n in range(0,reportTime.shape[0]):
+                    print("%f %f %f"%(reportTime[n],yReportTime[n],math.log10(yReportTime[n])))
+                print(' ')
+
+            # Keep this result
+            sampleFit = PKPDSampleFit()
+            sampleFit.sampleName = sample.varName
+            sampleFit.x = x
+            sampleFit.y = y
+            sampleFit.yp = model.yPredicted
+            sampleFit.yl = model.yPredictedLower
+            sampleFit.yu = model.yPredictedUpper
+            sampleFit.parameters = model.parameters
+            sampleFit.significance = optimizer2.significance
+            sampleFit.modelEquation = model.getEquation()
+            sampleFit.R2 = optimizer2.R2
+            sampleFit.lowerBound = optimizer2.lowerBound
+            sampleFit.upperBound = optimizer2.upperBound
+            self.fitting.sampleFits.append(sampleFit)
+            self.fitting.write(self._getPath("fitting.pkpd"))
 
     def createOutputStep(self):
-        self._defineOutputs(outputExperiment=self.experiment)
-        self._defineSourceRelation(self.inputExperiment, self.experiment)
+        self._defineOutputs(outputFitting=self.fitting)
+        self._defineSourceRelation(self.inputExperiment, self.fitting)
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):

@@ -170,38 +170,6 @@ def getImage(imageName, imgDict=None, tkImage=True, percent=100, maxheight=None)
             imgDict[imageName] = image
     return image
 
-def getPILImage(imageXmipp, dim=None, normalize=True):
-    """ Given an image read by Xmipp, convert it to PIL. """
-    from PIL import Image
-    import xmipp
-    
-    if normalize:
-        imageXmipp.convert2DataType(xmipp.DT_UCHAR, xmipp.CW_ADJUST)
-        
-    imageData = imageXmipp.getData()
-    image = Image.fromarray(imageData)
-    if dim:
-        size = int(dim), int(dim)
-        image.thumbnail(size, Image.ANTIALIAS)
-    return image
-
-def getTkImage(imageXmipp, filename, dim):
-    from PIL import ImageTk
-    imageXmipp.readPreview(filename, dim)
-    return ImageTk.PhotoImage(getPILImage(imageXmipp))
-
-def getImageFromPath(imagePath):
-    """ Read an image using Xmipp, convert to PIL
-    and then return as expected by Tk.
-    """
-    import xmipp
-    img = xmipp.Image(imagePath)
-    imgPIL = getPILImage(img)
-    from PIL import ImageTk
-    imgTk = ImageTk.PhotoImage(imgPIL)
-    
-    return imgTk
-
 """
 Windows geometry utilities
 """

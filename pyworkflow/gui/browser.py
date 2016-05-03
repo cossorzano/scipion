@@ -36,7 +36,6 @@ import stat
 
 import Tkinter as tk
 
-import xmipp
 from pyworkflow.utils.properties import Icon
 import gui
 from pyworkflow.utils import dirname, getHomePath, prettySize, getExt, dateStr
@@ -211,144 +210,7 @@ class SqlFileHandler(FileHandler):
     def getFileIcon(self, objFile):
         return 'file_sqlite.gif'    
     
-    
-class ImageFileHandler(FileHandler):
-    _image = xmipp.Image()
-    _index = ''
-    
-    def _getImageString(self, filename):
-        if isStandardImage(filename):
-            return "Image file."
-        x, y, z, n = xmipp.getImageSize(filename)
-        objType = 'Image'
-        dimMsg = "*%(objType)s file*\n  dimensions: %(x)d x %(y)d" 
-        expMsg = "Columns x Rows "
-        if z > 1: 
-            dimMsg += " x %(z)d"
-            expMsg += " x Slices"
-            objType = 'Volume'
-        if n > 1:
-            dimMsg += " x %(n)d" 
-            expMsg += " x Objects"
-            objType = 'Stack'
-        return (dimMsg + "\n" + expMsg) % locals()
-    
-    def _getImagePreview(self, filename):
-        dim = 128
         
-        if isStandardImage(filename):
-            self.tkImg = gui.getImage(os.path.abspath(filename), tkImage=True, maxheight=dim)
-        else:
-            fn = self._index + filename
-            self.tkImg = gui.getTkImage(self._image, fn, dim)
-            
-        return self.tkImg
-        
-    def getFilePreview(self, objFile):
-        fn = objFile.getPath()
-        return self._getImagePreview(fn), self._getImageString(fn)
-    
-    def getFileActions(self, objFile):
-        from pyworkflow.em.viewer import DataView
-        fn = objFile.getPath()
-        return [('Open with Xmipp viewer', lambda : DataView(fn).show(), Icon.ACTION_VISUALIZE)]
-    
-    
-class ParticleFileHandler(ImageFileHandler):
-    def getFileIcon(self, objFile):
-        return 'file_image.gif'
-    
-class VolFileHandler(ImageFileHandler):
-    def getFileIcon(self, objFile):
-        return 'file_vol.gif'
-    
-class StackHandler(ImageFileHandler):
-    _index = '1@'
-    
-    def getFileIcon(self, objFile):
-        return 'file_stack.gif'
-    
-
-class ChimeraHandler(FileHandler):
-    
-    def getFileActions(self, objFile):
-        from pyworkflow.em.viewer import ChimeraView
-        fn = objFile.getPath()
-        return [('Open with Chimera', lambda : ChimeraView(fn).show(), Icon.ACTION_VISUALIZE)]    
-    
-    def getFileIcon(self, objFile):
-        return 'file_text.gif' 
-    
-    
-class MdFileHandler(ImageFileHandler):
-    def getFileIcon(self, objFile):
-        return 'file_md.gif'
-    
-    def _getImgPath(self, mdFn, imgFn):
-        """ Get ups and ups until finding the relative location to images. """
-        path = dirname(mdFn)
-        index, fn = xmipp.FileName(imgFn).decompose()
-        
-        while path and path != '/':
-            newFn = os.path.join(path, fn)
-            if os.path.exists(newFn):
-                if index:
-                    newFn = '%d@%s' % (index, newFn)
-                return newFn
-            path = dirname(path)
-            
-        return None
-            
-    def _getMdString(self, filename, block=None):
-        md = xmipp.MetaData()
-        if block:
-            md.read(block + '@' + filename)
-        else:
-            md.read(filename, 1)
-        labels = md.getActiveLabels()
-        msg =  "Metadata items: *%d*\n" % md.getParsedLines()
-        msg += "Metadata labels: " + ''.join(["\n   - %s" % xmipp.label2Str(l) for l in labels])
-        
-        imgPath = None
-        for label in labels:
-            if xmipp.labelIsImage(label):
-                imgPath = self._getImgPath(filename, md.getValue(label, md.firstObject()))
-                break
-        if imgPath:
-            self._imgPreview = self._getImagePreview(imgPath)
-            self._imgInfo = self._getImageString(imgPath)
-        return msg
-    
-    def getFilePreview(self, objFile):
-        self._imgPreview = None
-        self._imgInfo = None
-        filename = objFile.getPath()
-        ext = getExt(filename)
-        
-        if ext == '.xmd' or ext == '.ctfparam' or ext == '.pos' or ext == '.doc':
-            msg = "*Metadata File* "
-            blocks = xmipp.getBlocksInMetaDataFile(filename)
-            nblocks = len(blocks)
-            if nblocks <= 1:
-                mdStr = self._getMdString(filename)
-                msg += "  (single block)\n"
-                if self._imgInfo:
-                    msg += "\nFirst item: \n" + self._imgInfo
-                msg += '\n' + mdStr
-            else:
-                mdStr = self._getMdString(filename, blocks[0])
-                msg += "  (%d blocks) " % nblocks
-                if self._imgInfo:
-                    msg += "\nFirst item: \n" + self._imgInfo
-                msg += "\nFirst block: \n" + mdStr
-                msg += "\nAll blocks:" + ''.join(["\n  - %s" % b for b in blocks])
-        elif ext == '.star':
-            msg = "*Relion STAR file* \n"
-            msg += self._getMdString(filename)
-            
-        return self._imgPreview, msg
-    
-    
 class FileTreeProvider(TreeProvider):
     """ Populate a tree with files and folders of a given path """
     
@@ -598,13 +460,5 @@ class FileBrowserWindow(BrowserWindow):
                                              '.txt', '.log', '.out', '.err', '.stdout', '.stderr', '.emx', '.json', '.xml', '.pam')
         FileTreeProvider.registerFileHandler(TextFileHandler('file_python.gif'), '.py')
         FileTreeProvider.registerFileHandler(TextFileHandler('file_java.gif'), '.java')
-        FileTreeProvider.registerFileHandler(MdFileHandler(), '.xmd', '.star', '.pos', '.ctfparam', '.doc')
         FileTreeProvider.registerFileHandler(SqlFileHandler(), '.sqlite', '.db')
-        FileTreeProvider.registerFileHandler(ParticleFileHandler(), '.xmp', '.tif', '.tiff', '.spi', '.mrc', 
-                                             '.map', '.raw', '.inf', '.dm3', '.em', '.pif', '.psd', '.spe', 
-                                             '.ser', '.img', '.hed', 
-                                             *STANDARD_IMAGE_EXTENSIONS)
-        FileTreeProvider.registerFileHandler(VolFileHandler(), '.vol')
-        FileTreeProvider.registerFileHandler(StackHandler(), '.stk', '.mrcs', '.st', '.pif')
-        FileTreeProvider.registerFileHandler(ChimeraHandler(), '.bild')
     

@@ -229,13 +229,7 @@ class Text(tk.Text, Scrollable):
             path = os.path.join(dirname, fname)
 
         if os.path.exists(path):
-            import xmipp
-            fn = xmipp.FileName(path)
-            if fn.isImage() or fn.isMetaData():
-                from pyworkflow.em.viewer import DataView
-                DataView(path).show()
-            else:
-                _open_cmd(path)
+            _open_cmd(path)
         else:
             # This is probably one special reference, like sci-open:... that
             # can be interpreted with our handlers.
@@ -247,8 +241,6 @@ class Text(tk.Text, Scrollable):
 
     def updateMenu(self, e=None):
         state = 'normal'
-        #if not xmippExists(self.selection):
-        #    state = 'disabled'#self.menu.entryconfig(1, background="green")
         self.menu.entryconfig(1, state=state)
         
     def setReadOnly(self, value):

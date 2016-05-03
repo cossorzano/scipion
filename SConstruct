@@ -412,7 +412,7 @@ def addJavaTest(env, name, source, installDir=None, default=True):
         return ''
     installDir = installDir or 'java/lib'
     classPath = ":".join(glob(join(Dir(installDir).abspath,'*.jar')))
-    cmd = '%s -cp %s org.junit.runner.JUnitCore xmipp.test.%s' % (join(env['JAVA_BINDIR'], 'java'), classPath, name)
+    cmd = '%s -cp %s org.junit.runner.JUnitCore' % (join(env['JAVA_BINDIR'], 'java'), classPath, name)
     runTest = env.Command(name, join(installDir, source), cmd)
     env.Alias('run_java_tests', runTest)
     env.Default(runTest)
@@ -601,13 +601,6 @@ env['JNI_CPPPATH'] = os.environ.get('JNI_CPPPATH').split(':')
 
 AddOption('--with-all-packages', dest='withAllPackages', action='store_true',
           help='Get all EM packages')
-
-xmippPath = Dir('#software/em/xmipp').abspath
-env['PACKAGE'] = {'NAME': 'xmipp',
-                  'SCONSCRIPT': xmippPath
-                  }
-
-env.SConscript(join(xmippPath, 'scipion_sconscript'), exports='env')
 
 # Add original help (the one that we would have if we didn't use
 # Help() before). But remove the "usage:" part (first line).
