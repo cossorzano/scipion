@@ -189,12 +189,13 @@ class ExperimentWindow(gui.Window):
             combo = ComboBox(varFrame, choices, width=10)
             combo.grid(row=0, column=1, sticky='nw', padx=5, pady=5)
             radioVar = tk.IntVar()
-            radio = tk.Checkbutton(varFrame, text='Log', variable=radioVar)
+            radio = tk.Checkbutton(varFrame, text='Log10', variable=radioVar)
             radio.grid(row=0, column=2, sticky='nw', padx=5, pady=5)
             return combo, radio, radioVar
 
         self.timeWidget = addVar('Time variable', 0, timeVars)
         self.measureWidget = addVar('Measure variable', 1, measureVars)
+        self.measureWidget[2].set(True)
 
         self.plotButton = Button(plotFrame, '   Plot   ', font=self.fontBold,
                                  command=self._onPlotClick,
@@ -241,11 +242,17 @@ class ExperimentWindow(gui.Window):
             samples = [self.experiment.samples[k] for k in sampleKeys]
             timeVarName = self.timeWidget[0].getText()
             measureVarName = self.measureWidget[0].getText()
+            timeVarLabel = timeVarName
+            measureVarLabel = measureVarName
+            if self.timeWidget[2].get():
+                timeVarLabel = "log10("+timeVarName+")"
+            if self.measureWidget[2].get():
+                measureVarLabel = "log10("+measureVarName+")"
 
             if self.plotter is None or self.plotter.isClosed():
                 self.plotter = EmPlotter()
                 doShow = True
-                ax = self.plotter.createSubPlot("Plot", timeVarName, measureVarName)
+                ax = self.plotter.createSubPlot("Plot", timeVarLabel, measureVarLabel)
                 self.plotDict = {}
             else:
                 doShow = False
@@ -256,9 +263,9 @@ class ExperimentWindow(gui.Window):
                 if not s.varName in self.plotDict:
                     x, y = s.getXYValues(timeVarName, measureVarName)
                     if self.timeWidget[2].get():
-                        x = [math.log(v) for v in x]
+                        x = [math.log10(v) for v in x]
                     if self.measureWidget[2].get():
-                        y = [math.log(v) for v in y]
+                        y = [math.log10(v) for v in y]
                     ax.plot(x, y, label=s.varName)
                     self.plotDict[s.varName] = True
             ax.legend()
