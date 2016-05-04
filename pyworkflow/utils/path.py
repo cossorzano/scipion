@@ -28,11 +28,13 @@ This module contains the PATH related utilities
 inside the utils module
 """
 
+import hashlib
 import os
 import shutil
 import sys
+import time
 from os.path import (exists, join, splitext, isdir, isfile, islink, expanduser,
-                     expandvars, basename, dirname, split, relpath)
+                     expandvars, basename, dirname, split, relpath, getmtime)
 from glob import glob
 
 import pyworkflow as pw
@@ -390,3 +392,26 @@ def createUniqueFileName(fn):
             return uni_fn
 
     return None
+
+def getMD5String(fn):
+    fnTime = time.strftime("%Y-%m-%d-%M:%S\n",time.gmtime(getmtime(fn)))
+    return hashlib.md5(fnTime+open(fn, 'rb').read()).hexdigest()
+
+def writeMD5(fn):
+    if not exists(fn):
+        return
+    fnMD5=splitext(fn)[0]+".md5"
+    fh=open(fnMD5,"w")
+    fh.write("%s\n"%getMD5String(fn))
+    fh.close()
+
+def verifyMD5(fn):
+    if not exists(fn):
+        return True
+    fnMD5=splitext(fn)[0]+".md5"
+    if not exists(fnMD5):
+        return False
+    fh=open(fnMD5,"r")
+    md5StringFile=fh.readline().strip()
+    fh.close()
+    return getMD5String(fn)==md5StringFile
