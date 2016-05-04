@@ -28,6 +28,7 @@ import json
 import math
 
 from pyworkflow.object import *
+from pyworkflow.utils.path import writeMD5, verifyMD5
 
 from constants import *
 import numpy as np
@@ -437,9 +438,11 @@ class PKPDExperiment(EMObject):
         self.samples = {}
         self.doses = {}
 
-    def load(self, fnExperiment=""):
+    def load(self, fnExperiment="", verifyIntegrity=True):
         if fnExperiment!="":
             self.fnPKPD.set(fnExperiment)
+        if verifyIntegrity and not verifyMD5(self.fnPKPD.get()):
+            raise Exception("The file %s has been modified since its creation"%self.fnPKPD.get())
         fh=open(self.fnPKPD.get(),'r')
         if not fh:
             raise Exception("Cannot open the file "+self.fnPKPD)
@@ -519,6 +522,7 @@ class PKPDExperiment(EMObject):
         self._printToStream(fh)
         fh.close()
         self.fnPKPD.set(fnExperiment)
+        writeMD5(fnExperiment)
 
     def _printToStream(self,fh):
         fh.write("[EXPERIMENT] ===========================\n")
@@ -894,6 +898,7 @@ class PKPDFitting(EMObject):
         self._printToStream(fh)
         fh.close()
         self.fnFitting.set(fnFitting)
+        writeMD5(fnFitting)
 
     def _printToStream(self,fh):
         fh.write("[FITTING] ===========================\n")
@@ -921,6 +926,8 @@ class PKPDFitting(EMObject):
         fh=open(fnFitting)
         if not fh:
             raise Exception("Cannot open %s"%fnFitting)
+        if not verifyMD5(fnFitting):
+            raise Exception("The file %s has been modified since its creation"%fnFitting)
         self.fnFitting.set(fnFitting)
 
         for line in fh.readlines():
