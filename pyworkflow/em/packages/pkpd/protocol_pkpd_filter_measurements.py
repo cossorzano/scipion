@@ -30,7 +30,8 @@ from pyworkflow.em.data import PKPDExperiment, PKPDSample, PKPDVariable
 
 
 class ProtPKPDFilterMeasurements(ProtPKPD):
-    """ Filter measurements """
+    """ Filter measurements.\n
+        Protocol created by http://www.kinestatpharma.com\n """
     _label = 'filter measurements'
 
     #--------------------------- DEFINE param functions --------------------------------------------

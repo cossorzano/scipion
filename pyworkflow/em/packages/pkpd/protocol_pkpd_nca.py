@@ -32,7 +32,8 @@ from pyworkflow.em.data import PKPDExperiment
 
 
 class ProtPKPDNCA(ProtPKPD):
-    """ Non-compartmental analysis """
+    """ Non-compartmental analysis.\n
+        Protocol created by http://www.kinestatpharma.com\n"""
     _label = 'non-compartmental'
 
     #--------------------------- DEFINE param functions --------------------------------------------

@@ -35,7 +35,8 @@ import sys
 from pyworkflow.utils.path import copyFile
 
 class ProtImportExperiment(ProtImportFiles):
-    """ Protocol to import an PKPD experiment """
+    """ Protocol to import an PKPD experiment\n
+        Protocol created by http://www.kinestatpharma.com\n"""
     _label = 'import experiment'
     IMPORT_FROM_FILES = 1 
     

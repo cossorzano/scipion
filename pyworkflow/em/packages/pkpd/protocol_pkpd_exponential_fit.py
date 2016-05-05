@@ -36,9 +36,10 @@ from pyworkflow.object import String, Integer
 
 
 class ProtPKPDExponentialFit(ProtPKPD):
-    """ Fit a set of exponentials. The observed measurement is modelled as Y=sum_{i=1}^N c_i exp(-lambda_i * X).
-        Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
-        are independent, which are not. Use Bootstrap estimates instead. """
+    """ Fit a set of exponentials. The observed measurement is modelled as Y=sum_{i=1}^N c_i exp(-lambda_i * X).\n
+Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
+are independent, which are not. Use Bootstrap estimates instead.\n
+        Protocol created by http://www.kinestatpharma.com\n"""
     _label = 'fit exponentials'
 
     #--------------------------- DEFINE param functions --------------------------------------------

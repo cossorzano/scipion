@@ -28,7 +28,8 @@ from pyworkflow.em.packages.pkpd.protocol_pkpd_exponential_fit import ProtPKPDEx
 
 
 class ProtPKPDEliminationRate(ProtPKPDExponentialFit):
-    """ Fit a single exponential to the input data. """
+    """ Fit a single exponential to the input data.\n
+        Protocol created by http://www.kinestatpharma.com\n"""
     _label = 'elimination rate'
 
     def _defineParams(self, form):

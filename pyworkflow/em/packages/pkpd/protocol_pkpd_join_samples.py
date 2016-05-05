@@ -33,7 +33,8 @@ from pyworkflow.em.data import PKPDExperiment
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
 class ProtPKPDJoinSamples(ProtPKPD):
-    """ Join samles """
+    """ Join samples.\n
+        Protocol created by http://www.kinestatpharma.com\n """
     _label = 'join samples'
 
     #--------------------------- DEFINE param functions --------------------------------------------
