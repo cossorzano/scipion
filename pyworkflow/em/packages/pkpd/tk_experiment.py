@@ -257,12 +257,12 @@ class ExperimentWindow(gui.Window):
             samples = [self.experiment.samples[k] for k in sampleKeys]
             timeVarName = self.timeWidget[0].getText()
             measureVarName = self.measureWidget[0].getText()
-            timeVarLabel = timeVarName
-            measureVarLabel = measureVarName
+            timeVarLabel = timeVarName+' ['+self.experiment.variables[timeVarName].getUnitsString()+']'
+            measureVarLabel = measureVarName+' ['+self.experiment.variables[measureVarName].getUnitsString()+']'
             if self.timeWidget[2].get():
-                timeVarLabel = "log10("+timeVarName+")"
+                timeVarLabel = "log10("+timeVarLabel+")"
             if self.measureWidget[2].get():
-                measureVarLabel = "log10("+measureVarName+")"
+                measureVarLabel = "log10("+measureVarLabel+")"
 
             if self.plotter is None or self.plotter.isClosed():
                 self.plotter = EmPlotter()
