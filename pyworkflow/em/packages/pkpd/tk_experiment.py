@@ -32,6 +32,7 @@ import pyworkflow.gui as gui
 from pyworkflow.gui.widgets import Button, HotButton, ComboBox
 from pyworkflow.gui.tree import TreeProvider, BoundTree
 from pyworkflow.em.plotter import EmPlotter
+from pyworkflow.object import Integer
 
 
 class VariablesTreeProvider(TreeProvider):
@@ -95,6 +96,22 @@ class SamplesTreeProvider(TreeProvider):
                 'values': tuple(values)
                 }
 
+class MeasurementTreeProvider(TreeProvider):
+    def __init__(self, sample):
+        self.sample = sample
+        self.columns = [(key, 60) for key in self.sample.measurementPattern]
+
+    def getColumns(self):
+        return [('Sample #',60)]+self.columns
+
+    def getObjects(self):
+        return self.sample.getSampleMeasurements()
+
+    def getObjectInfo(self, obj):
+        key = obj.n
+        return {'key': key, 'text': key,
+                'values': tuple(obj.getValues())
+                }
 
 class ExperimentWindow(gui.Window):
     """ This class creates a Window that will display some Point's
@@ -293,7 +310,9 @@ class ExperimentWindow(gui.Window):
             self._onPlotClick()
 
     def _onSampleDoubleClick(self, obj):
-        MeasureWindow(masterWindow=self, experiment=self.experiment).show()
+        sampleKeys = self.samplesTree.selection()
+        if sampleKeys:
+            MeasureWindow(masterWindow=self, sample=self.experiment.samples[sampleKeys[0]]).show()
 
     def _onClosing(self):
         if self.plotter:
@@ -304,7 +323,7 @@ class ExperimentWindow(gui.Window):
 class MeasureWindow(gui.Window):
     def __init__(self, **kwargs):
         gui.Window.__init__(self,  minsize=(420, 200), **kwargs)
-        self.experiment = kwargs.get('experiment')
+        self.sample = kwargs.get('sample')
         content = tk.Frame(self.root)
         self._createContent(content)
         content.grid(row=0, column=0, sticky='news')
@@ -317,10 +336,10 @@ class MeasureWindow(gui.Window):
     def _createMeasurementFrame(self, content):
         frame = tk.Frame(content)
         #frame = tk.LabelFrame(content, text='General')
-        lfSamples = tk.LabelFrame(frame, text='Measurement')
+        lfSamples = tk.LabelFrame(frame, text='Measurements')
         gui.configureWeigths(frame)
         lfSamples.grid(row=0, column=0, sticky='news', padx=5, pady=5)
-        self.samplesTree = self._addBoundTree(lfSamples, SamplesTreeProvider, 10)
+        self.measurementTree = self._addBoundTree(lfSamples, MeasurementTreeProvider, 10)
 
         frame.grid(row=0, column=0, sticky='news', padx=5, pady=5)
 
@@ -335,7 +354,7 @@ class MeasureWindow(gui.Window):
         frame.grid(row=2, column=0, sticky='news', padx=5, pady=5)
 
     def _addBoundTree(self, parent, ProviderClass, height):
-        bt = BoundTree(parent, ProviderClass(self.experiment), height=height)
+        bt = BoundTree(parent, ProviderClass(self.sample), height=height)
         bt.grid(row=0, column=0, sticky='news', padx=5, pady=5)
         gui.configureWeigths(parent)
         return bt

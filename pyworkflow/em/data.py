@@ -373,6 +373,12 @@ class PKPDSample:
             else:
                 raise Exception("Time measurements cannot be NA")
 
+    def getNumberOfVariables(self):
+        return len(self.measurementPattern)
+
+    def getNumberOfMeasurements(self):
+        return len(getattr(self,"measurement_%s"%self.measurementPattern[0]))
+
     def _printToStream(self,fh):
         descriptorString = ""
         for key, value in self.descriptors.iteritems():
@@ -387,12 +393,12 @@ class PKPDSample:
         if len(self.measurementPattern)>0:
             aux=getattr(self,"measurement_%s"%self.measurementPattern[0])
             N = len(aux)
-        for i in range(0,N):
-            lineString = ""
-            for n in range(0,len(self.measurementPattern)):
-                aux=getattr(self,"measurement_%s"%self.measurementPattern[n])
-                lineString += aux[i]+" "
-            fh.write("%s\n"%lineString)
+            for i in range(0,self.getNumberOfMeasurements()):
+                lineString = ""
+                for n in range(0,len(self.measurementPattern)):
+                    aux=getattr(self,"measurement_%s"%self.measurementPattern[n])
+                    lineString += aux[i]+" "
+                fh.write("%s\n"%lineString)
         fh.write("\n")
 
     def getRange(self, varName):
@@ -421,6 +427,23 @@ class PKPDSample:
                 xl.append(float(x))
                 yl.append(float(y))
         return xl, yl
+
+    def getSampleMeasurements(self):
+        return [PKPDSampleMeasurement(self,n) for n in range(0,self.getNumberOfMeasurements())]
+
+
+class PKPDSampleMeasurement():
+    def __init__(self, sample, n):
+        self.sample = sample
+        self.n = n
+
+    def getValues(self):
+        values = []
+        for i in range(0,self.sample.getNumberOfVariables()):
+            aux=getattr(self.sample,"measurement_%s"%self.sample.measurementPattern[i])
+            values.append(aux[self.n])
+        return values
+
 
 class PKPDExperiment(EMObject):
     READING_GENERAL = 1
