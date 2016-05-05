@@ -403,15 +403,22 @@ def writeMD5(fn):
     fnMD5=splitext(fn)[0]+".md5"
     fh=open(fnMD5,"w")
     fh.write("%s\n"%getMD5String(fn))
+    fh.write("%s\n"%fn)
     fh.close()
 
 def verifyMD5(fn):
     if not exists(fn):
         return True
-    fnMD5=splitext(fn)[0]+".md5"
-    if not exists(fnMD5):
-        return False
+    if fn.endswith(".md5"):
+        fnMD5=fn
+    else:
+        fnMD5=splitext(fn)[0]+".md5"
+        if not exists(fnMD5):
+            return False
     fh=open(fnMD5,"r")
     md5StringFile=fh.readline().strip()
+    fnFile=fh.readline().strip()
     fh.close()
+    if fn.endswith(".md5"):
+        fn=fnFile
     return getMD5String(fn)==md5StringFile
