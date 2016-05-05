@@ -68,4 +68,12 @@ class EMProtocol(Protocol):
     def allowsDelete(self, obj):
         return False
         
-    
+class BatchProtocol(EMProtocol):
+    """ Base class to all protocols that are launched
+    through other GUIs (such as showj) and that
+    are called "batch" protocols. They should not be
+    executed from normal "form" of other protocols.
+    """
+    pass
+
+
