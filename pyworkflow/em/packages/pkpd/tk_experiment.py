@@ -32,8 +32,6 @@ import pyworkflow.gui as gui
 from pyworkflow.gui.widgets import Button, HotButton, ComboBox
 from pyworkflow.gui.tree import TreeProvider, BoundTree
 from pyworkflow.em.plotter import EmPlotter
-from pyworkflow.object import Integer
-
 
 class VariablesTreeProvider(TreeProvider):
     def __init__(self, experiment):
@@ -296,11 +294,8 @@ class ExperimentWindow(gui.Window):
 
     def _onCreateClick(self, e=None):
         sampleKeys = self.samplesTree.selection()
-        if sampleKeys:
-            print "Info to create a new Experiment: "
-            print "samples: ", len(sampleKeys)
-            print "title: ", self._titleVar.get()
-            print "comment: ", self._commentText.getText()
+        if sampleKeys and self.callback:
+            self.callback()
         else:
             self.showInfo("Please select some sample(s) to create a "
                           "new experiment.")

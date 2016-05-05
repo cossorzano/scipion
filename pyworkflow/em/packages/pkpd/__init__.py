@@ -34,4 +34,6 @@ from protocol_pkpd_filter_measurements import ProtPKPDFilterMeasurements
 from protocol_pkpd_exponential_fit import ProtPKPDExponentialFit
 from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
 
+from protocol_batch_create_experiment import BatchProtCreateExperiment
+
 from viewer import PKPDExperimentViewer
