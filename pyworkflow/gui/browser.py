@@ -38,7 +38,9 @@ import Tkinter as tk
 
 from pyworkflow.utils.properties import Icon
 import gui
+from pyworkflow.gui.dialog import showInfo, showError
 from pyworkflow.utils import dirname, getHomePath, prettySize, getExt, dateStr
+from pyworkflow.utils.path import verifyMD5
 from tree import BoundTree, TreeProvider
 from text import TaggedText, openTextFileEditor
 from widgets import Button, HotButton
@@ -209,8 +211,14 @@ class TextFileHandler(FileHandler):
 class SqlFileHandler(FileHandler):
     def getFileIcon(self, objFile):
         return 'file_sqlite.gif'    
-    
-        
+
+def checkFileIntegrityGUI(fn,parent):
+    ok = verifyMD5(fn)
+    if ok:
+        showInfo("File integrity", "File is OK", parent)
+    else:
+        showError("File integrity","File seems to have been modified since its creation. Not OK", parent)
+
 class FileTreeProvider(TreeProvider):
     """ Populate a tree with files and folders of a given path """
     
@@ -227,10 +235,11 @@ class FileTreeProvider(TreeProvider):
         for fileExt in extensions:
             cls._FILE_HANDLERS[fileExt] = fileHandler
         
-    def __init__(self, currentDir=None, showHidden=False):
+    def __init__(self, currentDir=None, showHidden=False, browser=None):
         self._currentDir = os.path.abspath(currentDir)
         self._showHidden = showHidden
         self.getColumns = lambda: [('File', 300), ('Size', 70), ('Time', 150)]
+        self.browser = browser
     
     def getFileHandler(self, obj):
         filename = obj.getFileName()
@@ -260,7 +269,9 @@ class FileTreeProvider(TreeProvider):
         fn = obj.getPath()
         actions.append(("Open external Editor", 
                         lambda: openTextFileEditor(fn), Icon.ACTION_REFERENCES))
-        
+        if fn.endswith(".md5"):
+            actions.append(("Check file integrity",
+                            lambda: checkFileIntegrityGUI(fn,self.browser)))
         return actions
     
     def getObjects(self):
@@ -301,7 +312,7 @@ class FileBrowser(ObjectBrowser):
                  ):
         """ 
         """
-        self._provider = FileTreeProvider(initialDir, showHidden)
+        self._provider = FileTreeProvider(initialDir, showHidden, self)
         self.selectButton = selectButton
         self.entryLabel = entryLabel
         self.entryVar = tk.StringVar()
