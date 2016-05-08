@@ -775,9 +775,14 @@ class PKPDOptimizer:
         self.yTargetLogs = np.log10(self.yTarget)
         if fitType=="linear":
             self.takeYLogs = False
+            self.takeRelative = False
         elif fitType=="log":
             self.yTarget = self.yTargetLogs
             self.takeYLogs = True
+            self.takeRelative = False
+        elif fitType=="relative":
+            self.takeYLogs = False
+            self.takeRelative = True
 
         if goalFunction=="RMSE":
             self.goalFunction = self.goalRMSE
@@ -791,7 +796,10 @@ class PKPDOptimizer:
             nonIdx = yPredicted<1e-20
             yPredicted[idx] = np.log10(yPredicted[idx])
             yPredicted[nonIdx] = -100
-        return self.yTarget - yPredicted
+        diff = self.yTarget - yPredicted
+        if self.takeRelative:
+            diff = diff/self.yTarget
+        return diff
 
     def goalRMSE(self,parameters):
         rmse = math.sqrt((self.getResiduals(parameters) ** 2).mean())

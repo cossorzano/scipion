@@ -54,8 +54,9 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         form.addParam('predicted', params.StringParam, label="Predicted variable (Y)", default="Cp",
                       help='Y is predicted as an exponential function of X, Y=sum_{i=1}^N c_i exp(-lambda_i * X)')
         if fullForm:
-            form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic"], label="Fit mode", default=1,
-                          help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2')
+            form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic","Relative"], label="Fit mode", default=1,
+                          help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2\n'\
+                               "Relative: sum ((Cobserved-Cpredicted)/Cobserved)^2")
             form.addParam('Nexp', params.IntParam, label="Number of exponentials", default=1,
                           help='Number of exponentials to fit')
         else:
@@ -129,6 +130,8 @@ are independent, which are not. Use Bootstrap estimates instead.\n
             fitType = "linear"
         elif self.fitType.get()==1:
             fitType = "log"
+        elif self.fitType.get()==2:
+            fitType = "relative"
 
         for sampleName, sample in experiment.samples.iteritems():
             self.printSection("Fitting "+sampleName)
