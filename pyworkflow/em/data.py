@@ -338,14 +338,15 @@ class PKPDSample:
         # Get rest of variables
         self.descriptors = {}
         for n in range(2,len(tokens)):
-            varTokens = tokens[n].split('=')
-            varName  = varTokens[0].strip()
-            varValue = varTokens[1].strip()
-            if varName in variableDict:
-                varPtr = variableDict[varName]
-                if varPtr.role != PKPDVariable.ROLE_LABEL:
-                    raise Exception("Samples can only use role variables")
-                self.descriptors[varName] = varValue
+            if '=' in tokens[n]:
+                varTokens = tokens[n].split('=')
+                varName  = varTokens[0].strip()
+                varValue = varTokens[1].strip()
+                if varName in variableDict:
+                    varPtr = variableDict[varName]
+                    if varPtr.role != PKPDVariable.ROLE_LABEL:
+                        raise Exception("Samples can only use role variables")
+                    self.descriptors[varName] = varValue
 
         self.measurementPattern = []
 
