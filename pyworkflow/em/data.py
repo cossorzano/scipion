@@ -274,7 +274,7 @@ class PKPDDose:
             self.tF = float(timeTokens[1])
         else:
             raise Exception("Unrecognized dose type %s"%doseTypeString)
-        self.doseAmount = float(doseTokens[2].strip().lower().split("=")[1])
+        self.doseAmount = doseTokens[2].strip().lower().split("=")[1]
 
         # Get units
         unitString = tokens[2].strip()
@@ -284,15 +284,11 @@ class PKPDDose:
         if not self.units.isWeight():
             raise Exception("After normalization, the dose must be a weight")
 
-        # Get normalization
-        self.normalization = tokens[3].strip()
-
     def _printToStream(self,fh):
-        fh.write("%s ; %s d=%f; %s ; %s\n" % (self.varName,
+        fh.write("%s ; %s d=%s; %s\n" % (self.varName,
                                               self.getDoseString(),
                                               self.doseAmount,
-                                              self.getUnitsString(),
-                                              self.normalization))
+                                              self.getUnitsString()))
 
     def getDoseString(self):
         if self.doseType == PKPDDose.TYPE_BOLUS:
@@ -313,7 +309,7 @@ class PKPDSample:
         self.varName = ""
         self.variableDictPtr = None
         self.doseDictPtr = None
-        self.doseName = ""
+        self.doseList = []
         self.descriptors = None
         self.measurementPattern = None
 
@@ -327,13 +323,14 @@ class PKPDSample:
         # Get name
         self.varName = tokens[0].strip()
 
-        # Get dose
-        doseName = tokens[1].split('=')[1].strip()
-        if doseName in doseDict:
-            self.doseName = doseName
-            self.dose = doseDict[doseName]
-        else:
-            raise Exception("Unrecognized dose %s"%doseName)
+        # Get doses
+        doseList = tokens[1].split('=')[1].strip()
+        for doseName in doseList.split(','):
+            doseName=doseName.strip()
+            if doseName in doseDict:
+                self.doseList.append(doseName)
+            else:
+                raise Exception("Unrecognized dose %s"%doseName)
 
         # Get rest of variables
         self.descriptors = {}
@@ -384,7 +381,7 @@ class PKPDSample:
         descriptorString = ""
         for key, value in self.descriptors.iteritems():
             descriptorString +="; %s=%s"%(key,value)
-        fh.write("%s; dose=%s %s\n"%(self.varName,self.doseName,descriptorString))
+        fh.write("%s; dose=%s %s\n"%(self.varName,",".join(self.doseList),descriptorString))
 
     def _printMeasurements(self,fh):
         patternString = ""
@@ -509,7 +506,7 @@ class PKPDExperiment(EMObject):
 
             elif state==PKPDExperiment.READING_DOSES:
                 tokens = line.split(';')
-                if len(tokens)!=4:
+                if len(tokens)!=3:
                     print("Skipping dose: ",line)
                     continue
                 dosename = tokens[0].strip()
@@ -943,11 +940,28 @@ class PKPDFitting(EMObject):
         fh.write("\n")
 
         fh.write("[POPULATION PARAMETERS] =============\n")
+        i=0
         for sampleFitting in self.sampleFits:
             outputStr = ""
+            j=0
             for parameter in sampleFitting.parameters:
                 outputStr += "%f "%parameter
+                if i==0 and j==0:
+                    observations = np.zeros([len(self.sampleFits),len(sampleFitting.parameters)])
+                observations[i,j]=parameter
+                j+=1
             fh.write(outputStr+"\n")
+            i+=1
+        fh.write("\n")
+
+        mu=np.mean(observations,axis=0)
+        C=np.cov(np.transpose(observations))
+        sigma = np.sqrt(np.diag(C))
+        fh.write("Mean   parameters  = %s\n"%np.array_str(mu))
+        fh.write("Median parameters  = %s\n"%np.array_str(np.median(observations,axis=0)))
+        fh.write("Lower bound (95%%, independent Gaussians) = %s\n"%np.array_str(mu-1.96*sigma))
+        fh.write("Upper bound (95%%, independent Gaussians) = %s\n"%np.array_str(mu+1.96*sigma))
+        fh.write("Covariance matrix  =\n%s\n"%np.array_str(C,max_line_width=120))
         fh.write("\n")
 
         fh.write("[SAMPLE FITTINGS] ===================\n")
