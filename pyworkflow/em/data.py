@@ -355,7 +355,7 @@ class PKPDSample:
                 self.measurementPattern.append(varName)
                 setattr(self,"measurement_%s"%varName,[])
             else:
-                raise Exception("Unrocgnized variable %s"%varName)
+                raise Exception("Unrecognized variable %s"%varName)
 
     def addMeasurement(self,line):
         tokens = line.split()
