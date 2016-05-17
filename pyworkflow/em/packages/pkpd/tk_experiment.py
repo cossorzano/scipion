@@ -89,7 +89,7 @@ class SamplesTreeProvider(TreeProvider):
 
     def getObjectInfo(self, obj):
         key = obj.varName
-        values = [obj.doseName] + [obj.descriptors[k] for k, _ in self.columns]
+        values = [','.join(obj.doseList)] + [obj.descriptors[k] for k, _ in self.columns]
         return {'key': key, 'text': key,
                 'values': tuple(values)
                 }
