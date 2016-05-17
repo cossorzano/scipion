@@ -53,7 +53,7 @@ class ProtImportExperiment(ProtImportFiles):
         self._insertFunctionStep('createOutputStep', self.inputFile.get())
         
     def createOutputStep(self, inputPath):
-        localPath = self._getExtraPath(basename(inputPath))
+        localPath = self._getPath(basename(inputPath))
         experiment = PKPDExperiment()
         experiment.load(inputPath, verifyIntegrity=False)
         experiment._printToStream(sys.stdout)
