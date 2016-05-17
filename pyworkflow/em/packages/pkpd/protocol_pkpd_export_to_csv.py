@@ -103,4 +103,4 @@ class ProtPKPDExportToCSV(ProtPKPD):
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
-        return ["Output file: %s"%self._getPath("experiment%s.csv"%self.getFilenameOut())]
+        return ["Output file: %s"%self.getFilenameOut()]
