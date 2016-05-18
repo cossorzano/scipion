@@ -582,6 +582,36 @@ class PKPDExperiment(EMObject):
                 vmax = vmaxi
         return [vmin,vmax]
 
+    def sampleSummary(self):
+        summary=[]
+        for varName, var in self.variables.iteritems():
+            if var.role == PKPDVariable.ROLE_LABEL:
+                toAdd = varName+": "
+                if var.varType==PKPDVariable.TYPE_NUMERIC:
+                    listOfValues=[]
+                else:
+                    listOfValues={}
+                for sampleName, sample in self.samples.iteritems():
+                    value = sample.descriptors[varName]
+                    if var.varType==PKPDVariable.TYPE_NUMERIC:
+                        listOfValues.append(float(value))
+                    else:
+                        if value in listOfValues:
+                            listOfValues[value]+=1
+                        else:
+                            listOfValues[value]=1
+                if var.varType==PKPDVariable.TYPE_NUMERIC:
+                    listOfValuesNp = np.array(listOfValues)
+                    toAdd += " mean=%f std=%f 5%%=%f 25%%=%f 50%%=%f 75%%=%f 95%%=%f"%\
+                             (np.mean(listOfValuesNp),np.std(listOfValuesNp),np.percentile(listOfValuesNp,5),\
+                              np.percentile(listOfValuesNp,25),np.percentile(listOfValuesNp,50),\
+                              np.percentile(listOfValuesNp,75),np.percentile(listOfValuesNp,95))
+                else:
+                    for value in listOfValues:
+                        toAdd += value + "(" + str(listOfValues[value]) + ") "
+                summary.append(toAdd)
+        return summary
+
 class PKPDModel:
     def __init__(self):
         self.fnExperiment = None
@@ -921,6 +951,7 @@ class PKPDFitting(EMObject):
         self.predicted = None
         self.modelDescription = ""
         self.sampleFits = []
+        self.summaryLines = []
 
     def write(self, fnFitting):
         fh=open(fnFitting,'w')
@@ -986,8 +1017,10 @@ class PKPDFitting(EMObject):
                 section = line.split('=')[0].strip().lower()
                 if section=="[fitting]":
                     state=PKPDFitting.READING_FITTING_EXPERIMENT
+                    self.summaryLines.append(line)
                 elif section=="[population parameters]":
                     state=PKPDFitting.READING_POPULATION
+                    self.summaryLines.append(line)
                 elif section=="[sample fittings]":
                     state=PKPDFitting.READING_SAMPLEFITTINGS_NAME
                 else:
@@ -997,26 +1030,31 @@ class PKPDFitting(EMObject):
                 tokens = line.split(':')
                 self.fnExperiment.set(tokens[1].strip())
                 state = PKPDFitting.READING_FITTING_PREDICTOR
+                self.summaryLines.append(line)
 
             elif state==PKPDFitting.READING_FITTING_PREDICTOR:
                 tokens = line.split(':')
                 self.predictor = PKPDVariable()
                 self.predictor.parseTokens(tokens[1].split(';'))
                 state = PKPDFitting.READING_FITTING_PREDICTED
+                self.summaryLines.append(line)
 
             elif state==PKPDFitting.READING_FITTING_PREDICTED:
                 tokens = line.split(':')
                 self.predicted = PKPDVariable()
                 self.predicted.parseTokens(tokens[1].split(';'))
                 state = PKPDFitting.READING_FITTING_MODEL
+                self.summaryLines.append(line)
 
             elif state==PKPDFitting.READING_FITTING_MODEL:
                 tokens = line.split(':')
                 self.modelDescription = tokens[1].strip()
                 state = PKPDFitting.READING_POPULATION
+                self.summaryLines.append(line)
+                self.summaryLines.append("\n")
 
             elif state==PKPDFitting.READING_POPULATION:
-                continue
+                self.summaryLines.append(line)
 
             elif state==PKPDFitting.READING_SAMPLEFITTINGS_NAME:
                 tokens = line.split(':')
