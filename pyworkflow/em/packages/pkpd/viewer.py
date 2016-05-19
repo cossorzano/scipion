@@ -23,17 +23,14 @@
 # *  e-mail address 'jmdelarosa@cnb.csic.es'
 # *
 # **************************************************************************
-"""
-This module implement the wrappers aroung Xmipp CL2D protocol
-visualization program.
-"""
-
 from os.path import basename, join, exists
 import numpy as np
 
 from pyworkflow.viewer import Viewer, DESKTOP_TKINTER
 from pyworkflow.em.data import PKPDExperiment
 from pyworkflow.em.packages.pkpd.protocol_batch_create_experiment import BatchProtCreateExperiment
+from pyworkflow.em.packages.pkpd.protocol_pkpd_export_to_csv import ProtPKPDExportToCSV
+from pyworkflow.gui.text import openTextFile
 
 from tk_experiment import ExperimentWindow
 
@@ -42,13 +39,17 @@ from tk_experiment import ExperimentWindow
 class PKPDExperimentViewer(Viewer):
     """ Visualization of a given PKPDExperiment
     """
-    _targets = [PKPDExperiment]
+    _targets = [PKPDExperiment, ProtPKPDExportToCSV]
     _environments = [DESKTOP_TKINTER]
 
     def __init__(self, **kwargs):
         Viewer.__init__(self, **kwargs)
 
     def visualize(self, obj, **kwargs):
+        print(obj)
+        if isinstance(obj,ProtPKPDExportToCSV):
+            print("Que si")
+            return
         obj.load()
         self.experimentWindow = self.tkWindow(ExperimentWindow,
                                            title='Experiment Viewer',
@@ -78,3 +79,20 @@ class PKPDExperimentViewer(Viewer):
         newProt.newComment.set(self.experimentWindow._commentText.getText())
         project.launchProtocol(newProt)
 
+
+class PKPDCSVViewer(Viewer):
+    """ Wrapper to visualize CSV files
+    """
+    _label = 'viewer csv'
+    _targets = [ProtPKPDExportToCSV]
+    _environments = [DESKTOP_TKINTER]
+
+    def __init__(self, **args):
+        print("Aqui")
+        Viewer.__init__(self, **args)
+
+    def visualize(self, obj, **args):
+        fnCSV=self.protocol.getFilenameOut()
+        print(fnCSV)
+        if exists(fnCSV):
+            openTextFile(fnCSV)
