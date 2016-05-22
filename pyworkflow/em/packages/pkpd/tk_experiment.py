@@ -78,8 +78,12 @@ class DosesTreeProvider(TreeProvider):
 class SamplesTreeProvider(TreeProvider):
     def __init__(self, experiment):
         self.experiment = experiment
-        sample = self.experiment.samples.values()[0]
-        self.columns = [(key, 60) for key, _ in sample.descriptors.iteritems()]
+        numberOfSamples = len(experiment.samples)
+        if numberOfSamples>0:
+            sample = self.experiment.samples.values()[0]
+            self.columns = [(key, 60) for key, _ in sample.descriptors.iteritems()]
+        else:
+            self.columns = []
 
     def getColumns(self):
         return [('Name', 60), ('Dose', 60)] + self.columns
