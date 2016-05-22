@@ -698,8 +698,8 @@ class PKPDModel:
         yPredictedBackup = self.yPredicted.copy()
         self.yPredictedUpper = self.yPredicted.copy()
         self.yPredictedLower = self.yPredicted.copy()
-        for i in range(0,int(math.pow(2,2*self.Nexp))):
-            pattern = ("{0:0%db}"%(2*self.Nexp)).format(i)
+        for i in range(0,int(math.pow(2,self.getNumberOfParameters()))):
+            pattern = ("{0:0%db}"%(self.getNumberOfParameters())).format(i)
             p = np.where(np.array(list(pattern))=="1",upperBound,lowerBound)
             p = p.astype(np.float)
             if not self.areParametersValid(p):
