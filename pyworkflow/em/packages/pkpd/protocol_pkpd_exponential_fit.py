@@ -172,3 +172,6 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         if self.Nexp.get()<1:
             errors.append("The number of exponentials has to be larger than 0")
         return errors
+
+    def _citations(self):
+        return ['Spiess2010']

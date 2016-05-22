@@ -1,6 +1,7 @@
+# coding: latin-1
 # **************************************************************************
 # *
-# * Authors:     Carlos Oscar Sorzano (info@kinestat.com)
+# * Authors:     Carlos Oscar Sorzano
 # *
 # * Kinestat Pharma
 # *
@@ -20,25 +21,28 @@
 # * 02111-1307  USA
 # *
 # *  All comments concerning this program package may be sent to the
-# *  e-mail address 'info@kinestat.com'
+# *  e-mail address 'coss@cnb.csic.es'
 # *
 # **************************************************************************
 """
-PKPD functions
+Bibtex string file for Simple package.
 """
 
-from protocol_pkpd_nca import ProtPKPDNCA
-from protocol_pkpd_filter_samples import ProtPKPDFilterSamples
-from protocol_pkpd_join_samples import ProtPKPDJoinSamples
-from protocol_pkpd_drop_measurements import ProtPKPDDropMeasurements
-from protocol_pkpd_filter_measurements import ProtPKPDFilterMeasurements
-from protocol_pkpd_exponential_fit import ProtPKPDExponentialFit
-from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
-from protocol_pkpd_export_to_csv import ProtPKPDExportToCSV
-from protocol_pkpd_import_from_csv import ProtPKPDImportFromCSV
-from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
+_bibtexStr = """
 
-from protocol_batch_create_experiment import BatchProtCreateExperiment
+@Article{Spiess2010,
+  Title                    = {An evaluation of R2 as an inadequate measure for nonlinear models in pharmacological and biochemical research: a Monte Carlo approach.},
+  Author                   = {Spiess, A. and Neumeyer, N.},
+  Journal                  = {BMC Pharmacology},
+  Year                     = {2010},
+  Pages                    = {6},
+  Volume                   = {10},
+  Doi                      = {http://dx.doi.org/10.1186/1471-2210-10-6},
+  Url                      = {http://dx.doi.org/10.1186/1471-2210-10-6}
+}
 
-from viewer import PKPDExperimentViewer, PKPDCSVViewer
-from bibtex import _bibtex
+"""
+
+from pyworkflow.utils import parseBibTex
+
+_bibtex = parseBibTex(_bibtexStr)
