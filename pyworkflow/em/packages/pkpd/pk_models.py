@@ -86,6 +86,13 @@ class PKPDExponentialModel(PKGenericModel):
             toPrint+= "+[%f*exp(-%f*X)]"%(self.parameters[2*i],self.parameters[2*i+1])
         return toPrint
 
+    def getParameterNames(self):
+        parameterList = []
+        for i in range(self.Nexp):
+            parameterList.append('c%d'%(i+1))
+            parameterList.append('lambda%d'%(i+1))
+        return parameterList
+
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
         for i in range(self.Nexp):

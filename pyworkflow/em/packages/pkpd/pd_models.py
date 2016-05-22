@@ -69,6 +69,9 @@ class PDLinear(PDGenericModel):
         toPrint="Y=(%f)+(%f)*X"%(self.parameters[0],self.parameters[1])
         return toPrint
 
+    def getParameterNames(self):
+        return ['e0','s']
+
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
         retval.append(lowerBound[0]>0 or upperBound[0]<0)
