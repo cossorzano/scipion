@@ -51,4 +51,14 @@ Protocols = [{
 		"value": "ProtPKPDNCA",
 		"text": "non-compartmental analysis"
 	}]
+    },
+    {
+	"tag": "section",
+	"text": "Pharmacodynamics",
+	"icon": "bookmark.png",
+	"children": [{
+		"tag": "protocol",
+		"value": "ProtPKPDSimulateGenericPD",
+		"text": "simulate generic"
+	}]
     }]
