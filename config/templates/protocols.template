@@ -64,5 +64,9 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDSimulateGenericPD",
 		"text": "simulate generic"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDGenericFit",
+		"text": "fit pd generic"
 	}]
     }]

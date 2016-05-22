@@ -37,6 +37,7 @@ from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
 from protocol_pkpd_export_to_csv import ProtPKPDExportToCSV
 from protocol_pkpd_import_from_csv import ProtPKPDImportFromCSV
 from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
+from protocol_pkpd_pdgeneric_fit import ProtPKPDGenericFit
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
 
