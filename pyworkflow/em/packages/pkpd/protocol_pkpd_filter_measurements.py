@@ -79,8 +79,7 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
             candidateSample.variableDictPtr    = copy.copy(sample.variableDictPtr)
             candidateSample.doseDictPtr        = copy.copy(sample.doseDictPtr)
             candidateSample.varName            = copy.copy(sample.varName)
-            candidateSample.doseName           = copy.copy(sample.doseName)
-            candidateSample.dose               = copy.copy(sample.dose)
+            candidateSample.doseList           = copy.copy(sample.doseList)
             candidateSample.descriptors        = copy.copy(sample.descriptors)
             candidateSample.measurementPattern = copy.copy(sample.measurementPattern)
 
@@ -131,7 +130,9 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
             N = len(getattr(sample,"measurement_%s"%sample.measurementPattern[0])) # Number of final measurements
             if N!=0:
                 filteredExperiment.samples[candidateSample.varName] = candidateSample
-                usedDoses.append(candidateSample.doseName)
+                for doseName in candidateSample.doseList:
+                    if not doseName in usedDoses:
+                        usedDoses.append(doseName)
 
         if len(usedDoses)>0:
             for doseName in usedDoses:

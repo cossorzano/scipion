@@ -103,7 +103,8 @@ class ProtPKPDFilterSamples(ProtPKPD):
                 pass
             if (ok and (filterType=="keep" or filterType=="rmNA")) or (not ok and filterType=="exclude"):
                 filteredExperiment.samples[sampleKey] = copy.copy(sample)
-                usedDoses.append(sample.doseName)
+                for doseName in sample.doseList:
+                    usedDoses.append(doseName)
 
         if len(usedDoses)>0:
             for doseName in usedDoses:

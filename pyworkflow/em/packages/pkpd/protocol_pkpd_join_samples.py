@@ -105,12 +105,12 @@ class ProtPKPDJoinSamples(ProtPKPD):
         for key, value in experiment1.samples.iteritems():
             sample = copy.copy(value)
             sample.varName = "%s%s"%(self.prefix1.get(),key)
-            sample.doseName = "%s%s"%(self.prefix1.get(),sample.doseName)
+            sample.doseList = ["%s%s"%(self.prefix1.get(),doseName) for doseName in sample.doseList]
             self.experiment.samples[sample.varName] = sample
         for key, value in experiment2.samples.iteritems():
             sample = copy.copy(value)
             sample.varName = "%s%s"%(self.prefix2.get(),key)
-            sample.doseName = "%s%s"%(self.prefix2.get(),sample.doseName)
+            sample.doseList = ["%s%s"%(self.prefix2.get(),doseName) for doseName in sample.doseList]
             self.experiment.samples[sample.varName] = sample
 
         # Print and save
@@ -140,10 +140,10 @@ class ProtPKPDJoinSamples(ProtPKPD):
             for sampleName1 in experiment1.samples:
                 if sampleName1 in experiment2.samples:
                     errors.append("Sample %s is repeated in both experiments"%sampleName1)
-        if self.prefix1.get()!="" and not re.match("[_A-Za-z][_a-zA-Z0-9]*$",self.prefix1.get()):
-            errors.append("Prefix1 is not well formatted")
-        if self.prefix2.get()!="" and not re.match("[_A-Za-z][_a-zA-Z0-9]*$",self.prefix2.get()):
-            errors.append("Prefix2 is not well formatted")
+        # if self.prefix1.get()!="" and not re.match("[_A-Za-z][_a-zA-Z0-9]*$",self.prefix1.get()):
+        #     errors.append("Prefix1 is not well formatted")
+        # if self.prefix2.get()!="" and not re.match("[_A-Za-z][_a-zA-Z0-9]*$",self.prefix2.get()):
+        #     errors.append("Prefix2 is not well formatted")
         if len(errors)>0:
             errors.append("Use the prefixes in the Advanced options")
         return errors
