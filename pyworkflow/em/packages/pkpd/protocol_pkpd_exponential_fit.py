@@ -103,6 +103,7 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         self.fitting.predictor=experiment.variables[self.predictor.get()]
         self.fitting.predicted=experiment.variables[self.predicted.get()]
         self.fitting.modelDescription=model.getDescription()
+        self.fitting.modelParameters = model.getParameterNames()
 
         # Actual fitting
         if self.fitType.get()==0:
@@ -147,11 +148,8 @@ are independent, which are not. Use Bootstrap estimates instead.\n
             sampleFit.yl = model.yPredictedLower
             sampleFit.yu = model.yPredictedUpper
             sampleFit.parameters = model.parameters
-            sampleFit.significance = optimizer2.significance
             sampleFit.modelEquation = model.getEquation()
-            sampleFit.R2 = optimizer2.R2
-            sampleFit.lowerBound = optimizer2.lowerBound
-            sampleFit.upperBound = optimizer2.upperBound
+            sampleFit.copyFromOptimizer(optimizer2)
             self.fitting.sampleFits.append(sampleFit)
             self.fitting.write(self._getPath("fitting.pkpd"))
 
