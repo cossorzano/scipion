@@ -24,15 +24,15 @@
 # *
 # **************************************************************************
 
-import numpy as np
 import math
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDExponentialModel, PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, \
-                               PKPDSampleFit
+from pyworkflow.em.data import PKPDExperiment, PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, PKPDSampleFit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from pyworkflow.object import String, Integer
+from utils import parseRange
+from pk_models import PKPDExponentialModel
 
 
 class ProtPKPDExponentialFit(ProtPKPD):
@@ -64,15 +64,14 @@ are independent, which are not. Use Bootstrap estimates instead.\n
             self.fitType.set(1)
             self.Nexp=Integer()
             self.Nexp.set(1)
-        form.addParam('cBounds', params.StringParam, label="Amplitude bounds", default="", expertLevel=LEVEL_ADVANCED,
-                      help='Bounds for the c_i amplitudes.\nExample 1: (0,10)\nExample 2: (0,10);(1,5)')
-        form.addParam('lambdaBounds', params.StringParam, label="Time constant bounds", default="", expertLevel=LEVEL_ADVANCED,
-                      help='Bounds for the lambda_i time constants.\nExample 1: (0,0.01)\nExample 2: (0,1e-2);(0,1e-1)')
+        form.addParam('bounds', params.StringParam, label="Amplitude and time constant bounds", default="", expertLevel=LEVEL_ADVANCED,
+                      help='Bounds for the c_i amplitudes.\nExample 1: (0,10);(0,1e-2) -> c1 in (0,10), lambda1 in (0,1e-2)\n'\
+                           'Example 2: (0,10);(0,1e-2);(0,1);(0,1e-1) -> c1 in (0,10), lambda1 in (0,1e-2), c2 in (0,1), lambda2 in (0,1e-1)')
         form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
         if fullForm:
             form.addParam('reportTime', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
-                          help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: -10:5:10, from -10 to 10 in steps of 5')
+                          help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: 0:0.55:10, from 0 to 10 in steps of 0.5')
         else:
             self.reportTime=String()
             self.reportTime.set("")
@@ -81,32 +80,12 @@ are independent, which are not. Use Bootstrap estimates instead.\n
 
     def _insertAllSteps(self):
         self._insertFunctionStep('runFit',self.inputExperiment.get().getObjId(), self.predictor.get(), \
-                                 self.predicted.get(), self.fitType.get(), self.Nexp.get(), self.cBounds.get(), \
-                                 self.lambdaBounds.get())
+                                 self.predicted.get(), self.fitType.get(), self.Nexp.get(), self.bounds.get())
         self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
-    def getReportTime(self):
-        auxString = self.reportTime.get()
-        if auxString=="":
-            return None
-        elif auxString.startswith('['):
-            auxString=auxString.replace('[','')
-            auxString=auxString.replace(']','')
-            tokens=auxString.split(',')
-            auxArray = np.array(tokens, dtype='|S4')
-            return auxArray.astype(np.float)
-        elif ':' in auxString:
-            tokens=auxString.split(':')
-            if len(tokens)!=3:
-                raise Exception("The X evaluation string is not well formatted: %s"%auxString)
-            fromValue = float(tokens[0])
-            step= float(tokens[1])
-            toValue = float(tokens[2])
-            return np.arange(fromValue,toValue,step)
-
-    def runFit(self, objId, X, Y, fitType, Nexp, cBounds, lambdaBounds):
-        reportTime = self.getReportTime()
+    def runFit(self, objId, X, Y, fitType, Nexp, bounds):
+        reportTime = parseRange(self.reportTime.get())
         experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
 
         # Setup model
@@ -115,7 +94,7 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         model.setExperiment(experiment)
         model.setXVar(self.predictor.get())
         model.setYVar(self.predicted.get())
-        model.setNexp(self.Nexp.get())
+        model.Nexp=self.Nexp.get()
         model.printSetup()
 
         # Create output object
@@ -139,7 +118,7 @@ are independent, which are not. Use Bootstrap estimates instead.\n
             print("X= "+str(x))
             print("Y= "+str(y))
             print(" ")
-            model.setBounds(self.cBounds.get(),self.lambdaBounds.get())
+            model.setBounds(self.bounds.get())
             model.setXYValues(x, y)
             model.prepare()
             print(" ")
