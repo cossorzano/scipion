@@ -102,6 +102,7 @@ class PKPDUnit:
     UNIT_WEIGHT_mg= 101
     UNIT_WEIGHT_ug= 102
     UNIT_WEIGHT_ng= 103
+    UNIT_NONE = 99999
 
     unitDictionary = {
         UNIT_TIME_H: "h",
@@ -122,7 +123,8 @@ class PKPDUnit:
         UNIT_WEIGHT_g: "g",
         UNIT_WEIGHT_mg: "mg",
         UNIT_WEIGHT_ug: "ug",
-        UNIT_WEIGHT_ng: "ng"
+        UNIT_WEIGHT_ng: "ng",
+        UNIT_NONE: "none"
     }
 
     def __init__(self,unitString=""):
@@ -371,6 +373,12 @@ class PKPDSample:
             else:
                 raise Exception("Time measurements cannot be NA")
 
+    def addMeasurementColumn(self,varName,values):
+        self.measurementPattern.append(varName)
+        setattr(self, "measurement_%s"%varName, [])
+        for value in values:
+            exec("self.measurement_%s.append('%s')"%(varName,str(value)))
+
     def getNumberOfVariables(self):
         return len(self.measurementPattern)
 
@@ -616,6 +624,7 @@ class PKPDModel:
     def __init__(self):
         self.fnExperiment = None
         self.parameters = None
+        self.bounds = None
 
     def setExperiment(self, experiment):
         self.experiment = experiment
@@ -656,9 +665,6 @@ class PKPDModel:
     def getDescription(self):
         pass
 
-    def setParameters(self, parameters):
-        self.parameters = parameters
-
     def areParametersSignificant(self, lowerBound, upperBound):
         """
         :param lowerBound and upperBound: a numpy array of parameters
@@ -666,113 +672,24 @@ class PKPDModel:
         """
         pass
 
-    def setConfidenceInterval(self,lowerBound,upperBound):
+    def areParametersValid(self, p):
         pass
 
+    def setParameters(self, parameters):
+        self.parameters = parameters
 
-class PKPDExponentialModel(PKPDModel):
-    def forwardModel(self, parameters, x=None):
-        if x==None:
-            x=self.x
-        self.yPredicted = np.zeros(x.shape[0])
-        proceed=True
-        for k in range(1,self.Nexp):
-            ck = parameters[2*k]
-            ck_1 = parameters[2*(k-1)]
-            if ck_1<ck:
-                proceed=False
-                self.yPredicted = -1000*np.ones(x.shape[0])
-                break
-        if proceed:
-            for k in range(0,self.Nexp):
-                ck = parameters[2*k]
-                lk = parameters[2*k+1]
-                self.yPredicted += ck*np.exp(-lk*x)
-        return self.yPredicted
-
-    def setNexp(self, Nexp):
-        self.Nexp = Nexp
-
-    def getNumberOfParameters(self):
-        return 2*self.Nexp
-
-    def getDescription(self):
-        return "Sum of exponentials (%s)"%self.__class__.__name__
-
-    def parseBounds(self,inputString,msg):
-        if ';' in inputString:
-            tokens=inputString.split(';')
-            if len(tokens)!=self.Nexp:
-                raise Exception("The number of intervals for %s does not match the number of exponential terms"%msg)
-        else:
-            tokens = [inputString]*self.Nexp
-        return eval("["+",".join(tokens)+"]")
-
-    def setBounds(self, cBounds, lambdaBounds):
-        if lambdaBounds=="" or lambdaBounds is None:
-            self.lambdaBounds = None
-        else:
-            self.lambdaBounds = self.parseBounds(lambdaBounds,"lambda")
-
-        if cBounds=="" or cBounds is None:
-            self.cBounds = None
-        else:
-            self.cBounds = self.parseBounds(cBounds,"amplitude")
-
-    def prepare(self):
-        if self.cBounds == None and self.lambdaBounds == None:
-            print("First estimate of 1 exponential term: ")
-            p = np.polyfit(self.x,self.ylog,1)
-            self.cBounds=[(math.exp(p[1])*0.01,math.exp(p[1])*100.0)]*self.Nexp
-            self.lambdaBounds=[(-p[0]*0.01,-p[0]*100.0)]*self.Nexp
-            print("Y=%f*exp(-%f*X)"%(math.exp(p[1]),-p[0]))
-        elif self.cBounds == None or self.lambdaBounds == None:
-            raise Exception("Either give c and lambda bounds or none of them")
-        print("Amplitude (c) bounds: "+str(self.cBounds))
-        print("Lambda bounds: "+str(self.lambdaBounds))
+    def setBounds(self, boundsString):
+        self.bounds = None
+        if boundsString!="" and boundsString!=None:
+            tokens=boundsString.split(';')
+            if len(tokens)!=self.getNumberOfParameters():
+                raise Exception("The number of bound intervals does not match the number of exponential terms")
+            self.bounds=[]
+            for token in tokens:
+                self.bounds.append(token.strip())
 
     def getBounds(self):
-        bounds = []
-        for i in range(0,self.Nexp):
-            bounds.append(self.cBounds[i])
-            bounds.append(self.lambdaBounds[i])
-        return bounds
-
-    def printSetup(self):
-        print("Model: y=sum_i c_i*exp(-lambda_i * x)")
-        print("Number of exponentials: "+str(self.Nexp))
-
-    def getEquation(self):
-        toPrint="Y="
-        for i in range(self.Nexp):
-            toPrint+= "+[%f*exp(-%f*X)]"%(self.parameters[2*i],self.parameters[2*i+1])
-        return toPrint
-
-    def areParametersSignificant(self, lowerBound, upperBound):
-        retval=[]
-        for i in range(self.Nexp):
-            cLower = lowerBound[2*i]
-            cUpper = lowerBound[2*i+1]
-            if cLower<0 and cUpper>0:
-                retval.append("False")
-            elif cLower>0:
-                retval.append("True")
-            elif cUpper<0:
-                retval.append("Suspicious, this term may be negative")
-            else:
-                retval.append("NA")
-
-            decayLower = lowerBound[2*i+1]
-            decayUpper = lowerBound[2*i+1]
-            if decayLower<0 and decayUpper>0:
-                retval.append("Suspicious, looks like a constant")
-            elif decayLower<0:
-                retval.append("Suspicious, this term may be unstable")
-            elif decayLower>0:
-                retval.append("True")
-            else:
-                retval.append("NA")
-        return retval
+        return self.bounds
 
     def setConfidenceInterval(self,lowerBound,upperBound):
         yPredictedBackup = self.yPredicted.copy()
@@ -782,7 +699,7 @@ class PKPDExponentialModel(PKPDModel):
             pattern = ("{0:0%db}"%(2*self.Nexp)).format(i)
             p = np.where(np.array(list(pattern))=="1",upperBound,lowerBound)
             p = p.astype(np.float)
-            if np.sum(p<0)!=0:
+            if not self.areParametersValid(p):
                 continue
             y = self.forwardModel(p)
             for n in range(len(y)):
@@ -794,6 +711,7 @@ class PKPDExponentialModel(PKPDModel):
                 if y[n]>self.yPredictedUpper[n]:
                     self.yPredictedUpper[n]=y[n]
         self.yPredicted = yPredictedBackup.copy()
+
 
 class PKPDOptimizer:
     def __init__(self,model,fitType,goalFunction="RMSE"):
