@@ -32,6 +32,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDFilterMeasurements",
 		"text": "filter measurements"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDDropMeasurements",
+		"text": "drop measurements"
 	}]
     },
     {
