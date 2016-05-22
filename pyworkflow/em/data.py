@@ -665,6 +665,9 @@ class PKPDModel:
     def getDescription(self):
         pass
 
+    def getParameterNames(self):
+        pass
+
     def areParametersSignificant(self, lowerBound, upperBound):
         """
         :param lowerBound and upperBound: a numpy array of parameters
@@ -751,15 +754,30 @@ class PKPDOptimizer:
         rmse = math.sqrt((self.getResiduals(parameters) ** 2).mean())
         return rmse
 
+    def _evaluateQuality(self, x, y, yp):
+        # Spiess and Neumeyer, BMC Pharmacology 2010, 10:6
+        self.e = y-yp
+        self.R2 = (1-np.var(self.e)/np.var(y))
+        n=x.shape[0] # Number of samples
+        p=self.model.getNumberOfParameters()
+        self.R2adj = 1-self.R2*(n-1)/(n-p)*(1-self.R2)
+        logL = 0.5*(-n*(math.log(2*math.pi)+1-math.log(n)+math.log(np.sum(np.multiply(self.e,self.e)))))
+        self.AIC = 2*p-2*logL
+        self.AICc = self.AIC+2*p*(p+1)/(n-p-1)
+        self.BIC = p*math.log(n)-2*logL
+
     def _printFitting(self, x, y, yp):
+        self._evaluateQuality(x, y, yp)
         for n in range(0,x.shape[0]):
             print("%f %f %f %f"%(x[n],y[n],yp[n],y[n]-yp[n]))
-        e = y-yp
         print("------------------------")
-        print("Mean error = %f"%np.mean(e))
-        print("Std error = %f"%np.std(e))
-        self.R2 = (1-np.var(e)/np.var(y))
+        print("Mean error = %f"%np.mean(self.e))
+        print("Std error = %f"%np.std(self.e))
         print("R2 = %f"%self.R2)
+        print("R2adj = %f"%self.R2adj)
+        print("AIC = %f"%self.AIC)
+        print("AICc(Recommended) = %f"%self.AICc)
+        print("BIC = %f"%self.BIC)
         print("------------------------")
 
     def printFitting(self):
@@ -829,6 +847,10 @@ class PKPDSampleFit:
         self.yu = None
         self.modelEquation = ""
         self.R2 = 0
+        self.R2adj = 0
+        self.AIC = 0
+        self.AICc = 0
+        self.BIC = 0
         self.parameters = None
         self.lowerBound = None
         self.upperBound = None
@@ -840,6 +862,10 @@ class PKPDSampleFit:
         fh.write("Sample name: %s\n"%self.sampleName)
         fh.write("Model: %s\n"%self.modelEquation)
         fh.write("R2: %f\n"%self.R2)
+        fh.write("R2adj: %f\n"%self.R2adj)
+        fh.write("AIC: %f\n"%self.AIC)
+        fh.write("AICc(Recommended): %f\n"%self.AICc)
+        fh.write("BIC: %f\n"%self.BIC)
         fh.write("Parameter lowerBound upperBound IsStatisticallySignificant -------\n")
         for parameter, lower, upper, significance in izip(self.parameters,self.lowerBound,self.upperBound,\
                                                           self.significance):
@@ -849,17 +875,33 @@ class PKPDSampleFit:
             fh.write("%f %f %f [%f,%f]\n"%(x,y,yp,yl,yu))
         fh.write("\n")
 
+    def copyFromOptimizer(self,optimizer):
+        self.R2 = optimizer.R2
+        self.R2adj = optimizer.R2adj
+        self.AIC = optimizer.AIC
+        self.AICc = optimizer.AICc
+        self.BIC = optimizer.BIC
+        self.significance = optimizer.significance
+        self.lowerBound = optimizer.lowerBound
+        self.upperBound = optimizer.upperBound
+
+
 class PKPDFitting(EMObject):
     READING_FITTING_EXPERIMENT = 1
     READING_FITTING_PREDICTOR = 2
     READING_FITTING_PREDICTED = 3
     READING_FITTING_MODEL = 4
-    READING_POPULATION = 5
-    READING_SAMPLEFITTINGS_NAME = 6
-    READING_SAMPLEFITTINGS_MODELEQ = 7
-    READING_SAMPLEFITTINGS_R2 = 8
-    READING_SAMPLEFITTINGS_PARAMETER_BOUNDS = 9
-    READING_SAMPLEFITTINGS_SAMPLE_VALUES = 10
+    READING_POPULATION_HEADER = 5
+    READING_POPULATION = 6
+    READING_SAMPLEFITTINGS_NAME = 7
+    READING_SAMPLEFITTINGS_MODELEQ = 8
+    READING_SAMPLEFITTINGS_R2 = 9
+    READING_SAMPLEFITTINGS_R2ADJ = 10
+    READING_SAMPLEFITTINGS_AIC = 11
+    READING_SAMPLEFITTINGS_AICc = 12
+    READING_SAMPLEFITTINGS_BIC = 13
+    READING_SAMPLEFITTINGS_PARAMETER_BOUNDS = 14
+    READING_SAMPLEFITTINGS_SAMPLE_VALUES = 15
 
     def __init__(self, **args):
         EMObject.__init__(self, **args)
@@ -868,6 +910,7 @@ class PKPDFitting(EMObject):
         self.predictor = None
         self.predicted = None
         self.modelDescription = ""
+        self.modelParameters = []
         self.sampleFits = []
         self.summaryLines = []
 
@@ -889,6 +932,7 @@ class PKPDFitting(EMObject):
         fh.write("\n")
 
         fh.write("[POPULATION PARAMETERS] =============\n")
+        fh.write(' '.join(self.modelParameters)+" # R2 R2adj AIC AICc BIC\n")
         i=0
         for sampleFitting in self.sampleFits:
             outputStr = ""
@@ -899,6 +943,8 @@ class PKPDFitting(EMObject):
                     observations = np.zeros([len(self.sampleFits),len(sampleFitting.parameters)])
                 observations[i,j]=parameter
                 j+=1
+            outputStr += " # %f %f %f %f %f"%(sampleFitting.R2,sampleFitting.R2adj,sampleFitting.AIC,\
+                                            sampleFitting.AICc, sampleFitting.BIC)
             fh.write(outputStr+"\n")
             i+=1
         fh.write("\n")
@@ -931,13 +977,13 @@ class PKPDFitting(EMObject):
                 if state==PKPDFitting.READING_SAMPLEFITTINGS_SAMPLE_VALUES:
                      state=PKPDFitting.READING_SAMPLEFITTINGS_NAME
                 continue
-            if line[0]=='[':
+            if line.startswith('[') and line.endswith('='):
                 section = line.split('=')[0].strip().lower()
                 if section=="[fitting]":
                     state=PKPDFitting.READING_FITTING_EXPERIMENT
                     self.summaryLines.append(line)
                 elif section=="[population parameters]":
-                    state=PKPDFitting.READING_POPULATION
+                    state=PKPDFitting.READING_POPULATION_HEADER
                     self.summaryLines.append(line)
                 elif section=="[sample fittings]":
                     state=PKPDFitting.READING_SAMPLEFITTINGS_NAME
@@ -971,6 +1017,11 @@ class PKPDFitting(EMObject):
                 self.summaryLines.append(line)
                 self.summaryLines.append("\n")
 
+            elif state==PKPDFitting.READING_POPULATION_HEADER:
+                lineParts = line.split('#')
+                self.modelParameters=lineParts[0].split(' ')
+                state = PKPDFitting.READING_POPULATION
+
             elif state==PKPDFitting.READING_POPULATION:
                 self.summaryLines.append(line)
 
@@ -981,7 +1032,6 @@ class PKPDFitting(EMObject):
                 state = PKPDFitting.READING_SAMPLEFITTINGS_MODELEQ
 
             elif state==PKPDFitting.READING_SAMPLEFITTINGS_MODELEQ:
-                print("Model line=====",line)
                 tokens = line.split(':')
                 self.sampleFits[-1].modelEquation = tokens[1].strip()
                 state = PKPDFitting.READING_SAMPLEFITTINGS_R2
@@ -989,6 +1039,26 @@ class PKPDFitting(EMObject):
             elif state==PKPDFitting.READING_SAMPLEFITTINGS_R2:
                 tokens = line.split(':')
                 self.sampleFits[-1].R2 = float(tokens[1])
+                state = PKPDFitting.READING_SAMPLEFITTINGS_R2ADJ
+
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_R2ADJ:
+                tokens = line.split(':')
+                self.sampleFits[-1].R2adj = float(tokens[1])
+                state = PKPDFitting.READING_SAMPLEFITTINGS_AIC
+
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_AIC:
+                tokens = line.split(':')
+                self.sampleFits[-1].AIC = float(tokens[1])
+                state = PKPDFitting.READING_SAMPLEFITTINGS_AICc
+
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_AICc:
+                tokens = line.split(':')
+                self.sampleFits[-1].AICc = float(tokens[1])
+                state = PKPDFitting.READING_SAMPLEFITTINGS_BIC
+
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_BIC:
+                tokens = line.split(':')
+                self.sampleFits[-1].BIC = float(tokens[1])
                 state = PKPDFitting.READING_SAMPLEFITTINGS_PARAMETER_BOUNDS
 
             elif state==PKPDFitting.READING_SAMPLEFITTINGS_PARAMETER_BOUNDS:
