@@ -30,7 +30,7 @@ In this module are protocol base classes related to PKPD
 import sys
 
 from pyworkflow.em.protocol import *
-from pyworkflow.em.data import PKPDExperiment
+from pyworkflow.em.data import PKPDExperiment, PKPDFitting
 
 class ProtPKPD(EMProtocol):
     def printSection(self, msg):
@@ -50,3 +50,12 @@ class ProtPKPD(EMProtocol):
         self.printSection("Writing %s"%fnOut)
         experiment._printToStream(sys.stdout)
         experiment.write(fnOut)
+
+    def readFitting(self,fnIn, show=True):
+        fitting = PKPDFitting()
+        fitting.load(fnIn)
+        if show:
+            self.printSection("Reading %s"%fnIn)
+            fitting._printToStream(sys.stdout)
+        return fitting
+
