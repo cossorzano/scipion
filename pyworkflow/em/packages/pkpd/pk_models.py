@@ -56,9 +56,6 @@ class PKPDExponentialModel(PKGenericModel):
                 self.yPredicted += ck*np.exp(-lk*x)
         return self.yPredicted
 
-    def getNumberOfParameters(self):
-        return 2*self.Nexp
-
     def getDescription(self):
         return "Sum of exponentials (%s)"%self.__class__.__name__
 

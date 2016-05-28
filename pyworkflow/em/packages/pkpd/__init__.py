@@ -27,7 +27,7 @@
 PKPD functions
 """
 
-from protocol_pkpd_nca import ProtPKPDNCA
+from protocol_pkpd_nca_iv_obs import ProtPKPDNCAIVObs
 from protocol_pkpd_filter_samples import ProtPKPDFilterSamples
 from protocol_pkpd_join_samples import ProtPKPDJoinSamples
 from protocol_pkpd_drop_measurements import ProtPKPDDropMeasurements

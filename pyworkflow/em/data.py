@@ -620,11 +620,10 @@ class PKPDExperiment(EMObject):
                 summary.append(toAdd)
         return summary
 
-class PKPDModel:
+class PKPDModelBase:
     def __init__(self):
         self.fnExperiment = None
         self.parameters = None
-        self.bounds = None
 
     def setExperiment(self, experiment):
         self.experiment = experiment
@@ -647,10 +646,24 @@ class PKPDModel:
         self.y = np.array(y)
         self.ylog = np.log(self.y)
 
-    def forwardModel(self, parameters, x=None):
+    def getNumberOfParameters(self):
+        return len(self.getParameterNames())
+
+    def getDescription(self):
         pass
 
-    def getNumberOfParameters(self):
+    def getParameterNames(self):
+        pass
+
+    def setParameters(self, parameters):
+        self.parameters = parameters
+
+class PKPDModel(PKPDModelBase):
+    def __init__(self):
+        PKPDModelBase.__init__(self)
+        self.bounds = None
+
+    def forwardModel(self, parameters, x=None):
         pass
 
     def prepare(self):
@@ -662,12 +675,6 @@ class PKPDModel:
     def getEquation(self):
         pass
 
-    def getDescription(self):
-        pass
-
-    def getParameterNames(self):
-        pass
-
     def areParametersSignificant(self, lowerBound, upperBound):
         """
         :param lowerBound and upperBound: a numpy array of parameters
@@ -677,9 +684,6 @@ class PKPDModel:
 
     def areParametersValid(self, p):
         pass
-
-    def setParameters(self, parameters):
-        self.parameters = parameters
 
     def setBounds(self, boundsString):
         self.bounds = None
@@ -760,10 +764,16 @@ class PKPDOptimizer:
         self.R2 = (1-np.var(self.e)/np.var(y))
         n=x.shape[0] # Number of samples
         p=self.model.getNumberOfParameters()
-        self.R2adj = 1-self.R2*(n-1)/(n-p)*(1-self.R2)
+        if n-p>0:
+            self.R2adj = 1-self.R2*(n-1)/(n-p)*(1-self.R2)
+        else:
+            self.R2adj = -1
         logL = 0.5*(-n*(math.log(2*math.pi)+1-math.log(n)+math.log(np.sum(np.multiply(self.e,self.e)))))
         self.AIC = 2*p-2*logL
-        self.AICc = self.AIC+2*p*(p+1)/(n-p-1)
+        if n-p-1>0:
+            self.AICc = self.AIC+2*p*(p+1)/(n-p-1)
+        else:
+            self.AICc = -1
         self.BIC = p*math.log(n)-2*logL
 
     def _printFitting(self, x, y, yp):
@@ -1092,3 +1102,179 @@ class PKPDFitting(EMObject):
                 self.sampleFits[-1].yu.append(float(tokens[1]))
 
         fh.close()
+
+    def getSampleFit(self,sampleName):
+        for sampleFit in self.sampleFits:
+            if sampleFit.sampleName == sampleName:
+                return sampleFit
+        return None
+
+class PKPDSampleSignalAnalysis:
+    def __init__(self):
+        self.sampleName = ""
+        self.x = None
+        self.y = None
+        self.analysisVariables = []
+        self.parameters = None
+        self.lowerBound = None
+        self.upperBound = None
+        self.significance = None
+
+    def _printToStream(self,fh):
+        if self.significance == None:
+            self.significance = ["Undetermined"]*len(self.parameters)
+        fh.write("Sample name: %s\n"%self.sampleName)
+        for varName, parameter in izip(self.analysisVariables,self.parameters):
+            fh.write("%s = %f\n"%(varName,parameter))
+        fh.write("\n")
+
+
+class PKPDSignalAnalysis(EMObject):
+    READING_EXPERIMENT = 1
+    READING_PREDICTOR = 2
+    READING_PREDICTED = 3
+    READING_MODEL = 4
+    READING_ANALYSIS_VARIABLES = 5
+    READING_POPULATION_HEADER = 6
+    READING_POPULATION = 7
+    READING_SAMPLEANALYSIS_NAME = 8
+    READING_SAMPLEANALYSIS_PARAMETERS = 9
+
+    def __init__(self, **args):
+        EMObject.__init__(self, **args)
+        self.fnAnalysis = String()
+        self.fnExperiment = String()
+        self.predictor = None
+        self.predicted = None
+        self.analysisDescription = ""
+        self.analysisParameters = []
+        self.sampleAnalyses = []
+        self.summaryLines = []
+
+    def write(self, fnAnalysis):
+        fh=open(fnAnalysis,'w')
+        self._printToStream(fh)
+        fh.close()
+        self.fnAnalysis.set(fnAnalysis)
+        writeMD5(fnAnalysis)
+
+    def _printToStream(self,fh):
+        fh.write("[SIGNAL ANALYSIS] ===========================\n")
+        fh.write("Experiment: %s\n"%self.fnExperiment.get())
+        fh.write("Predictor (X): ")
+        self.predictor._printToStream(fh)
+        fh.write("Predicted (Y): ")
+        self.predicted._printToStream(fh)
+        fh.write("Analysis: %s\n"%self.analysisDescription)
+        fh.write("\n")
+
+        fh.write("[POPULATION PARAMETERS] =============\n")
+        fh.write(' '.join(self.analysisParameters)+"\n")
+        i=0
+        for sampleAnalysis in self.sampleAnalyses:
+            outputStr = ""
+            j=0
+            for parameter in sampleAnalysis.parameters:
+                outputStr += "%f "%parameter
+                if i==0 and j==0:
+                    observations = np.zeros([len(self.sampleAnalyses),len(sampleAnalysis.parameters)])
+                observations[i,j]=parameter
+                j+=1
+            fh.write(outputStr+"\n")
+            i+=1
+        fh.write("\n")
+
+        mu=np.mean(observations,axis=0)
+        C=np.cov(np.transpose(observations))
+        sigma = np.sqrt(np.diag(C))
+        fh.write("Mean   parameters  = %s\n"%np.array_str(mu))
+        fh.write("Median parameters  = %s\n"%np.array_str(np.median(observations,axis=0)))
+        fh.write("Lower bound (95%%, independent Gaussians) = %s\n"%np.array_str(mu-1.96*sigma))
+        fh.write("Upper bound (95%%, independent Gaussians) = %s\n"%np.array_str(mu+1.96*sigma))
+        fh.write("Covariance matrix  =\n%s\n"%np.array_str(C,max_line_width=120))
+        fh.write("\n")
+
+        fh.write("[SAMPLE ANALYSES] ===================\n")
+        for sampleAnalysis in self.sampleAnalyses:
+            sampleAnalysis._printToStream(fh)
+
+    def load(self,fnAnalysis):
+        fh=open(fnAnalysis)
+        if not fh:
+            raise Exception("Cannot open %s"%fnAnalysis)
+        if not verifyMD5(fnAnalysis):
+            raise Exception("The file %s has been modified since its creation"%fnAnalysis)
+        self.fnAnalysis.set(fnAnalysis)
+
+        for line in fh.readlines():
+            line=line.strip()
+            if line=="":
+                if state==PKPDSignalAnalysis.READING_SAMPLEANALYSIS_PARAMETERS:
+                     state=PKPDSignalAnalysis.READING_SAMPLEANALYSIS_NAME
+                continue
+            if line.startswith('[') and line.endswith('='):
+                section = line.split('=')[0].strip().lower()
+                if section=="[signal analysis]":
+                    state=PKPDSignalAnalysis.READING_EXPERIMENT
+                    self.summaryLines.append(line)
+                elif section=="[population parameters]":
+                    state=PKPDSignalAnalysis.READING_POPULATION_HEADER
+                    self.summaryLines.append(line)
+                elif section=="[sample analyses]":
+                    state=PKPDSignalAnalysis.READING_SAMPLEANALYSIS_NAME
+                else:
+                    print("Skipping: ",line)
+
+            elif state==PKPDSignalAnalysis.READING_EXPERIMENT:
+                tokens = line.split(':')
+                self.fnExperiment.set(tokens[1].strip())
+                state = PKPDSignalAnalysis.READING_PREDICTOR
+                self.summaryLines.append(line)
+
+            elif state==PKPDSignalAnalysis.READING_PREDICTOR:
+                tokens = line.split(':')
+                self.predictor = PKPDVariable()
+                self.predictor.parseTokens(tokens[1].split(';'))
+                state = PKPDSignalAnalysis.READING_PREDICTED
+                self.summaryLines.append(line)
+
+            elif state==PKPDSignalAnalysis.READING_PREDICTED:
+                tokens = line.split(':')
+                self.predicted = PKPDVariable()
+                self.predicted.parseTokens(tokens[1].split(';'))
+                state = PKPDSignalAnalysis.READING_MODEL
+                self.summaryLines.append(line)
+
+            elif state==PKPDSignalAnalysis.READING_MODEL:
+                tokens = line.split(':')
+                self.analysisDescription = tokens[1].strip()
+                state = PKPDSignalAnalysis.READING_POPULATION
+                self.summaryLines.append(line)
+                self.summaryLines.append("\n")
+
+            elif state==PKPDSignalAnalysis.READING_POPULATION_HEADER:
+                self.analysisParameters=line.split(' ')
+                state = PKPDSignalAnalysis.READING_POPULATION
+
+            elif state==PKPDSignalAnalysis.READING_POPULATION:
+                self.summaryLines.append(line)
+
+            elif state==PKPDSignalAnalysis.READING_SAMPLEANALYSIS_NAME:
+                tokens = line.split(':')
+                self.sampleAnalyses.append(PKPDSampleSignalAnalysis())
+                self.sampleAnalyses[-1].sampleName = tokens[1].strip()
+                self.sampleAnalyses[-1].parameters=[]
+                state = PKPDSignalAnalysis.READING_SAMPLEANALYSIS_PARAMETERS
+
+            elif state==PKPDSignalAnalysis.READING_SAMPLEANALYSIS_PARAMETERS:
+                tokens=line.split('=')
+                self.sampleAnalyses[-1].analysisVariables.append(tokens[0].strip())
+                self.sampleAnalyses[-1].parameters.append(float(tokens[1].strip()))
+
+        fh.close()
+
+    def getSampleAnalysis(self,sampleName):
+        for sampleAnalysis in self.sampleAnalyses:
+            if sampleAnalysis.sampleName == sampleName:
+                return sampleAnalysis
+        return None

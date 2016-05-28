@@ -45,9 +45,6 @@ class PDLinear(PDGenericModel):
         self.yPredicted = e0+s*x
         return self.yPredicted
 
-    def getNumberOfParameters(self):
-        return 2
-
     def getDescription(self):
         return "Linear (%s)"%self.__class__.__name__
 

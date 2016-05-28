@@ -52,7 +52,7 @@ Protocols = [{
 		"text": "elimination rate"
 	},{
 		"tag": "protocol",
-		"value": "ProtPKPDNCA",
+		"value": "ProtPKPDNCAIVObs",
 		"text": "non-compartmental analysis"
 	}]
     },

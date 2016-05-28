@@ -24,59 +24,31 @@
 # *
 # **************************************************************************
 """
-PD models
+Signal Analysis models
 """
 import numpy as np
-from pyworkflow.em.data import PKPDModel
+from pyworkflow.em.data import PKPDModelBase
 
-class PDModel(PKPDModel):
-    pass
+class SAModel(PKPDModelBase):
+    def calculateParameters(self):
+        pass
 
-class PDGenericModel(PDModel):
-    pass
-
-class PDLinear(PDGenericModel):
-    def forwardModel(self, parameters, x=None):
-        if x==None:
-            x=self.x
-        self.yPredicted = np.zeros(x.shape[0])
-        e0 = parameters[0]
-        s = parameters[1]
-        self.yPredicted = e0+s*x
-        return self.yPredicted
-
-    def getNumberOfParameters(self):
-        return 2
-
+class NCAObsIVModel(SAModel):
     def getDescription(self):
-        return "Linear (%s)"%self.__class__.__name__
-
-    def prepare(self):
-        if self.bounds == None:
-            p = np.polyfit(self.x,self.y,1)
-            print("First estimate of linear term: ")
-            print("Y=%f+%f*X"%(p[1],p[0]))
-
-            self.bounds = []
-            self.bounds.append((0.1*p[1],10*p[1]))
-            self.bounds.append((0.1*p[0],10*p[0]))
-
-    def printSetup(self):
-        print("Model: Y=e0+s*X")
-        print("Bounds: "+str(self.bounds))
-
-    def getEquation(self):
-        toPrint="Y=(%f)+(%f)*X"%(self.parameters[0],self.parameters[1])
-        return toPrint
+        return "Non-compartmental Analysis based on observations (%s)"%self.__class__.__name__
 
     def getParameterNames(self):
-        return ['e0','s']
+        return ['AUC_0t','AUC_0inf']
 
-    def areParametersSignificant(self, lowerBound, upperBound):
-        retval=[]
-        retval.append(lowerBound[0]>0 or upperBound[0]<0)
-        retval.append(lowerBound[0]>1 or upperBound[0]<1)
-        return retval
+    def calculateParameters(self):
+        t = self.x
+        C = self.y
+        AUC0t = 0
+        for i in range(len(C)-1):
+            AUC0t += (t[i+1]-t[i])*(C[i]+C[i+1])
+        AUC0t*=0.5
+        print("AUC(0-t) = %f"%AUC0t)
 
-    def areParametersValid(self, p):
-        return True
+        self.parameters = []
+        self.parameters.append(AUC0t)
+        self.parameters.append(0.0)
