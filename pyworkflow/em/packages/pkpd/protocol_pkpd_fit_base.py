@@ -129,7 +129,7 @@ class ProtPKPDFitBase(ProtPKPD):
             sampleFit.modelEquation = self.model.getEquation()
             sampleFit.copyFromOptimizer(optimizer2)
             self.fitting.sampleFits.append(sampleFit)
-            self.fitting.write(self._getPath("fitting.pkpd"))
+        self.fitting.write(self._getPath("fitting.pkpd"))
 
     def createOutputStep(self):
         self._defineOutputs(outputFitting=self.fitting)
