@@ -961,12 +961,14 @@ class PKPDFitting(EMObject):
 
         mu=np.mean(observations,axis=0)
         C=np.cov(np.transpose(observations))
+        R=np.corrcoef(np.transpose(observations))
         sigma = np.sqrt(np.diag(C))
         fh.write("Mean   parameters  = %s\n"%np.array_str(mu))
         fh.write("Median parameters  = %s\n"%np.array_str(np.median(observations,axis=0)))
         fh.write("Lower bound (95%%, independent Gaussians) = %s\n"%np.array_str(mu-1.96*sigma))
         fh.write("Upper bound (95%%, independent Gaussians) = %s\n"%np.array_str(mu+1.96*sigma))
         fh.write("Covariance matrix  =\n%s\n"%np.array_str(C,max_line_width=120))
+        fh.write("Correlation matrix  =\n%s\n"%np.array_str(R,max_line_width=120))
         fh.write("\n")
 
         fh.write("[SAMPLE FITTINGS] ===================\n")
@@ -1187,11 +1189,13 @@ class PKPDSignalAnalysis(EMObject):
         mu=np.mean(observations,axis=0)
         C=np.cov(np.transpose(observations))
         sigma = np.sqrt(np.diag(C))
+        R=np.corrcoef(np.transpose(observations))
         fh.write("Mean   parameters  = %s\n"%np.array_str(mu))
         fh.write("Median parameters  = %s\n"%np.array_str(np.median(observations,axis=0)))
         fh.write("Lower bound (95%%, independent Gaussians) = %s\n"%np.array_str(mu-1.96*sigma))
         fh.write("Upper bound (95%%, independent Gaussians) = %s\n"%np.array_str(mu+1.96*sigma))
         fh.write("Covariance matrix  =\n%s\n"%np.array_str(C,max_line_width=120))
+        fh.write("Correlation matrix  =\n%s\n"%np.array_str(R,max_line_width=120))
         fh.write("\n")
 
         fh.write("[SAMPLE ANALYSES] ===================\n")
