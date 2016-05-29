@@ -38,18 +38,38 @@ class NCAObsIVModel(SAModel):
         return "Non-compartmental Analysis based on observations (%s)"%self.__class__.__name__
 
     def getParameterNames(self):
-        return ['AUC_0t','AUC_0inf']
+        return ['AUC_0t','AUC_0inf','AUMC_0t','AUMC_0inf','MRT']
 
     def calculateParameters(self, show=True):
         t = self.x
         C = self.y
+
+        # AUC0t, AUMC0t
         AUC0t = 0
+        AUMC0t = 0
         for i in range(len(C)-1):
-            AUC0t += (t[i+1]-t[i])*(C[i]+C[i+1])
+            dt = (t[i+1]-t[i])
+            AUC0t  += dt*(C[i]+C[i+1])
+            AUMC0t += dt*(C[i]*t[i]+C[i+1]*t[i+1])
         AUC0t*=0.5
+        AUMC0t*=0.5
+
+        # AUC0inf, AUMC0inf
+        AUC0inf = AUC0t+C[-1]/self.lambdaz
+        AUMC0inf = AUMC0t+C[-1]*(t[-1]+1/self.lambdaz)/self.lambdaz
+
+        # MRT
+        MRT = AUMC0inf/AUC0inf
         if show:
             print("AUC(0-t) = %f"%AUC0t)
+            print("AUC(0-inf) = %f"%AUC0inf)
+            print("AUMC(0-t) = %f"%AUMC0t)
+            print("AUMC(0-inf) = %f"%AUMC0inf)
+            print("MRT = %f"%MRT)
 
         self.parameters = []
         self.parameters.append(AUC0t)
-        self.parameters.append(0.0)
+        self.parameters.append(AUC0inf)
+        self.parameters.append(AUMC0t)
+        self.parameters.append(AUMC0inf)
+        self.parameters.append(MRT)
