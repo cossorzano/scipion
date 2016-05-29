@@ -30,7 +30,7 @@ import numpy as np
 from pyworkflow.em.data import PKPDModelBase
 
 class SAModel(PKPDModelBase):
-    def calculateParameters(self):
+    def calculateParameters(self, show=True):
         pass
 
 class NCAObsIVModel(SAModel):
@@ -40,14 +40,15 @@ class NCAObsIVModel(SAModel):
     def getParameterNames(self):
         return ['AUC_0t','AUC_0inf']
 
-    def calculateParameters(self):
+    def calculateParameters(self, show=True):
         t = self.x
         C = self.y
         AUC0t = 0
         for i in range(len(C)-1):
             AUC0t += (t[i+1]-t[i])*(C[i]+C[i+1])
         AUC0t*=0.5
-        print("AUC(0-t) = %f"%AUC0t)
+        if show:
+            print("AUC(0-t) = %f"%AUC0t)
 
         self.parameters = []
         self.parameters.append(AUC0t)

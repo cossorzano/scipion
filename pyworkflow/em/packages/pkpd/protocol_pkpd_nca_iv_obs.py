@@ -24,87 +24,51 @@
 # *
 # **************************************************************************
 
-import sys
-
 import pyworkflow.protocol.params as params
-from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDSampleSignalAnalysis, PKPDSignalAnalysis
-from sa_models import NCAObsICModel
+from protocol_pkpd_sa_base import ProtPKPDSABase
+from sa_models import NCAObsIVModel
 
 
-class ProtPKPDNCAIVObs(ProtPKPD):
-    """ Non-compartmental analysis.\n
+class ProtPKPDNCAIVObs(ProtPKPDSABase):
+    """ Non-compartmental analysis based on observations.\n
         Protocol created by http://www.kinestatpharma.com\n"""
     _label = 'nca iv observations'
 
     #--------------------------- DEFINE param functions --------------------------------------------
-
     def _defineParams(self, form):
-        form.addSection('Input')
-        form.addParam('inputExperiment', params.PointerParam, label="Input experiment",
-                      pointerClass='PKPDExperiment',
-                      help='Select an experiment with samples')
+        ProtPKPDSABase._defineParams1(self,form,False)
         form.addParam('protElimination', params.PointerParam, label="Elimination rate",
                       pointerClass='ProtPKPDEliminationRate',
                       help='Select an execution of a protocol estimating the elimination rate')
 
-    #--------------------------- INSERT steps functions --------------------------------------------
-
-    def _insertAllSteps(self):
-        self._insertFunctionStep('runAnalysis',self.inputExperiment.get().getObjId())
-        self._insertFunctionStep('createOutputStep')
+    def getListOfFormDependencies(self):
+        return [self.protElimination.get().getObjId()]
 
     #--------------------------- STEPS functions --------------------------------------------
-    def runAnalysis(self, objId):
-        experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
-        fitting = self.readFitting(self.protElimination.get().outputFitting.fnFitting.get())
+    def setupFromFormParameters(self):
+        self.fitting = self.readFitting(self.protElimination.get().outputFitting.fnFitting.get())
 
-        varNameX = self.protElimination.get().predictor.get()
-        varNameY = self.protElimination.get().predicted.get()
+    def getXYvars(self):
+        self.varNameX = self.protElimination.get().predictor.get()
+        self.varNameY = self.protElimination.get().predicted.get()
 
+    def createAnalysis(self):
         self.analysis = NCAObsIVModel()
-        self.analysis.setExperiment(experiment)
-        self.analysis.setXVar(varNameX)
-        self.analysis.setYVar(varNameY)
+        self.analysis.setExperiment(self.experiment)
+        self.analysis.setXVar(self.varNameX)
+        self.analysis.setYVar(self.varNameY)
 
-        self.signalAnalysis = PKPDSignalAnalysis()
-        self.signalAnalysis.fnExperiment.set(self.inputExperiment.get().fnPKPD.get())
-        self.signalAnalysis.predictor=experiment.variables[varNameX]
-        self.signalAnalysis.predicted=experiment.variables[varNameY]
-        self.signalAnalysis.analysisDescription=self.analysis.getDescription()
-        self.signalAnalysis.analysisParameters = self.analysis.getParameterNames()
-
-        self.printSection("Processing samples")
-        for sampleName, sample in experiment.samples.iteritems():
-            print("%s -------------------\n"%sampleName)
-            sampleFit = fitting.getSampleFit(sampleName)
-            if sampleFit == None:
-                print("  Cannot process %s because its elimination rate cannot be found\n\n"%sampleName)
-                continue
-            lambdaz = sampleFit.parameters[1]
-            print("Elimination rate = %f"%lambdaz)
-
-            # Actually analyze
-            x, y = sample.getXYValues(varNameX,varNameY)
-            self.analysis.setXYValues(x, y)
-            self.analysis.calculateParameters()
-
-            # Keep this result
-            sampleAnalysis = PKPDSampleSignalAnalysis()
-            sampleAnalysis.sampleName = sampleName
-            sampleAnalysis.x = x
-            sampleAnalysis.y = y
-            sampleAnalysis.analysisVariables = self.analysis.getParameterNames()
-            sampleAnalysis.parameters = self.analysis.parameters
-            self.signalAnalysis.sampleAnalyses.append(sampleAnalysis)
-        self.signalAnalysis.write(self._getPath("analysis.pkpd"))
-
-    def createOutputStep(self):
-        self._defineOutputs(outputAnalysis=self.signalAnalysis)
-        self._defineSourceRelation(self.inputExperiment, self.signalAnalysis)
+    def prepareForSampleAnalysis(self, sampleName):
+        sampleFit = self.fitting.getSampleFit(sampleName)
+        if sampleFit == None:
+            print("  Cannot process %s because its elimination rate cannot be found\n\n"%sampleName)
+            return False
+        self.analysis.lambdaz = sampleFit.parameters[1]
+        print("Elimination rate = %f"%self.analysis.lambdaz)
+        return True
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
         msg=[]
-        msg.append("Non-compartmental analysis for the variable %s"%self.protElimination.get().predicted.get())
+        msg.append("Non-compartmental analysis for the observations of the variable %s"%self.protElimination.get().predicted.get())
         return msg
