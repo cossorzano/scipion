@@ -32,6 +32,7 @@ from pyworkflow.utils.path import writeMD5, verifyMD5
 
 from constants import *
 import numpy as np
+import copy
 
 class EMObject(OrderedObject):
     """Base object for all EM classes"""
@@ -241,7 +242,8 @@ class PKPDVariable:
 
 class PKPDDose:
     TYPE_BOLUS = 1
-    TYPE_INFUSION = 2
+    TYPE_REPEATED_BOLUS = 2
+    TYPE_INFUSION = 3
 
     def __init__(self):
         self.varName = None
@@ -249,12 +251,14 @@ class PKPDDose:
         self.doseAmount = None
         self.t0 = None
         self.tF = None
-        self.units = None
-        self.normalization = ""
+        self.every = None
+        self.tunits = None
+        self.dunits = None
 
     def parseTokens(self,tokens):
-        # Dose1; bolus t=0 d=60; mg; dose*weight/1000
-        # Dose1; infusion t=0...59 d=1; mg; dose*weight/1000
+        # Dose1; bolus t=0 d=60*$(weight)/1000; min; mg
+        # Dose1; repeated_bolus t=0:8:48 d=60*$(weight)/1000; h; mg
+        # Dose1; infusion t=0:59 d=1; min; mg
 
         # Get name
         self.varName = tokens[0].strip()
@@ -269,42 +273,85 @@ class PKPDDose:
         if doseTypeString=="bolus":
             self.doseType = PKPDDose.TYPE_BOLUS
             self.t0 = float(timeString)
+        elif doseTypeString=="repeated_bolus":
+            self.doseType = PKPDDose.TYPE_REPEATED_BOLUS
+            timeTokens = timeString.split(":")
+            self.t0 = float(timeTokens[0].strip())
+            self.every = float(timeTokens[1].strip())
+            self.tF = float(timeTokens[2].strip())
         elif doseTypeString=="infusion":
             self.doseType = PKPDDose.TYPE_INFUSION
-            timeTokens = timeString.split("...")
-            self.t0 = float(timeTokens[0])
-            self.tF = float(timeTokens[1])
+            timeTokens = timeString.split(":")
+            self.t0 = float(timeTokens[0].strip())
+            self.tF = float(timeTokens[1].strip())
         else:
             raise Exception("Unrecognized dose type %s"%doseTypeString)
         self.doseAmount = doseTokens[2].strip().lower().split("=")[1]
 
-        # Get units
+        # Get time units
         unitString = tokens[2].strip()
-        self.units = PKPDUnit(unitString)
-        if not self.units.unit:
+        self.tunits = PKPDUnit(unitString)
+        if not self.tunits.unit:
             raise Exception("Unrecognized unit: %s"%unitString)
-        if not self.units.isWeight():
+        if not self.tunits.isTime():
+            raise Exception("Time unit is not valid")
+
+        # Get dose units
+        unitString = tokens[3].strip()
+        self.dunits = PKPDUnit(unitString)
+        if not self.dunits.unit:
+            raise Exception("Unrecognized unit: %s"%unitString)
+        if not self.dunits.isWeight():
             raise Exception("After normalization, the dose must be a weight")
 
     def _printToStream(self,fh):
-        fh.write("%s ; %s d=%s; %s\n" % (self.varName,
+        fh.write("%s ; %s d=%s; %s; %s\n" % (self.varName,
                                               self.getDoseString(),
                                               self.doseAmount,
-                                              self.getUnitsString()))
+                                              self.tunits._toString(),
+                                              self.dunits._toString()))
 
     def getDoseString(self):
         if self.doseType == PKPDDose.TYPE_BOLUS:
             doseString = "bolus t=%f" % self.t0
+        elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
+            doseString = "repeated_bolus t=%f:%f:%f" % (self.t0, self.every, self.tF)
         elif self.doseType == PKPDDose.TYPE_INFUSION:
-            doseString = "infusion t=%f...%f" % (self.t0, self.tF)
+            doseString = "infusion t=%f:%f" % (self.t0, self.tF)
         else:
             doseString = ""
-
         return doseString
 
-    def getUnitsString(self):
-        return self.units._toString()
+    def changeTimeUnitsToMinutes(self):
+        if self.doseType == PKPDDose.TYPE_BOLUS:
+            self.t0 *= 60
+        elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
+            self.t0 *= 60
+            self.tF *= 60
+            self.every *= 60
+        elif self.doseType == PKPDDose.TYPE_INFUSION:
+            self.t0 *= 60
+            self.tF *= 60
 
+    def getDoseAt(self,t0,dt=0.5):
+        """Dose between t0<=t<t0+dt, t0 is in minutes"""
+        t1=t0+dt
+        if self.doseType == PKPDDose.TYPE_BOLUS:
+            if t0<=self.t0 and self.t0<t1:
+                return self.doseAmount
+        elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
+            doseAmount=0
+            for t in np.arange(self.t0,self.tF,self.every):
+                if t0<=t and t<t1:
+                    doseAmount+=self.doseAmount
+            return doseAmount
+        elif self.doseType == PKPDDose.TYPE_INFUSION:
+            if t0>self.tF or t1<self.t0:
+                return 0.0
+            else:
+                tLeft=max(t0,self.t0)
+                tRight=min(t1,self.tF)
+                return self.doseAmount*(tRight-tLeft)
 
 class PKPDSample:
     def __init__(self):
@@ -348,6 +395,20 @@ class PKPDSample:
                     self.descriptors[varName] = varValue
 
         self.measurementPattern = []
+
+    def interpretDose(self):
+        self.parsedDoseList = []
+        for doseName in self.doseList:
+            dose = copy.copy(self.doseDictPtr[doseName])
+            dose.doseAmount = self.evaluateExpression(dose.doseAmount)
+            dose.changeTimeUnitsToMinutes()
+            self.parsedDoseList.append(dose)
+
+    def getDoseAt(self,t0,dt=0.5):
+        doseAmount = 0.0
+        for dose in self.parsedDoseList:
+            doseAmount += dose.getDoseAt(t0,dt)
+        return doseAmount
 
     def addMeasurementPattern(self,tokens):
         self.measurementPattern = []
@@ -437,6 +498,21 @@ class PKPDSample:
     def getSampleMeasurements(self):
         return [PKPDSampleMeasurement(self,n) for n in range(0,self.getNumberOfMeasurements())]
 
+    def evaluateExpression(self, expression):
+        expressionPython = copy.copy(expression)
+        for key, variable in self.variableDictPtr.iteritems():
+            if key in self.descriptors:
+                value = self.descriptors[key]
+                if value=="NA":
+                    expressionPython="None"
+                    break
+                else:
+                    if variable.varType == PKPDVariable.TYPE_NUMERIC:
+                        expressionPython = expressionPython.replace("$(%s)"%key,"%f"%float(value))
+                    else:
+                        expressionPython = expressionPython.replace("$(%s)"%key,"'%s'"%value)
+        return eval(expressionPython, {"__builtins__" : {"True": True, "False": False, "None": None} }, {})
+
 
 class PKPDSampleMeasurement():
     def __init__(self, sample, n):
@@ -514,7 +590,7 @@ class PKPDExperiment(EMObject):
 
             elif state==PKPDExperiment.READING_DOSES:
                 tokens = line.split(';')
-                if len(tokens)!=3:
+                if len(tokens)!=4:
                     print("Skipping dose: ",line)
                     continue
                 dosename = tokens[0].strip()
