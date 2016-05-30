@@ -40,6 +40,8 @@ class ProtPKPDNCAIVObs(ProtPKPDSABase):
         form.addParam('protElimination', params.PointerParam, label="Elimination rate",
                       pointerClass='ProtPKPDEliminationRate',
                       help='Select an execution of a protocol estimating the elimination rate')
+        form.addParam("absorptionF", params.FloatParam, label="Absorption fraction", default=1,
+                      help="Between 0 (=no absorption) and 1 (=full absorption)")
 
     def getListOfFormDependencies(self):
         return [self.protElimination.get().getObjId()]
@@ -57,9 +59,13 @@ class ProtPKPDNCAIVObs(ProtPKPDSABase):
         self.analysis.setExperiment(self.experiment)
         self.analysis.setXVar(self.varNameX)
         self.analysis.setYVar(self.varNameY)
+        self.analysis.F = self.absorptionF.get()
 
     def prepareForSampleAnalysis(self, sampleName):
         sampleFit = self.fitting.getSampleFit(sampleName)
+        sample = self.experiment.samples[sampleName]
+        sample.interpretDose()
+        self.analysis.D = sample.getDoseAt(0.0)
         if sampleFit == None:
             print("  Cannot process %s because its elimination rate cannot be found\n\n"%sampleName)
             return False
