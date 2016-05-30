@@ -27,6 +27,7 @@
 Signal Analysis models
 """
 import numpy as np
+import math
 from pyworkflow.em.data import PKPDModelBase
 
 class SAModel(PKPDModelBase):
@@ -38,7 +39,7 @@ class NCAObsIVModel(SAModel):
         return "Non-compartmental Analysis based on observations (%s)"%self.__class__.__name__
 
     def getParameterNames(self):
-        return ['AUC_0t','AUC_0inf','AUMC_0t','AUMC_0inf','MRT']
+        return ['AUC_0t','AUC_0inf','AUMC_0t','AUMC_0inf','MRT','Vd_0t','Vd_0inf','Vss','CL_0t','CL_0inf', 'thalf']
 
     def calculateParameters(self, show=True):
         t = self.x
@@ -60,16 +61,41 @@ class NCAObsIVModel(SAModel):
 
         # MRT
         MRT = AUMC0inf/AUC0inf
+
+        # Volumes
+        Vd0t = self.F*self.D/(AUC0t*self.lambdaz)
+        Vd0inf = self.F*self.D/(AUC0inf*self.lambdaz)
+        Vss = self.D*AUMC0inf/(AUC0inf*AUC0inf)
+
+        # Clearances
+        CL0t = self.F*self.D/AUC0t
+        CL0inf = self.F*self.D/AUC0inf
+
+        # Thalf
+        thalf = math.log(2.0)*Vd0inf/CL0inf
+
+        # Finish
         if show:
             print("AUC(0-t) = %f"%AUC0t)
             print("AUC(0-inf) = %f"%AUC0inf)
             print("AUMC(0-t) = %f"%AUMC0t)
             print("AUMC(0-inf) = %f"%AUMC0inf)
             print("MRT = %f"%MRT)
-
+            print("Vd(0-t) = %f"%Vd0t)
+            print("Vd(0-inf) = %f"%Vd0inf)
+            print("Vss = %f"%Vss)
+            print("CL(0-t) = %f"%CL0t)
+            print("CL(0-inf) = %f"%CL0inf)
+            print("thalf = %f"%thalf)
         self.parameters = []
         self.parameters.append(AUC0t)
         self.parameters.append(AUC0inf)
         self.parameters.append(AUMC0t)
         self.parameters.append(AUMC0inf)
         self.parameters.append(MRT)
+        self.parameters.append(Vd0t)
+        self.parameters.append(Vd0inf)
+        self.parameters.append(Vss)
+        self.parameters.append(CL0t)
+        self.parameters.append(CL0inf)
+        self.parameters.append(thalf)
