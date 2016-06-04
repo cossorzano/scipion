@@ -283,6 +283,13 @@ class PKPDDose:
                 tRight=min(t1,self.tF)
                 return self.doseAmount*(tRight-tLeft)
 
+    def isDoseABolus(self):
+        if self.doseType != PKPDDose.TYPE_BOLUS:
+            return False
+        if self.t0 != 0:
+            return False
+        return True
+
     def getTUnitsString(self):
         return self.tunits._toString()
 
@@ -346,6 +353,11 @@ class PKPDSample:
             self.parsedDoseList.append(dose)
         if len(self.parsedDoseList)==0:
             raise Exception("Cannot find any useful dose")
+
+    def isDoseABolus(self):
+        if len(self.parsedDoseList)!=1:
+            return False
+        return self.parsedDoseList[0].isDoseABolus()
 
     def getDoseAt(self,t0,dt=0.5):
         doseAmount = 0.0
