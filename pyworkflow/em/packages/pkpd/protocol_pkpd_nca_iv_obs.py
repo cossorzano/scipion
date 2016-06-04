@@ -81,3 +81,16 @@ class ProtPKPDNCAIVObs(ProtPKPDSABase):
         msg=[]
         msg.append("Non-compartmental analysis for the observations of the variable %s"%self.protElimination.get().predicted.get())
         return msg
+
+    def _validate(self):
+        experiment = self.readExperiment(self.getInputExperiment().fnPKPD,show=False)
+        incorrectList = []
+        for sampleName, sample in experiment.samples.iteritems():
+            sample.interpretDose()
+            if not sample.isDoseABolus():
+                incorrectList.append(sampleName)
+        if len(incorrectList)==0:
+            return []
+        else:
+            return ["This protocol is meant only for intravenous bolus regimens. Check the doses for %s"%(','.join(incorrectList))]
+
