@@ -24,9 +24,12 @@
 # *
 # **************************************************************************
 
+from itertools import izip
+
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDExperiment, PKPDSampleSignalAnalysis, PKPDSignalAnalysis
+from pyworkflow.em.pkpd_units import PKPDUnit
 
 
 class ProtPKPDSABase(ProtPKPD):
@@ -46,10 +49,16 @@ class ProtPKPDSABase(ProtPKPD):
 
     #--------------------------- INSERT steps functions --------------------------------------------
     def _insertAllSteps(self):
-        self._insertFunctionStep('runAnalysis',self.inputExperiment.get().getObjId(), self.getListOfFormDependencies())
+        self._insertFunctionStep('runAnalysis',self.getInputExperiment().getObjId(),self.getListOfFormDependencies())
         self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
+    def getInputExperiment(self):
+        if hasattr(self,"inputExperiment"):
+            return self.inputExperiment.get()
+        else:
+            return None
+
     def getListOfFormDependencies(self):
         return None
 
@@ -67,12 +76,14 @@ class ProtPKPDSABase(ProtPKPD):
 
     def runAnalysis(self, objId, otherDependencies):
         self.getXYvars()
-        self.experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
+        self.experiment = self.readExperiment(self.getInputExperiment().fnPKPD)
         self.setupFromFormParameters()
         self.createAnalysis()
+        self.analysis.setXVar(self.varNameX)
+        self.analysis.setYVar(self.varNameY)
 
         self.signalAnalysis = PKPDSignalAnalysis()
-        self.signalAnalysis.fnExperiment.set(self.inputExperiment.get().fnPKPD.get())
+        self.signalAnalysis.fnExperiment.set(self.getInputExperiment().fnPKPD.get())
         self.signalAnalysis.predictor=self.experiment.variables[self.varNameX]
         self.signalAnalysis.predicted=self.experiment.variables[self.varNameY]
         self.signalAnalysis.analysisDescription=self.analysis.getDescription()
@@ -83,6 +94,7 @@ class ProtPKPDSABase(ProtPKPD):
             print("%s -------------------"%sampleName)
             if not self.prepareForSampleAnalysis(sampleName):
                 continue
+            self.analysis.calculateParameterUnits(sample)
 
             # Actually analyze
             x, y = sample.getXYValues(self.varNameX,self.varNameY)
@@ -98,9 +110,22 @@ class ProtPKPDSABase(ProtPKPD):
             sampleAnalysis.parameters = self.analysis.parameters
             self.signalAnalysis.sampleAnalyses.append(sampleAnalysis)
 
+            # Add the parameters to the sample and experiment
+            unit = PKPDUnit()
+            for varName, varUnits, description, varValue in izip(self.analysis.getParameterNames(),
+                                                                 self.analysis.parameterUnits,
+                                                                 self.analysis.getParameterDescriptions(),
+                                                                 self.analysis.parameters):
+                self.experiment.addParameterToSample(sampleName, varName, varUnits, description, varValue)
+                print("%s = %f [%s]"%(varName,varValue,unit.unitDictionary[varUnits]))
+
             print(" ")
+
         self.signalAnalysis.write(self._getPath("analysis.pkpd"))
+        self.experiment.write(self._getPath("experiment.pkpd"))
 
     def createOutputStep(self):
         self._defineOutputs(outputAnalysis=self.signalAnalysis)
-        self._defineSourceRelation(self.inputExperiment, self.signalAnalysis)
+        self._defineOutputs(outputExperiment=self.experiment)
+        self._defineSourceRelation(self.getInputExperiment(), self.signalAnalysis)
+        self._defineSourceRelation(self.getInputExperiment(), self.experiment)

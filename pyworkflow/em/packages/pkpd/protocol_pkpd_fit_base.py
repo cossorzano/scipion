@@ -25,15 +25,12 @@
 # **************************************************************************
 
 import math
+from itertools import izip
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, PKPDSampleFit
-from pyworkflow.protocol.constants import LEVEL_ADVANCED
-from pyworkflow.object import String, Integer
+from pyworkflow.em.data import PKPDExperiment, PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, PKPDSampleFit, PKPDVariable
 from utils import parseRange
-from pd_models import PDLinear
-
 
 class ProtPKPDFitBase(ProtPKPD):
     """ Base fit protocol"""
@@ -64,12 +61,12 @@ class ProtPKPDFitBase(ProtPKPD):
 
     def runFit(self, objId, X, Y, fitType, bounds):
         reportX = parseRange(self.reportX.get())
-        experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
+        self.experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
 
         # Setup model
         self.printSection("Model setup")
         self.model = self.createModel()
-        self.model.setExperiment(experiment)
+        self.model.setExperiment(self.experiment)
         self.model.setXVar(self.predictor.get())
         self.model.setYVar(self.predicted.get())
         self.setupFromFormParameters()
@@ -78,8 +75,8 @@ class ProtPKPDFitBase(ProtPKPD):
         # Create output object
         self.fitting = PKPDFitting()
         self.fitting.fnExperiment.set(self.inputExperiment.get().fnPKPD.get())
-        self.fitting.predictor=experiment.variables[self.predictor.get()]
-        self.fitting.predicted=experiment.variables[self.predicted.get()]
+        self.fitting.predictor=self.experiment.variables[self.predictor.get()]
+        self.fitting.predicted=self.experiment.variables[self.predicted.get()]
         self.fitting.modelDescription=self.model.getDescription()
         self.fitting.modelParameters = self.model.getParameterNames()
 
@@ -91,9 +88,10 @@ class ProtPKPDFitBase(ProtPKPD):
         elif self.fitType.get()==2:
             fitType = "relative"
 
-        for sampleName, sample in experiment.samples.iteritems():
+        for sampleName, sample in self.experiment.samples.iteritems():
             self.printSection("Fitting "+sampleName)
             x, y = sample.getXYValues(self.predictor.get(),self.predicted.get())
+            self.model.calculateParameterUnits(sample)
             print("X= "+str(x))
             print("Y= "+str(y))
             print(" ")
@@ -129,11 +127,19 @@ class ProtPKPDFitBase(ProtPKPD):
             sampleFit.modelEquation = self.model.getEquation()
             sampleFit.copyFromOptimizer(optimizer2)
             self.fitting.sampleFits.append(sampleFit)
+
+            # Add the parameters to the sample and experiment
+            for varName, varUnits, description, varValue in izip(self.model.getParameterNames(), self.model.parameterUnits, self.model.getParameterDescriptions(), self.model.parameters):
+                self.experiment.addParameterToSample(sampleName, varName, varUnits, description, varValue)
+
         self.fitting.write(self._getPath("fitting.pkpd"))
+        self.experiment.write(self._getPath("experiment.pkpd"))
 
     def createOutputStep(self):
         self._defineOutputs(outputFitting=self.fitting)
+        self._defineOutputs(outputExperiment=self.experiment)
         self._defineSourceRelation(self.inputExperiment, self.fitting)
+        self._defineSourceRelation(self.inputExperiment, self.experiment)
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):

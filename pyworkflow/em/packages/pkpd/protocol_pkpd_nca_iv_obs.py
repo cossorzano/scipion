@@ -36,12 +36,15 @@ class ProtPKPDNCAIVObs(ProtPKPDSABase):
 
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):
-        ProtPKPDSABase._defineParams1(self,form,False)
+        form.addSection('Input')
         form.addParam('protElimination', params.PointerParam, label="Elimination rate",
                       pointerClass='ProtPKPDEliminationRate',
                       help='Select an execution of a protocol estimating the elimination rate')
         form.addParam("absorptionF", params.FloatParam, label="Absorption fraction", default=1,
                       help="Between 0 (=no absorption) and 1 (=full absorption)")
+
+    def getInputExperiment(self):
+        return self.protElimination.get().outputExperiment
 
     def getListOfFormDependencies(self):
         return [self.protElimination.get().getObjId()]

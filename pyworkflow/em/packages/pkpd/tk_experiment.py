@@ -60,7 +60,7 @@ class DosesTreeProvider(TreeProvider):
 
     def getColumns(self):
         return [('Name', 60), ('Dose', 60), ('Amount', 60),
-                ('Unit', 60), ('Norm.', 60)]
+                ('Time Units', 60), ('Dose Units', 60)]
 
     def getObjects(self):
         return self.experiment.doses.values()
@@ -70,8 +70,9 @@ class DosesTreeProvider(TreeProvider):
         return {'key': key, 'text': key,
                 'values': (obj.getDoseString(),
                            obj.doseAmount,
-                           obj.getUnitsString(),
-                           obj.normalization)
+                           obj.getTUnitsString(),
+                           obj.getDUnitsString()
+                          )
                 }
 
 

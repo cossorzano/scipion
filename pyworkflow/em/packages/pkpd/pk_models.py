@@ -26,9 +26,13 @@
 """
 PD models
 """
-import numpy as np
-from pyworkflow.em.data import PKPDModel
 import math
+
+import numpy as np
+
+from pyworkflow.em.data import PKPDModel
+from pyworkflow.em.pkpd_units import inverseUnits
+
 
 class PKModel(PKPDModel):
     pass
@@ -73,9 +77,12 @@ class PKPDExponentialModel(PKGenericModel):
                 self.bounds.append(lambdaBound)
 
     def printSetup(self):
-        print("Model: Y=sum_i c_i*exp(-lambda_i * X)")
+        print("Model: %s"%self.getModelEquation())
         print("Number of exponentials: "+str(self.Nexp))
         print("Bounds: "+str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y=sum_i c_i*exp(-lambda_i * X)"
 
     def getEquation(self):
         toPrint="Y="
@@ -89,6 +96,11 @@ class PKPDExponentialModel(PKGenericModel):
             parameterList.append('c%d'%(i+1))
             parameterList.append('lambda%d'%(i+1))
         return parameterList
+
+    def calculateParameterUnits(self,sample):
+        xunits = self.experiment.getVarUnits(self.xName)
+        yunits = self.experiment.getVarUnits(self.yName)
+        self.parameterUnits = [yunits,inverseUnits(xunits)]
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]

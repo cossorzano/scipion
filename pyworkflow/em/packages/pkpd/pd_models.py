@@ -27,7 +27,7 @@
 PD models
 """
 import numpy as np
-from pyworkflow.em.data import PKPDModel
+from pyworkflow.em.data import PKPDModel, PKPDUnit
 
 class PDModel(PKPDModel):
     pass
@@ -59,8 +59,11 @@ class PDLinear(PDGenericModel):
             self.bounds.append((0.1*p[0],10*p[0]))
 
     def printSetup(self):
-        print("Model: Y=e0+s*X")
+        print("Model: %s"%self.getModelEquation())
         print("Bounds: "+str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y=e0+s*X"
 
     def getEquation(self):
         toPrint="Y=(%f)+(%f)*X"%(self.parameters[0],self.parameters[1])
@@ -68,6 +71,12 @@ class PDLinear(PDGenericModel):
 
     def getParameterNames(self):
         return ['e0','s']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=e0+s*X']*self.getNumberOfParameters()
+
+    def calculateParameterUnits(self,sample):
+        self.parameterUnits=[PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]

@@ -29,6 +29,7 @@ Signal Analysis models
 import numpy as np
 import math
 from pyworkflow.em.data import PKPDModelBase
+from pyworkflow.em.pkpd_units import multiplyUnits, divideUnits
 
 class SAModel(PKPDModelBase):
     def calculateParameters(self, show=True):
@@ -38,8 +39,31 @@ class NCAObsIVModel(SAModel):
     def getDescription(self):
         return "Non-compartmental Analysis based on observations (%s)"%self.__class__.__name__
 
+    def getParameterDescriptions(self):
+        return ['Automatically estimated Area Under the Curve from 0 to t',
+                'Automatically estimated Area Under the Curve from 0 to infinity',
+                'Automatically estimated Area Under the 1st Moment Curve from 0 to t',
+                'Automatically estimated Area Under the 1st Moment Curve from 0 to infinity',
+                'Automatically estimated Mean Residence Time',
+                'Automatically estimated Apparent Volume of Distribution using measurements from 0 to t',
+                'Automatically estimated Apparent Volume of Distribution using measurements from 0 to infinity',
+                'Automatically estimated Apparent Volume of Distribution at steady state',
+                'Automatically estimated Clearance using measurements from 0 to t',
+                'Automatically estimated Clearance using measurements from 0 to infinity',
+                'Automatically estimated Half time']
+
     def getParameterNames(self):
         return ['AUC_0t','AUC_0inf','AUMC_0t','AUMC_0inf','MRT','Vd_0t','Vd_0inf','Vss','CL_0t','CL_0inf', 'thalf']
+
+    def calculateParameterUnits(self, sample):
+        tunits = self.experiment.getVarUnits(self.xName)
+        Cunits = self.experiment.getVarUnits(self.yName)
+        Dunits = sample.getDoseUnits()
+        AUCunits = multiplyUnits(tunits,Cunits)
+        AUMCunits = multiplyUnits(tunits,AUCunits)
+        Vunits = divideUnits(Dunits,Cunits)
+        CLunits = divideUnits(Vunits,tunits)
+        self.parameterUnits = [AUCunits, AUCunits, AUMCunits, AUMCunits, tunits, Vunits, Vunits, Vunits, CLunits, CLunits, tunits]
 
     def calculateParameters(self, show=True):
         t = self.x
@@ -75,18 +99,6 @@ class NCAObsIVModel(SAModel):
         thalf = math.log(2.0)*Vd0inf/CL0inf
 
         # Finish
-        if show:
-            print("AUC(0-t) = %f"%AUC0t)
-            print("AUC(0-inf) = %f"%AUC0inf)
-            print("AUMC(0-t) = %f"%AUMC0t)
-            print("AUMC(0-inf) = %f"%AUMC0inf)
-            print("MRT = %f"%MRT)
-            print("Vd(0-t) = %f"%Vd0t)
-            print("Vd(0-inf) = %f"%Vd0inf)
-            print("Vss = %f"%Vss)
-            print("CL(0-t) = %f"%CL0t)
-            print("CL(0-inf) = %f"%CL0inf)
-            print("thalf = %f"%thalf)
         self.parameters = []
         self.parameters.append(AUC0t)
         self.parameters.append(AUC0inf)

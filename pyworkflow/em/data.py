@@ -24,15 +24,16 @@
 # *
 # **************************************************************************
 
+import copy
 import json
 import math
 
+import numpy as np
+
+from pyworkflow.em.pkpd_units import PKPDUnit, convertUnits
 from pyworkflow.object import *
 from pyworkflow.utils.path import writeMD5, verifyMD5
 
-from constants import *
-import numpy as np
-import copy
 
 class EMObject(OrderedObject):
     """Base object for all EM classes"""
@@ -83,77 +84,6 @@ class Matrix(Scalar):
         self.setMatrix(np.copy(other.getMatrix()))
         self._objValue = other._objValue
 
-class PKPDUnit:
-    UNIT_TIME_H = 1
-    UNIT_TIME_MIN = 2
-    UNIT_TIME_SEC = 3
-    UNIT_CONC_g_L= 10
-    UNIT_CONC_mg_L= 11
-    UNIT_CONC_ug_L= 12
-    UNIT_CONC_ng_L= 13
-    UNIT_CONC_g_mL= 14
-    UNIT_CONC_mg_mL= 15
-    UNIT_CONC_ug_mL= 16
-    UNIT_CONC_ng_mL= 17
-    UNIT_CONC_g_uL= 18
-    UNIT_CONC_mg_uL= 19
-    UNIT_CONC_ug_uL= 20
-    UNIT_CONC_ng_uL= 21
-    UNIT_WEIGHT_g= 100
-    UNIT_WEIGHT_mg= 101
-    UNIT_WEIGHT_ug= 102
-    UNIT_WEIGHT_ng= 103
-    UNIT_NONE = 99999
-
-    unitDictionary = {
-        UNIT_TIME_H: "h",
-        UNIT_TIME_MIN: "min",
-        UNIT_TIME_SEC: "s",
-        UNIT_CONC_g_L: "g/L",
-        UNIT_CONC_mg_L: "mg/L",
-        UNIT_CONC_ug_L: "ug/L",
-        UNIT_CONC_ng_L: "ng/L",
-        UNIT_CONC_g_mL: "g/mL",
-        UNIT_CONC_mg_mL: "mg/mL",
-        UNIT_CONC_ug_mL: "ug/mL",
-        UNIT_CONC_ng_mL: "ng/mL",
-        UNIT_CONC_g_uL: "g/uL",
-        UNIT_CONC_mg_uL: "mg/uL",
-        UNIT_CONC_ug_uL: "ug/uL",
-        UNIT_CONC_ng_uL: "ng/uL",
-        UNIT_WEIGHT_g: "g",
-        UNIT_WEIGHT_mg: "mg",
-        UNIT_WEIGHT_ug: "ug",
-        UNIT_WEIGHT_ng: "ng",
-        UNIT_NONE: "none"
-    }
-
-    def __init__(self,unitString=""):
-        self.unit = self._fromString(unitString)
-
-    def isTime(self):
-        return self.unit>=1 and self.unit<=9
-
-    def isConcentration(self):
-        return self.unit>=10 and self.unit<=99
-
-    def isWeight(self):
-        return self.unit>=100 and self.unit<=109
-
-    def _fromString(self, unitString):
-        if unitString =="":
-            return None
-        for _unitKey, _unitString in self.unitDictionary.items():
-            if _unitString == unitString:
-                return _unitKey
-        return None
-
-    def _toString(self):
-        if self.unit:
-            return self.unitDictionary[self.unit]
-        else:
-            return ""
-
 class PKPDVariable:
     TYPE_NUMERIC = 1000
     TYPE_TEXT = 1001
@@ -173,6 +103,7 @@ class PKPDVariable:
         self.displayString = ""
         self.role = None
         self.comment = ""
+        self.units = None
 
     def parseTokens(self,tokens):
         # t ; h ; numeric[%f] ; time ;
@@ -238,7 +169,6 @@ class PKPDVariable:
 
     def getUnitsString(self):
         return self.units._toString()
-
 
 class PKPDDose:
     TYPE_BOLUS = 1
@@ -353,6 +283,12 @@ class PKPDDose:
                 tRight=min(t1,self.tF)
                 return self.doseAmount*(tRight-tLeft)
 
+    def getTUnitsString(self):
+        return self.tunits._toString()
+
+    def getDUnitsString(self):
+        return self.dunits._toString()
+
 class PKPDSample:
     def __init__(self):
         self.varName = ""
@@ -398,17 +334,27 @@ class PKPDSample:
 
     def interpretDose(self):
         self.parsedDoseList = []
-        for doseName in self.doseList:
+        firstUnit = None
+        for doseName in sorted(self.doseList):
             dose = copy.copy(self.doseDictPtr[doseName])
             dose.doseAmount = self.evaluateExpression(dose.doseAmount)
             dose.changeTimeUnitsToMinutes()
+            if firstUnit==None:
+                firstUnit = dose.dunits.unit
+            else:
+                dose.doseAmount = convertUnits(dose.doseAmount, dose.dunits.unit, firstUnit)
             self.parsedDoseList.append(dose)
+        if len(self.parsedDoseList)==0:
+            raise Exception("Cannot find any useful dose")
 
     def getDoseAt(self,t0,dt=0.5):
         doseAmount = 0.0
         for dose in self.parsedDoseList:
             doseAmount += dose.getDoseAt(t0,dt)
         return doseAmount
+
+    def getDoseUnits(self):
+        return self.parsedDoseList[0].dunits.unit
 
     def addMeasurementPattern(self,tokens):
         self.measurementPattern = []
@@ -696,10 +642,35 @@ class PKPDExperiment(EMObject):
                 summary.append(toAdd)
         return summary
 
+    def getVarUnits(self,varName):
+        if varName in self.variables:
+            return self.variables[varName].units.unit
+        else:
+            return PKPDUnit.UNIT_NONE
+
+    def addParameterToSample(self, sampleName, varName, varUnits, varDescr, varValue):
+        if not varName in self.variables:
+            varX = PKPDVariable()
+            varX.varName = varName
+            varX.varType = PKPDVariable.TYPE_NUMERIC
+            varX.displayString = "%f"
+            varX.role = PKPDVariable.ROLE_LABEL
+            varX.comment = varDescr
+            varX.units = PKPDUnit()
+            varX.units.unit = varUnits
+            self.variables[varName] = varX
+        if sampleName in self.samples:
+            sample = self.samples[sampleName]
+            sample.descriptors[varName] = varValue
+
+
 class PKPDModelBase:
     def __init__(self):
         self.fnExperiment = None
         self.parameters = None
+        self.parameterUnits = None
+        self.xName = None
+        self.yName = None
 
     def setExperiment(self, experiment):
         self.experiment = experiment
@@ -731,6 +702,13 @@ class PKPDModelBase:
     def getParameterNames(self):
         pass
 
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form %s'%self.getModelEquation()]*self.getNumberOfParameters()
+        pass
+
+    def calculateParameterUnits(self,sample):
+        pass
+
     def setParameters(self, parameters):
         self.parameters = parameters
 
@@ -749,6 +727,13 @@ class PKPDModel(PKPDModelBase):
         pass
 
     def getEquation(self):
+        pass
+
+    def getModelEquation(self):
+        pass
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form %s'%self.getModelEquation()]*self.getNumberOfParameters()
         pass
 
     def areParametersSignificant(self, lowerBound, upperBound):
