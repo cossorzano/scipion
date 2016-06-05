@@ -41,10 +41,11 @@ class PKPDUnit:
     UNIT_VOLUME_mL=31
     UNIT_VOLUME_uL=32
     UNIT_VOLUME_nL=33
-    UNIT_WEIGHT_g= 100
-    UNIT_WEIGHT_mg= 101
-    UNIT_WEIGHT_ug= 102
-    UNIT_WEIGHT_ng= 103
+    UNIT_WEIGHT_kg= 100
+    UNIT_WEIGHT_g= 101
+    UNIT_WEIGHT_mg= 102
+    UNIT_WEIGHT_ug= 103
+    UNIT_WEIGHT_ng= 104
     UNIT_TIMECONC_H_g_L = 200
     UNIT_TIMECONC_H_mg_L = 201
     UNIT_TIMECONC_H_ug_L = 202
@@ -81,6 +82,8 @@ class PKPDUnit:
     UNIT_VOLUMEINVTIME_mL_SEC = 309
     UNIT_VOLUMEINVTIME_uL_SEC = 310
     UNIT_VOLUMEINVTIME_nL_SEC = 311
+    UNIT_VOLUMEINVWEIGHT_L_kg = 312
+    UNIT_VOLUMEINVWEIGHT_L_g = 313
     UNIT_NONE = 99999
 
     unitDictionary = {
@@ -144,6 +147,8 @@ class PKPDUnit:
         UNIT_VOLUMEINVTIME_mL_SEC: "mL/s",
         UNIT_VOLUMEINVTIME_uL_SEC: "uL/s",
         UNIT_VOLUMEINVTIME_nL_SEC: "nL/s",
+        UNIT_VOLUMEINVWEIGHT_L_kg: "L/kg",
+        UNIT_VOLUMEINVWEIGHT_L_g: "L/g",
     }
 
     def __init__(self,unitString=""):
