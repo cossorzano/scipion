@@ -100,7 +100,7 @@ class PKPDExponentialModel(PKGenericModel):
     def calculateParameterUnits(self,sample):
         xunits = self.experiment.getVarUnits(self.xName)
         yunits = self.experiment.getVarUnits(self.yName)
-        self.parameterUnits = [yunits,inverseUnits(xunits)]
+        self.parameterUnits = [yunits,inverseUnits(xunits)]*self.Nexp
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
