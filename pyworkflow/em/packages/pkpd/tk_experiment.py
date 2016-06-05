@@ -42,7 +42,10 @@ class VariablesTreeProvider(TreeProvider):
                 ('Type', 60), ('Role', 60), ('Comment', 100)]
 
     def getObjects(self):
-        return self.experiment.variables.values()
+        sortedVars = []
+        for key in sorted(self.experiment.variables.keys()):
+            sortedVars.append(self.experiment.variables[key])
+        return sortedVars
 
     def getObjectInfo(self, obj):
         key = obj.varName
@@ -63,7 +66,10 @@ class DosesTreeProvider(TreeProvider):
                 ('Time Units', 60), ('Dose Units', 60)]
 
     def getObjects(self):
-        return self.experiment.doses.values()
+        sortedDoses = []
+        for key in sorted(self.experiment.doses.keys()):
+            sortedDoses.append(self.experiment.doses[key])
+        return sortedDoses
 
     def getObjectInfo(self, obj):
         key = obj.varName
@@ -82,7 +88,7 @@ class SamplesTreeProvider(TreeProvider):
         numberOfSamples = len(experiment.samples)
         if numberOfSamples>0:
             sample = self.experiment.samples.values()[0]
-            self.columns = [(key, 60) for key, _ in sample.descriptors.iteritems()]
+            self.columns = [(key, 60) for key in sorted(sample.descriptors.keys())]
         else:
             self.columns = []
 
@@ -90,7 +96,10 @@ class SamplesTreeProvider(TreeProvider):
         return [('Name', 60), ('Dose', 60)] + self.columns
 
     def getObjects(self):
-        return self.experiment.samples.values()
+        sortedSamples = []
+        for key in sorted(self.experiment.samples.keys()):
+            sortedSamples.append(self.experiment.samples[key])
+        return sortedSamples
 
     def getObjectInfo(self, obj):
         key = obj.varName
