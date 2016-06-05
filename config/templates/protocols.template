@@ -36,6 +36,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDDropMeasurements",
 		"text": "drop measurements"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDCreateLabel",
+		"text": "add label"
 	}]
     },
     {
@@ -53,7 +57,7 @@ Protocols = [{
 	},{
 		"tag": "protocol",
 		"value": "ProtPKPDNCAIVObs",
-		"text": "non-compartmental analysis"
+		"text": "non-compartmental analysis (obs)"
 	}]
     },
     {

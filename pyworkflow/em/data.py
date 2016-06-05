@@ -406,8 +406,8 @@ class PKPDSample:
 
     def _printToStream(self,fh):
         descriptorString = ""
-        for key, value in self.descriptors.iteritems():
-            descriptorString +="; %s=%s"%(key,value)
+        for key in sorted(self.descriptors.keys()):
+            descriptorString +="; %s=%s"%(key,self.descriptors[key])
         fh.write("%s; dose=%s %s\n"%(self.varName,",".join(self.doseList),descriptorString))
 
     def _printMeasurements(self,fh):
@@ -594,23 +594,23 @@ class PKPDExperiment(EMObject):
         fh.write("\n")
 
         fh.write("[VARIABLES] ============================\n")
-        for key, value in self.variables.iteritems():
-            value._printToStream(fh)
+        for key in sorted(self.variables.keys()):
+            self.variables[key]._printToStream(fh)
         fh.write("\n")
 
         fh.write("[DOSES] ================================\n")
-        for key, value in self.doses.iteritems():
-            value._printToStream(fh)
+        for key in sorted(self.doses.keys()):
+            self.doses[key]._printToStream(fh)
         fh.write("\n")
 
         fh.write("[SAMPLES] ================================\n")
-        for key, value in self.samples.iteritems():
-            value._printToStream(fh)
+        for key in sorted(self.samples.keys()):
+            self.samples[key]._printToStream(fh)
         fh.write("\n")
 
         fh.write("[MEASUREMENTS] ===========================\n")
-        for key, value in self.samples.iteritems():
-            value._printMeasurements(fh)
+        for key in sorted(self.samples.keys()):
+            self.samples[key]._printMeasurements(fh)
         fh.write("\n")
 
     def getRange(self,varName):
