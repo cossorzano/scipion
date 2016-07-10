@@ -79,6 +79,7 @@ class ProtPKPDFitBase(ProtPKPD):
         self.fitting.predicted=self.experiment.variables[self.predicted.get()]
         self.fitting.modelDescription=self.model.getDescription()
         self.fitting.modelParameters = self.model.getParameterNames()
+        self.fitting.modelParameterUnits = None
 
         # Actual fitting
         if self.fitType.get()==0:
@@ -92,6 +93,8 @@ class ProtPKPDFitBase(ProtPKPD):
             self.printSection("Fitting "+sampleName)
             x, y = sample.getXYValues(self.predictor.get(),self.predicted.get())
             self.model.calculateParameterUnits(sample)
+            if self.fitting.modelParameterUnits==None:
+                self.fitting.modelParameterUnits = self.model.parameterUnits
             print("X= "+str(x))
             print("Y= "+str(y))
             print(" ")
