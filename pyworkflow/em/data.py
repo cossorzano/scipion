@@ -27,7 +27,6 @@
 import copy
 import json
 import math
-
 import numpy as np
 
 from pyworkflow.em.pkpd_units import PKPDUnit, convertUnits
@@ -994,6 +993,7 @@ class PKPDFitting(EMObject):
         self.predicted = None
         self.modelDescription = ""
         self.modelParameters = []
+        self.modelParameterUnits = []
         self.sampleFits = []
         self.summaryLines = []
 
@@ -1015,7 +1015,11 @@ class PKPDFitting(EMObject):
         fh.write("\n")
 
         fh.write("[POPULATION PARAMETERS] =============\n")
-        fh.write(' '.join(self.modelParameters)+" # R2 R2adj AIC AICc BIC\n")
+        auxUnit = PKPDUnit()
+        for paramName, paramUnits in izip(self.modelParameters, self.modelParameterUnits):
+            auxUnit.unit = paramUnits
+            fh.write("%s [%s] "%(paramName,auxUnit._toString()))
+        fh.write(" # R2 R2adj AIC AICc BIC\n")
         i=0
         for sampleFitting in self.sampleFits:
             outputStr = ""
@@ -1056,6 +1060,7 @@ class PKPDFitting(EMObject):
             raise Exception("The file %s has been modified since its creation"%fnFitting)
         self.fnFitting.set(fnFitting)
 
+        auxUnit = PKPDUnit()
         for line in fh.readlines():
             line=line.strip()
             if line=="":
@@ -1104,7 +1109,10 @@ class PKPDFitting(EMObject):
 
             elif state==PKPDFitting.READING_POPULATION_HEADER:
                 lineParts = line.split('#')
-                self.modelParameters=lineParts[0].split(' ')
+                tokens = lineParts[0].split(' ')
+                for i in range(0,len(tokens),2):
+                    self.modelParameters.append(tokens[i])
+                    self.modelParameterUnits.append(auxUnit._fromString(tokens[i+1][1:-1]))
                 state = PKPDFitting.READING_POPULATION
 
             elif state==PKPDFitting.READING_POPULATION:
