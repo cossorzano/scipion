@@ -44,7 +44,7 @@ Protocols = [{
     },
     {
 	"tag": "section",
-	"text": "Non-compartmental",
+	"text": "Non-compartmental PK",
 	"icon": "bookmark.png",
 	"children": [{
 		"tag": "protocol",
@@ -57,12 +57,16 @@ Protocols = [{
 	},{
 		"tag": "protocol",
 		"value": "ProtPKPDNCAIVObs",
-		"text": "non-compartmental analysis (obs)"
+		"text": "NCA iv (observations)"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDNCAIVExp",
+		"text": "NCA iv (exponentials)"
 	}]
     },
     {
 	"tag": "section",
-	"text": "Pharmacodynamics",
+	"text": "PD",
 	"icon": "bookmark.png",
 	"children": [{
 		"tag": "protocol",

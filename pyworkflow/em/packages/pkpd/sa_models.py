@@ -28,6 +28,7 @@ Signal Analysis models
 """
 import numpy as np
 import math
+from scipy.optimize import fsolve
 from pyworkflow.em.data import PKPDModelBase
 from pyworkflow.em.pkpd_units import multiplyUnits, divideUnits
 
@@ -109,5 +110,87 @@ class NCAObsIVModel(SAModel):
         self.parameters.append(Vd0inf)
         self.parameters.append(Vss)
         self.parameters.append(CL0t)
+        self.parameters.append(CL0inf)
+        self.parameters.append(thalf)
+
+class NCAExpIVModel(SAModel):
+    def getDescription(self):
+        return "Non-compartmental Analysis based on observations (%s)"%self.__class__.__name__
+
+    def getParameterDescriptions(self):
+        return ['Automatically estimated Slope of decay at the end of the curve',
+                'Automatically estimated Last decay rate (lambda_n)',
+                'Automatically estimated Initial concentration at time 0',
+                'Automatically estimated Area Under the Curve from 0 to infinity',
+                'Automatically estimated Area Under the 1st Moment Curve from 0 to infinity',
+                'Automatically estimated Mean Residence Time',
+                'Automatically estimated Apparent Volume of the Central Compartment',
+                'Automatically estimated Apparent Volume of Distribution',
+                'Automatically estimated Apparent Volume of Distribution at steady state',
+                'Automatically estimated Clearance',
+                'Automatically estimated Half time'
+                ]
+
+    def getParameterNames(self):
+        return ['slope','rate_constant','C0','AUC_0inf','AUMC_0inf','MRT','Vc','Vd','Vss','CL','thalf']
+
+    def calculateParameterUnits(self, sample):
+        tunits = self.experiment.getVarUnits(self.xName)
+        Cunits = self.experiment.getVarUnits(self.yName)
+        Dunits = sample.getDoseUnits()
+        AUCunits = multiplyUnits(tunits,Cunits)
+        AUMCunits = multiplyUnits(tunits,AUCunits)
+        Vunits = divideUnits(Dunits,Cunits)
+        CLunits = divideUnits(Vunits,tunits)
+        lambdaUnits = self.lambdanUnits.unit
+        self.parameterUnits = [lambdaUnits, lambdaUnits, Cunits, AUCunits, AUMCunits, tunits, Vunits, Vunits, Vunits, CLunits, tunits]
+
+    def calculateParameters(self, show=True):
+        Cn = self.Cn
+        lambdan = self.lambdan
+
+        # Rate constant
+        rateConstant = lambdan[-1]
+
+        # Slope
+        slope = -rateConstant/math.log(10.0)
+
+        # C0
+        C0 = sum(Cn)
+
+        # AUC0inf, AUMC0inf
+        AUC0inf = sum([ci/lambdai for (ci, lambdai) in zip(Cn, lambdan)])
+        AUMC0inf = sum([ci/(lambdai*lambdai) for (ci, lambdai) in zip(Cn, lambdan)])
+
+        # MRT
+        # COSS: I think it is incorrect MRT = sum([1.0/lambdai for lambdai in lambdan])
+        MRT = AUMC0inf/AUC0inf
+
+        # Volumes
+        Vc = self.D/C0
+        Vd = self.F*self.D/(AUC0inf*self.lambdaz)
+        Vss = self.D*AUMC0inf/(AUC0inf*AUC0inf)
+
+        # Clearances
+        CL0inf = self.F*self.D/AUC0inf
+
+        # thalf
+        # COSS: I think it is incorrect thalf = math.log(2.0)/rateConstant
+        thalf = math.log(2.0)*Vd/CL0inf
+        npLambdan = -np.asarray(lambdan,np.double)
+        func = lambda thalf : 0.5*C0 - np.dot(Cn,np.exp(npLambdan*thalf))
+        thalf = fsolve(func, thalf)
+
+        # Finish
+        self.parameters = []
+        self.parameters.append(slope)
+        self.parameters.append(rateConstant)
+        self.parameters.append(C0)
+        self.parameters.append(AUC0inf)
+        self.parameters.append(AUMC0inf)
+        self.parameters.append(MRT)
+        self.parameters.append(Vc)
+        self.parameters.append(Vd)
+        self.parameters.append(Vss)
         self.parameters.append(CL0inf)
         self.parameters.append(thalf)
