@@ -27,6 +27,7 @@
 import pyworkflow.protocol.params as params
 from protocol_pkpd_sa_base import ProtPKPDSABase
 from sa_models import NCAObsIVModel
+from pyworkflow.em.pkpd_units import PKPDUnit
 
 
 class ProtPKPDNCAIVObs(ProtPKPDSABase):
@@ -70,7 +71,9 @@ class ProtPKPDNCAIVObs(ProtPKPDSABase):
             print("  Cannot process %s because its elimination rate cannot be found\n\n"%sampleName)
             return False
         self.analysis.lambdaz = sampleFit.parameters[1]
-        print("Elimination rate = %f"%self.analysis.lambdaz)
+        self.analysis.lambdazUnits = PKPDUnit()
+        self.analysis.lambdazUnits.unit = self.fitting.modelParameterUnits[1]
+        print("Elimination rate = %f [%s]"%(self.analysis.lambdaz,self.analysis.lambdazUnits._toString()))
         return True
 
     #--------------------------- INFO functions --------------------------------------------
