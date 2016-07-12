@@ -48,6 +48,16 @@ Protocols = [{
     },
     {
 	"tag": "section",
+	"text": "Statistics",
+	"icon": "bookmark.png",
+	"children": [{
+		"tag": "protocol",
+		"value": "ProtPKPDStatsExp1Subgroups2Mean",
+		"text": "1 Exp. 2 Subgroups Mean"
+	}]
+    },
+    {
+	"tag": "section",
 	"text": "Non-compartmental PK",
 	"icon": "bookmark.png",
 	"children": [{

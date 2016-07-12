@@ -41,6 +41,7 @@ from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
 from protocol_pkpd_pdgeneric_fit import ProtPKPDGenericFit
 from protocol_pkpd_create_label import ProtPKPDCreateLabel
 from protocol_pkpd_merge_labels import ProtPKPDMergeLabels
+from protocol_pkpd_stats_oneExperiment_twoSubgroups_mean import ProtPKPDStatsExp1Subgroups2Mean
 
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
