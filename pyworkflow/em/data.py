@@ -674,6 +674,19 @@ class PKPDExperiment(EMObject):
             sample = self.samples[sampleName]
             sample.descriptors[varName] = varValue
 
+    def getSubGroup(self,condition):
+        samplesSubGroup = {}
+        for sampleName, sample in self.samples.iteritems():
+            if sample.evaluateExpression(condition):
+                samplesSubGroup[sampleName] = sample
+        return samplesSubGroup
+
+    def getSubGroupLabels(self,condition,labelName):
+        subgroupLabels = []
+        for sampleName, sample in self.samples.iteritems():
+            if sample.evaluateExpression(condition):
+                subgroupLabels.append(sample.descriptors[labelName])
+        return subgroupLabels
 
 class PKPDModelBase:
     def __init__(self):
