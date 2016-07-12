@@ -195,6 +195,7 @@ class NCAExpIVModel(SAModel):
         npLambdan = -np.asarray(lambdan,np.double)
         func = lambda thalf : 0.5*C0 - np.dot(Cn,np.exp(npLambdan*thalf))
         thalf = fsolve(func, thalf)
+        thalf=thalf[0]
 
         # Finish
         self.parameters = []
