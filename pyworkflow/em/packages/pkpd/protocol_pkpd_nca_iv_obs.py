@@ -28,7 +28,7 @@ import pyworkflow.protocol.params as params
 from protocol_pkpd_sa_base import ProtPKPDSABase
 from sa_models import NCAObsIVModel
 from pyworkflow.em.pkpd_units import PKPDUnit
-
+from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
 class ProtPKPDNCAIVObs(ProtPKPDSABase):
     """ Non-compartmental analysis based on observations.\n
@@ -41,8 +41,11 @@ class ProtPKPDNCAIVObs(ProtPKPDSABase):
         form.addParam('protElimination', params.PointerParam, label="Elimination rate",
                       pointerClass='ProtPKPDEliminationRate',
                       help='Select an execution of a protocol estimating the elimination rate')
-        form.addParam("absorptionF", params.FloatParam, label="Absorption fraction", default=1,
-                      help="Between 0 (=no absorption) and 1 (=full absorption)")
+        form.addParam('areaCalc', params.EnumParam, choices=["Trapezoidal","Log-Trapezoidal"],
+                      label="Method for AUC, AUMC calculation", default=1, expertLevel=LEVEL_ADVANCED,
+                      help='See explanation at http://learnpkpd.com/2011/04/02/calculating-auc-linear-and-log-linear\n')
+        form.addParam("absorptionF", params.FloatParam, label="Absorption fraction (bioavailability)", default=1,
+                      expertLevel=LEVEL_ADVANCED, help="Between 0 (=no absorption) and 1 (=full absorption)")
 
     def getListOfFormDependencies(self):
         return [self.protElimination.get().getObjId()]
@@ -61,6 +64,10 @@ class ProtPKPDNCAIVObs(ProtPKPDSABase):
         self.analysis.setXVar(self.varNameX)
         self.analysis.setYVar(self.varNameY)
         self.analysis.F = self.absorptionF.get()
+        if self.areaCalc == 0:
+            self.analysis.areaCalc = "Trapezoidal"
+        else:
+            self.analysis.areaCalc = "Log-Trapezoidal"
 
     def prepareForSampleAnalysis(self, sampleName):
         sampleFit = self.fitting.getSampleFit(sampleName)

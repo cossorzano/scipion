@@ -73,12 +73,27 @@ class NCAObsIVModel(SAModel):
         # AUC0t, AUMC0t
         AUC0t = 0
         AUMC0t = 0
-        for i in range(len(C)-1):
-            dt = (t[i+1]-t[i])
-            AUC0t  += dt*(C[i]+C[i+1])
-            AUMC0t += dt*(C[i]*t[i]+C[i+1]*t[i+1])
-        AUC0t*=0.5
-        AUMC0t*=0.5
+        if self.areaCalc == "Trapezoidal":
+            for i in range(len(C)-1):
+                dt = (t[i+1]-t[i])
+                AUC0t  += dt*(C[i]+C[i+1])
+                AUMC0t += dt*(C[i]*t[i]+C[i+1]*t[i+1])
+            AUC0t*=0.5
+            AUMC0t*=0.5
+        elif self.areaCalc == "Log-Trapezoidal":
+            for i in range(len(C)-1):
+                dt = (t[i+1]-t[i])
+                decrement = C[i]/C[i+1]
+                K = math.log(decrement)
+                print("%f %f %f "%(C[i],C[i+1],K))
+                B = K/dt
+                AUC0t  += dt*(C[i]-C[i+1])/K
+                # AUMC0t += dt*(C[i+1]*t[i+1]-C[i]*t[i])/(-K)-1.0/decrement*dt*dt/(K*K)
+                   # Eq. 7.44 of Domenech Berrozpe, ... Tratado general de biofarmacia y farmacocinetica Vol. 1 (2013)
+                # AUMC0t += (C[i]*t[i]-C[i+1]*t[i+1])/B-(C[i]-C[i+1])/(B*B)
+                   # http://www.agah.eu/fileadmin/_migrated/content_uploads/PK-glossary_PK_working_group_2004.pdf
+                AUMC0t += 1/K * dt*(C[i]*t[i]+C[i+1]*t[i+1])
+                   # Eq. 8.32 Atkinson, Huang, ... Principles of Clinical Pharmacology (2012)
 
         # AUC0inf, AUMC0inf
         AUC0inf = AUC0t+C[-1]/self.lambdaz
