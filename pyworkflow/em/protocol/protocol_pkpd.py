@@ -59,3 +59,6 @@ class ProtPKPD(EMProtocol):
             fitting._printToStream(sys.stdout)
         return fitting
 
+    def doublePrint(self,fh,msg):
+        fh.write(msg+"\n")
+        print(msg)
