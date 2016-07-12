@@ -39,7 +39,11 @@ Protocols = [{
 	},{
 		"tag": "protocol",
 		"value": "ProtPKPDCreateLabel",
-		"text": "add label"
+		"text": "create label"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDMergeLabels",
+		"text": "merge labels"
 	}]
     },
     {
