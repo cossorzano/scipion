@@ -675,6 +675,8 @@ class PKPDExperiment(EMObject):
             sample.descriptors[varName] = varValue
 
     def getSubGroup(self,condition):
+        if condition=="":
+            return self.samples
         samplesSubGroup = {}
         for sampleName, sample in self.samples.iteritems():
             if sample.evaluateExpression(condition):
@@ -684,7 +686,7 @@ class PKPDExperiment(EMObject):
     def getSubGroupLabels(self,condition,labelName):
         subgroupLabels = []
         for sampleName, sample in self.samples.iteritems():
-            if sample.evaluateExpression(condition):
+            if condition!="" and sample.evaluateExpression(condition) or condition=="":
                 subgroupLabels.append(sample.descriptors[labelName])
         return subgroupLabels
 
