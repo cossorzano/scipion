@@ -28,7 +28,7 @@ In this module are protocol base classes related to PKPD
 
 """
 import sys
-
+import os
 from pyworkflow.em.protocol import *
 from pyworkflow.em.data import PKPDExperiment, PKPDFitting
 
@@ -62,3 +62,10 @@ class ProtPKPD(EMProtocol):
     def doublePrint(self,fh,msg):
         fh.write(msg+"\n")
         print(msg)
+
+    def addFileContentToMessage(self,msg,fn):
+        if os.path.exists(fn):
+            fh = open(fn)
+            for line in fh.readlines():
+                msg.append(line.strip())
+            fh.close()
