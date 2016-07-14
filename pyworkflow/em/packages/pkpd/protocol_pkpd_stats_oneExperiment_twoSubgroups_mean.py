@@ -92,19 +92,14 @@ class ProtPKPDStatsExp1Subgroups2Mean(ProtPKPD):
         import os
         msg=["Comparison between Subgroup1 (%s) and Subgroup2 (%s)"%(self.expression1.get(),self.expression2.get())]
         msg.append(' ')
-        fnReport = self._getPath("report.txt")
-        if os.path.exists(fnReport):
-            fh = open(fnReport)
-            for line in fh.readlines():
-                msg.append(line.strip())
-            fh.close()
+        self.addFileContentToMessage(msg,self._getPath("report.txt"))
         return msg
 
     def _validate(self):
         msg=[]
         self.experiment = self.readExperiment(self.inputExperiment.get().fnPKPD,False)
         if not self.labelToCompare.get() in self.experiment.variables:
-            msg.append("Cannot find %s amongst the experiment variables")
+            msg.append("Cannot find %s amongst the experiment variables"%self.labelToCompare.get())
         else:
             variable = self.experiment.variables[self.labelToCompare.get()]
             if variable.role != PKPDVariable.ROLE_LABEL:
