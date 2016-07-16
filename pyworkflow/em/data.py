@@ -455,7 +455,7 @@ class PKPDSample:
     def getSampleMeasurements(self):
         return [PKPDSampleMeasurement(self,n) for n in range(0,self.getNumberOfMeasurements())]
 
-    def evaluateExpression(self, expression):
+    def substituteValuesInExpression(self, expression, prefix=""):
         expressionPython = copy.copy(expression)
         for key, variable in self.variableDictPtr.iteritems():
             if key in self.descriptors:
@@ -465,9 +465,13 @@ class PKPDSample:
                     break
                 else:
                     if variable.varType == PKPDVariable.TYPE_NUMERIC:
-                        expressionPython = expressionPython.replace("$(%s)"%key,"%f"%float(value))
+                        expressionPython = expressionPython.replace("$%s(%s)"%(prefix,key),"%f"%float(value))
                     else:
-                        expressionPython = expressionPython.replace("$(%s)"%key,"'%s'"%value)
+                        expressionPython = expressionPython.replace("$%s(%s)"%(prefix,key),"'%s'"%value)
+        return expressionPython
+
+    def evaluateExpression(self, expression, prefix=""):
+        expressionPython=self.substituteValuesInExpression(expression,prefix)
         return eval(expressionPython, {"__builtins__" : {"True": True, "False": False, "None": None} }, {})
 
 
