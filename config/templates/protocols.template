@@ -42,6 +42,10 @@ Protocols = [{
 		"text": "create label"
 	},{
 		"tag": "protocol",
+		"value": "ProtPKPDCreateLabel2Exps",
+		"text": "create label 2 exps"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDMergeLabels",
 		"text": "merge labels"
 	}]
