@@ -75,9 +75,15 @@ class ProtPKPDFitBase(ProtPKPD):
     def setupFromFormParameters(self):
         pass
 
+    def prepareForSampleAnalysis(self, sampleName):
+        pass
+
     def runFit(self, objId, otherDependencies):
         self.getXYvars()
-        reportX = parseRange(self.reportX.get())
+        if hasattr(self,"reportX"):
+            reportX = parseRange(self.reportX.get())
+        else:
+            reportX = None
         self.experiment = self.readExperiment(self.getInputExperiment().fnPKPD)
 
         # Setup model
@@ -109,14 +115,15 @@ class ProtPKPDFitBase(ProtPKPD):
         for sampleName, sample in self.experiment.samples.iteritems():
             self.printSection("Fitting "+sampleName)
             x, y = sample.getXYValues(self.varNameX,self.varNameY)
-            self.model.calculateParameterUnits(sample)
-            if self.fitting.modelParameterUnits==None:
-                self.fitting.modelParameterUnits = self.model.parameterUnits
             print("X= "+str(x))
             print("Y= "+str(y))
             print(" ")
             self.model.setBounds(self.bounds.get())
             self.model.setXYValues(x, y)
+            self.prepareForSampleAnalysis(sampleName)
+            self.model.calculateParameterUnits(sample)
+            if self.fitting.modelParameterUnits==None:
+                self.fitting.modelParameterUnits = self.model.parameterUnits
             self.model.prepare()
             print(" ")
 
