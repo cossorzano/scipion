@@ -31,7 +31,7 @@ import math
 import numpy as np
 
 from pyworkflow.em.data import PKPDModel
-from pyworkflow.em.pkpd_units import inverseUnits
+from pyworkflow.em.pkpd_units import inverseUnits, createUnit, divideUnits
 
 
 class PKModel(PKPDModel):
@@ -126,6 +126,80 @@ class PKPDExponentialModel(PKGenericModel):
                 retval.append("True")
             else:
                 retval.append("NA")
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p<0)==0
+
+class PKPDSimpleNonIVModel(PKModel):
+    def forwardModel(self, parameters, x=None):
+        if x==None:
+            x=self.x
+
+        Ka=parameters[0]
+        V=parameters[1]
+
+        self.yPredicted = Ka*self.F*self.D/(V*(Ka-self.Ke))*(np.exp(-self.Ke*x)-np.exp(-Ka*x))
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Simple non-iv model (%s)"%self.__class__.__name__
+
+    def prepare(self):
+        if self.bounds == None:
+            ylogE = np.polyval(np.asarray([-self.Ke,math.log(self.C0)],np.double),self.x)
+            ylogToFit = self.ylog-ylogE
+            p = np.polyfit(self.x,-ylogToFit,1)
+            Ka = -p[0]
+            V = (Ka*self.F*self.D)/(math.exp(p[1])*(Ka-self.Ke))
+            print("First estimate of Ka: %f"%Ka)
+            print("First estimate of V: %f"%V)
+            self.bounds=[(Ka*0.01,Ka*100),(0.01*V,100*V)]
+
+    def printSetup(self):
+        print("Model: %s"%self.getModelEquation())
+        print("Bounds: "+str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y=Ka*F*D/(V*(Ka-Ke))*(exp(-Ke*t)-exp(-Ka*t)"
+
+    def getEquation(self):
+        Ka=self.parameters[0]
+        V=self.parameters[1]
+        return "Y=%f*%f*D/(%f*(%f-%f))*(exp(-%f*t)-exp(-%f*t))"%(Ka,self.F,V,Ka,self.Ke,self.Ke,Ka)
+
+    def getParameterNames(self):
+        return ['Ka','V']
+
+    def calculateParameterUnits(self,sample):
+        xunits = self.experiment.getVarUnits(self.xName)
+        Vunits = divideUnits(self.Dunits,self.C0units)
+        self.parameterUnits = [inverseUnits(xunits),Vunits]
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        # Ka
+        decayLower = lowerBound[0]
+        decayUpper = upperBound[0]
+        if decayLower<0 and decayUpper>0:
+            retval.append("Suspicious, Ka looks like a constant")
+        elif decayLower<0:
+            retval.append("Suspicious, Ka may be unstable")
+        elif decayLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # V
+        VLower = lowerBound[1]
+        VUpper = upperBound[1]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, V looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, F seems to be negative")
+        else:
+            retval.append("True")
+
         return retval
 
     def areParametersValid(self, p):

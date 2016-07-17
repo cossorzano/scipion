@@ -78,6 +78,10 @@ Protocols = [{
 		"text": "elimination rate"
 	},{
 		"tag": "protocol",
+		"value": "ProtPKPDAbsorptionRate",
+		"text": "absorption rate"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDNCAIVObs",
 		"text": "NCA iv (observations)"
 	},{
