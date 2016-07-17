@@ -694,6 +694,14 @@ class PKPDExperiment(EMObject):
                 subgroupLabels.append(sample.descriptors[labelName])
         return subgroupLabels
 
+    def getNonBolusDoses(self):
+        nonBolusList = []
+        for sampleName, sample in self.samples.iteritems():
+            sample.interpretDose()
+            if not sample.isDoseABolus():
+                nonBolusList.append(sampleName)
+        return nonBolusList
+
 class PKPDModelBase:
     def __init__(self):
         self.fnExperiment = None
