@@ -48,35 +48,52 @@ class ProtPKPDFitBase(ProtPKPD):
 
     #--------------------------- INSERT steps functions --------------------------------------------
     def _insertAllSteps(self):
-        self._insertFunctionStep('runFit',self.inputExperiment.get().getObjId(), self.predictor.get(), \
-                                 self.predicted.get(), self.fitType.get(), self.bounds.get())
+        self._insertFunctionStep('runFit',self.getInputExperiment().getObjId(),self.getListOfFormDependencies())
         self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
+    def getInputExperiment(self):
+        if hasattr(self,"inputExperiment"):
+            return self.inputExperiment.get()
+        else:
+            return None
+
+    def getXYvars(self):
+        if hasattr(self,"predictor"):
+            self.varNameX=self.predictor.get()
+        else:
+            self.varNameX=None
+
+        if hasattr(self,"predicted"):
+            self.varNameY=self.predicted.get()
+        else:
+            self.varNameY=None
+
     def createModel(self):
         pass
 
     def setupFromFormParameters(self):
         pass
 
-    def runFit(self, objId, X, Y, fitType, bounds):
+    def runFit(self, objId, otherDependencies):
+        self.getXYvars()
         reportX = parseRange(self.reportX.get())
-        self.experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
+        self.experiment = self.readExperiment(self.getInputExperiment().fnPKPD)
 
         # Setup model
         self.printSection("Model setup")
         self.model = self.createModel()
         self.model.setExperiment(self.experiment)
-        self.model.setXVar(self.predictor.get())
-        self.model.setYVar(self.predicted.get())
+        self.model.setXVar(self.varNameX)
+        self.model.setYVar(self.varNameY)
         self.setupFromFormParameters()
         self.model.printSetup()
 
         # Create output object
         self.fitting = PKPDFitting()
-        self.fitting.fnExperiment.set(self.inputExperiment.get().fnPKPD.get())
-        self.fitting.predictor=self.experiment.variables[self.predictor.get()]
-        self.fitting.predicted=self.experiment.variables[self.predicted.get()]
+        self.fitting.fnExperiment.set(self.getInputExperiment().fnPKPD.get())
+        self.fitting.predictor=self.experiment.variables[self.varNameX]
+        self.fitting.predicted=self.experiment.variables[self.varNameY]
         self.fitting.modelDescription=self.model.getDescription()
         self.fitting.modelParameters = self.model.getParameterNames()
         self.fitting.modelParameterUnits = None
@@ -91,7 +108,7 @@ class ProtPKPDFitBase(ProtPKPD):
 
         for sampleName, sample in self.experiment.samples.iteritems():
             self.printSection("Fitting "+sampleName)
-            x, y = sample.getXYValues(self.predictor.get(),self.predicted.get())
+            x, y = sample.getXYValues(self.varNameX,self.varNameY)
             self.model.calculateParameterUnits(sample)
             if self.fitting.modelParameterUnits==None:
                 self.fitting.modelParameterUnits = self.model.parameterUnits
@@ -141,21 +158,23 @@ class ProtPKPDFitBase(ProtPKPD):
     def createOutputStep(self):
         self._defineOutputs(outputFitting=self.fitting)
         self._defineOutputs(outputExperiment=self.experiment)
-        self._defineSourceRelation(self.inputExperiment, self.fitting)
-        self._defineSourceRelation(self.inputExperiment, self.experiment)
+        self._defineSourceRelation(self.getInputExperiment(), self.fitting)
+        self._defineSourceRelation(self.getInputExperiment(), self.experiment)
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
-        msg=['Predicting %s from %s'%(self.predicted.get(),self.predictor.get())]
+        self.getXYvars()
+        msg=['Predicting %s from %s'%(self.varNameX,self.varNameY)]
         return msg
 
     def _validate(self):
+        self.getXYvars()
         errors=[]
-        experiment = self.readExperiment(self.inputExperiment.get().fnPKPD, False)
-        if not self.predictor.get() in experiment.variables:
-            errors.append("Cannot find %s as variable"%self.predictor.get())
-        if not self.predicted.get() in experiment.variables:
-            errors.append("Cannot find %s as variable"%self.predicted.get())
+        experiment = self.readExperiment(self.getInputExperiment().fnPKPD, False)
+        if not self.varNameX in experiment.variables:
+            errors.append("Cannot find %s as variable"%self.varNameX)
+        if not self.varNameY in experiment.variables:
+            errors.append("Cannot find %s as variable"%self.varNameY)
         return errors
 
     def _citations(self):

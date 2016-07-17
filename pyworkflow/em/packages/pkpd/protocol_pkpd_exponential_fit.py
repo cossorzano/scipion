@@ -44,7 +44,6 @@ are independent, which are not. Use Bootstrap estimates instead.\n
     _label = 'fit exponentials'
 
     #--------------------------- DEFINE param functions --------------------------------------------
-
     def _defineParams(self, form, fullForm=True):
         self._defineParams1(form,"t","Cp")
         if fullForm:
@@ -70,6 +69,9 @@ are independent, which are not. Use Bootstrap estimates instead.\n
             self.reportX=String()
             self.reportX.set("")
 
+    def getListOfFormDependencies(self):
+        return [self.predictor.get(), self.predicted.get(), self.fitType.get(), self.bounds.get()]
+
     def createModel(self):
         return PKPDExponentialModel()
 
@@ -81,4 +83,9 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         errors=ProtPKPDFitBase._validate(self)
         if self.Nexp.get()<1:
             errors.append("The number of exponentials has to be larger than 0")
+
+        experiment = self.readExperiment(self.getInputExperiment().fnPKPD,show=False)
+        incorrectList = experiment.getNonBolusDoses()
+        if len(incorrectList)>0:
+            errors.append("This protocol is meant only for intravenous bolus regimens. Check the doses for %s"%(','.join(incorrectList)))
         return errors
