@@ -436,3 +436,7 @@ def inverseUnits(unit):
 
     else:
         return PKPDUnit.UNIT_NONE
+
+def createUnit(unitName):
+    unit = PKPDUnit()
+    unit.unit = unit._fromString(unitName)
