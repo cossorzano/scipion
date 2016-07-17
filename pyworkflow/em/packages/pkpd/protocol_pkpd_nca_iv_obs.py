@@ -91,11 +91,7 @@ class ProtPKPDNCAIVObs(ProtPKPDSABase):
 
     def _validate(self):
         experiment = self.readExperiment(self.getInputExperiment().fnPKPD,show=False)
-        incorrectList = []
-        for sampleName, sample in experiment.samples.iteritems():
-            sample.interpretDose()
-            if not sample.isDoseABolus():
-                incorrectList.append(sampleName)
+        incorrectList = experiment.getNonBolusDoses()
         if len(incorrectList)==0:
             return []
         else:

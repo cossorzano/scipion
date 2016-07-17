@@ -108,11 +108,7 @@ class ProtPKPDNCAIVExp(ProtPKPDSABase):
     def _validate(self):
         msg = []
         experiment = self.readExperiment(self.getInputExperiment().fnPKPD,show=False)
-        incorrectList = []
-        for sampleName, sample in experiment.samples.iteritems():
-            sample.interpretDose()
-            if not sample.isDoseABolus():
-                incorrectList.append(sampleName)
+        incorrectList = experiment.getNonBolusDoses()
         if len(incorrectList)!=0:
             msg.append("This protocol is meant only for intravenous bolus regimens. Check the doses for %s"%(','.join(incorrectList)))
 
