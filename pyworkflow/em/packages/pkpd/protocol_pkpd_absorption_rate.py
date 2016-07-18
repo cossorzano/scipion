@@ -99,6 +99,8 @@ class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
         print("Concentration at t=0 = %f [%s]"%(self.model.C0,self.model.C0units._toString()))
         print("Elimination rate = %f [%s]"%(self.model.Ke,self.model.KeUnits._toString()))
 
+        self.experiment.addParameterToSample(sampleName, "Ke", self.model.KeUnits.unit, "Automatically estimated elimination rate", self.model.Ke)
+
         return True
 
     #--------------------------- INFO functions --------------------------------------------
