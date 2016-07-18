@@ -78,6 +78,9 @@ class ProtPKPDFitBase(ProtPKPD):
     def prepareForSampleAnalysis(self, sampleName):
         pass
 
+    def postSampleAnalysis(self, sampleName):
+        pass
+
     def runFit(self, objId, otherDependencies):
         self.getXYvars()
         if hasattr(self,"reportX"):
@@ -158,6 +161,8 @@ class ProtPKPDFitBase(ProtPKPD):
             # Add the parameters to the sample and experiment
             for varName, varUnits, description, varValue in izip(self.model.getParameterNames(), self.model.parameterUnits, self.model.getParameterDescriptions(), self.model.parameters):
                 self.experiment.addParameterToSample(sampleName, varName, varUnits, description, varValue)
+
+            self.postSampleAnalysis(sampleName)
 
         self.fitting.write(self._getPath("fitting.pkpd"))
         self.experiment.write(self._getPath("experiment.pkpd"))
