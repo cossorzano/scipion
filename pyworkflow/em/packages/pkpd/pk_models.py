@@ -137,9 +137,9 @@ class PKPDSimpleNonIVModel(PKModel):
             x=self.x
 
         Ka=parameters[0]
-        V=parameters[1]
+        Vd=parameters[1]
 
-        self.yPredicted = Ka*self.F*self.D/(V*(Ka-self.Ke))*(np.exp(-self.Ke*x)-np.exp(-Ka*x))
+        self.yPredicted = Ka*self.F*self.D/(Vd*(Ka-self.Ke))*(np.exp(-self.Ke*x)-np.exp(-Ka*x))
         return self.yPredicted
 
     def getDescription(self):
@@ -151,25 +151,25 @@ class PKPDSimpleNonIVModel(PKModel):
             ylogToFit = self.ylog-ylogE
             p = np.polyfit(self.x,-ylogToFit,1)
             Ka = -p[0]
-            V = (Ka*self.F*self.D)/(math.exp(p[1])*(Ka-self.Ke))
+            Vd = (Ka*self.F*self.D)/(math.exp(p[1])*(Ka-self.Ke))
             print("First estimate of Ka: %f"%Ka)
-            print("First estimate of V: %f"%V)
-            self.bounds=[(Ka*0.01,Ka*100),(0.01*V,100*V)]
+            print("First estimate of Vd: %f"%Vd)
+            self.bounds=[(Ka*0.01,Ka*100),(0.01*Vd,100*Vd)]
 
     def printSetup(self):
         print("Model: %s"%self.getModelEquation())
         print("Bounds: "+str(self.bounds))
 
     def getModelEquation(self):
-        return "Y=Ka*F*D/(V*(Ka-Ke))*(exp(-Ke*t)-exp(-Ka*t)"
+        return "Y=Ka*F*D/(Vd*(Ka-Ke))*(exp(-Ke*t)-exp(-Ka*t)"
 
     def getEquation(self):
         Ka=self.parameters[0]
-        V=self.parameters[1]
-        return "Y=%f*%f*D/(%f*(%f-%f))*(exp(-%f*t)-exp(-%f*t))"%(Ka,self.F,V,Ka,self.Ke,self.Ke,Ka)
+        Vd=self.parameters[1]
+        return "Y=%f*%f*D/(%f*(%f-%f))*(exp(-%f*t)-exp(-%f*t))"%(Ka,self.F,Vd,Ka,self.Ke,self.Ke,Ka)
 
     def getParameterNames(self):
-        return ['Ka','V']
+        return ['Ka','Vd']
 
     def calculateParameterUnits(self,sample):
         xunits = self.experiment.getVarUnits(self.xName)
@@ -190,13 +190,13 @@ class PKPDSimpleNonIVModel(PKModel):
         else:
             retval.append("NA")
 
-        # V
+        # Vd
         VLower = lowerBound[1]
         VUpper = upperBound[1]
         if VLower<0 and VUpper>0:
-            retval.append("Suspicious, V looks like 0")
+            retval.append("Suspicious, Vd looks like 0")
         elif VUpper<0:
-            retval.append("Suspicious, F seems to be negative")
+            retval.append("Suspicious, Vd seems to be negative")
         else:
             retval.append("True")
 
