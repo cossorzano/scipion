@@ -83,11 +83,15 @@ Protocols = [{
 	},{
 		"tag": "protocol",
 		"value": "ProtPKPDNCAIVObs",
-		"text": "NCA iv (observations)"
+		"text": "NCA iv bolus (observations)"
 	},{
 		"tag": "protocol",
 		"value": "ProtPKPDNCAIVExp",
-		"text": "NCA iv (exponentials)"
+		"text": "NCA iv bolus (exponentials)"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDNCANIV",
+		"text": "NCA non-iv bolus"
 	}]
     },
     {

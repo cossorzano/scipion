@@ -85,7 +85,6 @@ class NCAObsIVModel(SAModel):
                 dt = (t[i+1]-t[i])
                 decrement = C[i]/C[i+1]
                 K = math.log(decrement)
-                print("%f %f %f "%(C[i],C[i+1],K))
                 B = K/dt
                 AUC0t  += dt*(C[i]-C[i+1])/K
                 # AUMC0t += dt*(C[i+1]*t[i+1]-C[i]*t[i])/(-K)-1.0/decrement*dt*dt/(K*K)
@@ -208,5 +207,92 @@ class NCAExpIVModel(SAModel):
         self.parameters.append(Vc)
         self.parameters.append(Vd)
         self.parameters.append(Vss)
+        self.parameters.append(CL0inf)
+        self.parameters.append(thalf)
+
+class NCANIVModel(SAModel):
+    def getDescription(self):
+        return "Non-compartmental Analysis based on observations (%s)"%self.__class__.__name__
+
+    def getParameterDescriptions(self):
+        return ['Automatically estimated Area Under the Curve from 0 to t',
+                'Automatically estimated Area Under the Curve from 0 to infinity',
+                'Automatically estimated Area Under the 1st Moment Curve from 0 to t',
+                'Automatically estimated Area Under the 1st Moment Curve from 0 to infinity',
+                'Automatically estimated Mean Residence Time',
+                'Automatically estimated Apparent Volume of Distribution using measurements from 0 to t',
+                'Automatically estimated Apparent Volume of Distribution using measurements from 0 to infinity',
+                'Automatically estimated Clearance using measurements from 0 to t',
+                'Automatically estimated Clearance using measurements from 0 to infinity',
+                'Automatically estimated Half time']
+
+    def getParameterNames(self):
+        return ['AUC_0t','AUC_0inf','AUMC_0t','AUMC_0inf','MRT','Vd_0t','Vd_0inf','CL_0t','CL_0inf','thalf']
+
+    def calculateParameterUnits(self, sample):
+        tunits = self.experiment.getVarUnits(self.xName)
+        Cunits = self.experiment.getVarUnits(self.yName)
+        Dunits = sample.getDoseUnits()
+        AUCunits = multiplyUnits(tunits,Cunits)
+        AUMCunits = multiplyUnits(tunits,AUCunits)
+        Vunits = divideUnits(Dunits,Cunits)
+        CLunits = divideUnits(Vunits,tunits)
+        self.parameterUnits = [AUCunits, AUCunits, AUMCunits, AUMCunits, tunits, Vunits, Vunits, CLunits, CLunits, tunits]
+
+    def calculateParameters(self, show=True):
+        t = np.concatenate([[0],self.x])
+        C = np.concatenate([[0],self.y])
+
+        # AUC0t, AUMC0t
+        AUC0t = 0
+        AUMC0t = 0
+        if self.areaCalc == "Trapezoidal":
+            for i in range(len(C)-1):
+                dt = (t[i+1]-t[i])
+                AUC0t  += dt*(C[i]+C[i+1])
+                AUMC0t += dt*(C[i]*t[i]+C[i+1]*t[i+1])
+            AUC0t*=0.5
+            AUMC0t*=0.5
+        elif self.areaCalc == "Mixed":
+            for i in range(len(C)-1):
+                dt = (t[i+1]-t[i])
+                if C[i+1]>C[i]: # Trapezoidal in the raise
+                    AUC0t  += 0.5*dt*(C[i]+C[i+1])
+                    AUMC0t += 0.5*dt*(C[i]*t[i]+C[i+1]*t[i+1])
+                else: # Log-trapezoidal in the decay
+                    decrement = C[i]/C[i+1]
+                    K = math.log(decrement)
+                    AUC0t  += dt*(C[i]-C[i+1])/K
+                    AUMC0t += 1/K * dt*(C[i]*t[i]+C[i+1]*t[i+1])
+                       # Eq. 8.32 Atkinson, Huang, ... Principles of Clinical Pharmacology (2012)
+
+        # AUC0inf, AUMC0inf
+        AUC0inf = AUC0t+C[-1]/self.Ke
+        AUMC0inf = AUMC0t+C[-1]*(t[-1]+1/self.Ke)/self.Ke
+
+        # MRT
+        MRT = AUMC0inf/AUC0inf
+
+        # Volumes
+        Vd0t = self.F*self.D/(AUC0t*self.Ke)
+        Vd0inf = self.F*self.D/(AUC0inf*self.Ke)
+
+        # Clearances
+        CL0t = self.F*self.D/AUC0t
+        CL0inf = self.F*self.D/AUC0inf
+
+        # Thalf
+        thalf = math.log(2.0)/self.Ke
+
+        # Finish
+        self.parameters = []
+        self.parameters.append(AUC0t)
+        self.parameters.append(AUC0inf)
+        self.parameters.append(AUMC0t)
+        self.parameters.append(AUMC0inf)
+        self.parameters.append(MRT)
+        self.parameters.append(Vd0t)
+        self.parameters.append(Vd0inf)
+        self.parameters.append(CL0t)
         self.parameters.append(CL0inf)
         self.parameters.append(thalf)
