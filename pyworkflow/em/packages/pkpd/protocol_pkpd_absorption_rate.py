@@ -30,6 +30,7 @@ from pk_models import PKPDSimpleNonIVModel
 from pyworkflow.em.pkpd_units import PKPDUnit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from pyworkflow.object import Integer
+import math
 
 
 class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
@@ -102,6 +103,16 @@ class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
         self.experiment.addParameterToSample(sampleName, "Ke", self.model.KeUnits.unit, "Automatically estimated elimination rate", self.model.Ke)
 
         return True
+
+    def postSampleAnalysis(self, sampleName):
+        xunits = self.experiment.getVarUnits(self.varNameX)
+        Cunits = self.experiment.getVarUnits(self.varNameY)
+        Ka = self.model.parameters[0]
+        Ke = self.model.Ke
+        tmax = math.log(Ka/Ke)/(Ka-Ke)
+        self.experiment.addParameterToSample(sampleName, "tmax", xunits, "Time of the Maximum of the non-iv peak", tmax)
+        self.experiment.addParameterToSample(sampleName, "Cmax", Cunits, "Concentration of the Maximum of the non-iv peak",
+                                             self.model.forwardModel(self.model.parameters,tmax))
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
