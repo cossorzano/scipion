@@ -27,7 +27,7 @@
 import pyworkflow.protocol.params as params
 from protocol_pkpd_fit_base import ProtPKPDFitBase
 from pk_models import PKPDSimpleNonIVModel
-from pyworkflow.em.pkpd_units import PKPDUnit
+from pyworkflow.em.pkpd_units import strUnit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from pyworkflow.object import Integer
 import math
@@ -92,15 +92,13 @@ class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
             print("  Cannot process %s because its elimination rate cannot be found\n\n"%sampleName)
             return False
         self.model.C0 = sampleFit.parameters[0]
-        self.model.C0units = PKPDUnit()
-        self.model.C0units.unit = self.eliminationFitting.modelParameterUnits[0]
+        self.model.C0units = self.eliminationFitting.modelParameterUnits[0]
         self.model.Ke = sampleFit.parameters[1]
-        self.model.KeUnits = PKPDUnit()
-        self.model.KeUnits.unit = self.eliminationFitting.modelParameterUnits[1]
-        print("Concentration at t=0 = %f [%s]"%(self.model.C0,self.model.C0units._toString()))
-        print("Elimination rate = %f [%s]"%(self.model.Ke,self.model.KeUnits._toString()))
+        self.model.KeUnits = self.eliminationFitting.modelParameterUnits[1]
+        print("Concentration at t=0 = %f [%s]"%(self.model.C0,strUnit(self.model.C0units)))
+        print("Elimination rate = %f [%s]"%(self.model.Ke,strUnit(self.model.KeUnits)))
 
-        self.experiment.addParameterToSample(sampleName, "Ke", self.model.KeUnits.unit, "Automatically estimated elimination rate", self.model.Ke)
+        self.experiment.addParameterToSample(sampleName, "Ke", self.model.KeUnits, "Automatically estimated elimination rate", self.model.Ke)
 
         return True
 
