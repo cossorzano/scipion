@@ -74,6 +74,9 @@ class ProtPKPDSABase(ProtPKPD):
     def prepareForSampleAnalysis(self, sampleName):
         pass
 
+    def postAnalysis(self, sampleName):
+        pass
+
     def runAnalysis(self, objId, otherDependencies):
         self.getXYvars()
         self.experiment = self.readExperiment(self.getInputExperiment().fnPKPD)
@@ -118,6 +121,7 @@ class ProtPKPDSABase(ProtPKPD):
                                                                  self.analysis.parameters):
                 self.experiment.addParameterToSample(sampleName, varName, varUnits, description, varValue)
                 print("%s = %f [%s]"%(varName,varValue,unit.unitDictionary[varUnits]))
+            self.postAnalysis(sampleName)
 
             print(" ")
 
