@@ -62,6 +62,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDStatsExp2Subgroups2Mean",
 		"text": "2 Exps. 2 Subgroups Mean"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDRegressionLabel",
+		"text": "regression"
 	}]
     },
     {

@@ -46,6 +46,7 @@ from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsEx
 from protocol_pkpd_create_label_2exps import ProtPKPDCreateLabel2Exps
 from protocol_pkpd_absorption_rate import ProtPKPDAbsorptionRate
 from protocol_pkpd_nca_niv import ProtPKPDNCAEV
+from protocol_pkpd_regression_labels import ProtPKPDRegressionLabel
 
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
