@@ -131,15 +131,23 @@ class PKPDExponentialModel(PKGenericModel):
     def areParametersValid(self, p):
         return np.sum(p<0)==0
 
-class PKPDSimpleNonIVModel(PKModel):
+class PKPDSimpleEVModel(PKModel):
+    def __init__(self, includeTlag=True):
+        PKModel.__init__(self)
+        self.includeTlag = includeTlag
+
     def forwardModel(self, parameters, x=None):
         if x==None:
             x=self.x
 
         Ka=parameters[0]
         Vd=parameters[1]
+        if self.includeTlag:
+            tlag=parameters[2]
+        else:
+            tlag = 0.0
 
-        self.yPredicted = Ka*self.F*self.D/(Vd*(Ka-self.Ke))*(np.exp(-self.Ke*x)-np.exp(-Ka*x))
+        self.yPredicted = Ka*self.F*self.D/(Vd*(Ka-self.Ke))*(np.exp(-self.Ke*x)-np.exp(-Ka*(x-tlag)))
         return self.yPredicted
 
     def getDescription(self):
@@ -152,29 +160,45 @@ class PKPDSimpleNonIVModel(PKModel):
             p = np.polyfit(self.x,-ylogToFit,1)
             Ka = -p[0]
             Vd = (Ka*self.F*self.D)/(math.exp(p[1])*(Ka-self.Ke))
+            self.bounds=[(Ka*0.01,Ka*100),(0.01*Vd,100*Vd)]
             print("First estimate of Ka: %f"%Ka)
             print("First estimate of Vd: %f"%Vd)
-            self.bounds=[(Ka*0.01,Ka*100),(0.01*Vd,100*Vd)]
+            if self.includeTlag:
+                tlag = (p[1]-math.log(self.C0))/(Ka-self.Ke)
+                print("First estimate of tlag: %f"%tlag)
+                self.bounds.append((-5*abs(tlag),5*abs(tlag)))
 
     def printSetup(self):
         print("Model: %s"%self.getModelEquation())
         print("Bounds: "+str(self.bounds))
 
     def getModelEquation(self):
-        return "Y=Ka*F*D/(Vd*(Ka-Ke))*(exp(-Ke*t)-exp(-Ka*t)"
+        if self.includeTlag:
+            return "Y=Ka*F*D/(Vd*(Ka-Ke))*(exp(-Ke*t)-exp(-Ka*(t-tlag))"
+        else:
+            return "Y=Ka*F*D/(Vd*(Ka-Ke))*(exp(-Ke*t)-exp(-Ka*t)"
 
     def getEquation(self):
         Ka=self.parameters[0]
         Vd=self.parameters[1]
-        return "Y=%f*%f*D/(%f*(%f-%f))*(exp(-%f*t)-exp(-%f*t))"%(Ka,self.F,Vd,Ka,self.Ke,self.Ke,Ka)
+        if self.includeTlag:
+            tlag=self.parameters[2]
+            return "Y=%f*%f*D/(%f*(%f-%f))*(exp(-%f*t)-exp(-%f*(t-(%f))))"%(Ka,self.F,Vd,Ka,self.Ke,self.Ke,Ka,tlag)
+        else:
+            return "Y=%f*%f*D/(%f*(%f-%f))*(exp(-%f*t)-exp(-%f*t))"%(Ka,self.F,Vd,Ka,self.Ke,self.Ke,Ka)
 
     def getParameterNames(self):
-        return ['Ka','Vd']
+        if self.includeTlag:
+            return ['Ka','Vd','tlag']
+        else:
+            return ['Ka','Vd']
 
     def calculateParameterUnits(self,sample):
         xunits = self.experiment.getVarUnits(self.xName)
         Vunits = divideUnits(self.Dunits,self.C0units)
         self.parameterUnits = [inverseUnits(xunits),Vunits]
+        if self.includeTlag:
+            self.parameterUnits.append(xunits)
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
@@ -200,7 +224,18 @@ class PKPDSimpleNonIVModel(PKModel):
         else:
             retval.append("True")
 
+        # tlag
+        if self.includeTlag:
+            tLower = lowerBound[2]
+            tUpper = upperBound[2]
+            if tLower<0 and tUpper>0:
+                retval.append("Suspicious, tlag looks like 0")
+            elif tUpper<0:
+                retval.append("Suspicious, tlag seems to be negative")
+            else:
+                retval.append("True")
+
         return retval
 
     def areParametersValid(self, p):
-        return np.sum(p<0)==0
+        return np.sum(p[0:1]<0)==0

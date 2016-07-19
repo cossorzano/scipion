@@ -90,8 +90,8 @@ Protocols = [{
 		"text": "NCA iv bolus (exponentials)"
 	},{
 		"tag": "protocol",
-		"value": "ProtPKPDNCANIV",
-		"text": "NCA non-iv bolus"
+		"value": "ProtPKPDNCAEV",
+		"text": "NCA ev bolus"
 	}]
     },
     {

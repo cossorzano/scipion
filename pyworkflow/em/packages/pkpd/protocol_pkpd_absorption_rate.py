@@ -26,11 +26,12 @@
 
 import pyworkflow.protocol.params as params
 from protocol_pkpd_fit_base import ProtPKPDFitBase
-from pk_models import PKPDSimpleNonIVModel
+from pk_models import PKPDSimpleEVModel
 from pyworkflow.em.pkpd_units import strUnit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from pyworkflow.object import Integer
 import math
+import numpy as np
 
 
 class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
@@ -54,8 +55,10 @@ class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
 
         form.addParam('bounds', params.StringParam, label="Ka, Ke, F bounds", default="", expertLevel=LEVEL_ADVANCED,
                       help='Bounds for Ka (absorption constant), Ke (elimination constant) and F (bioavailability).\nExample 1: (0,1e-3);(0,1e-2);(0.8,1) -> Ka in (0,1e-3), Ke in (0,1e-2), and F in (0.8,1)\n')
-        form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
+        form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
+        form.addParam('includeTlag', params.BooleanParam, label="Include tlag", default=True, expertLevel=LEVEL_ADVANCED,
+                      help='Calculate the delay between administration and absorption')
         self.fitType=Integer() # Logarithmic fit
         self.fitType.set(1)
 
@@ -72,7 +75,7 @@ class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
         self.varNameY = self.protElimination.get().predicted.get()
 
     def createModel(self):
-        return PKPDSimpleNonIVModel()
+        return PKPDSimpleEVModel(self.includeTlag.get())
 
     def prepareForSampleAnalysis(self, sampleName):
         # Keep only the ascending part of the curve
@@ -108,9 +111,12 @@ class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
         Ka = self.model.parameters[0]
         Ke = self.model.Ke
         tmax = math.log(Ka/Ke)/(Ka-Ke)
-        self.experiment.addParameterToSample(sampleName, "tmax", xunits, "Time of the Maximum of the non-iv peak", tmax)
-        self.experiment.addParameterToSample(sampleName, "Cmax", Cunits, "Concentration of the Maximum of the non-iv peak",
-                                             self.model.forwardModel(self.model.parameters,tmax))
+
+        self.experiment.addParameterToSample(sampleName, "tmax", xunits, "Estimated time of the Maximum of the non-iv peak", tmax)
+        Cmax = self.model.forwardModel(self.model.parameters,tmax)
+        self.experiment.addParameterToSample(sampleName, "Cmax", Cunits, "Estimated concentration of the Maximum of the non-iv peak", Cmax)
+        print("tmax = %f [%s]"%(tmax,strUnit(xunits)))
+        print("Cmax = %f [%s]"%(Cmax,strUnit(Cunits)))
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):

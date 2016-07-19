@@ -38,7 +38,7 @@ class SAModel(PKPDModelBase):
 
 class NCAObsIVModel(SAModel):
     def getDescription(self):
-        return "Non-compartmental Analysis based on observations (%s)"%self.__class__.__name__
+        return "Non-compartmental Analysis of intravascular bolus based on observations (%s)"%self.__class__.__name__
 
     def getParameterDescriptions(self):
         return ['Automatically estimated Area Under the Curve from 0 to t',
@@ -131,7 +131,7 @@ class NCAObsIVModel(SAModel):
 
 class NCAExpIVModel(SAModel):
     def getDescription(self):
-        return "Non-compartmental Analysis based on observations (%s)"%self.__class__.__name__
+        return "Non-compartmental Analysis of intravascular bolus based on exponential fitting (%s)"%self.__class__.__name__
 
     def getParameterDescriptions(self):
         return ['Automatically estimated Slope of decay at the end of the curve',
@@ -212,9 +212,9 @@ class NCAExpIVModel(SAModel):
         self.parameters.append(CL0inf)
         self.parameters.append(thalf)
 
-class NCANIVModel(SAModel):
+class NCAEVModel(SAModel):
     def getDescription(self):
-        return "Non-compartmental Analysis based on observations (%s)"%self.__class__.__name__
+        return "Non-compartmental Analysis of extravascular bolus (%s)"%self.__class__.__name__
 
     def getParameterDescriptions(self):
         return ['Automatically estimated Area Under the Curve from 0 to t',

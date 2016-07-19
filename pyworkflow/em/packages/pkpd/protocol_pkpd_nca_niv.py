@@ -26,14 +26,14 @@
 
 import pyworkflow.protocol.params as params
 from protocol_pkpd_sa_base import ProtPKPDSABase
-from sa_models import NCANIVModel
+from sa_models import NCAEVModel
 from pyworkflow.em.pkpd_units import PKPDUnit, strUnit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
-class ProtPKPDNCANIV(ProtPKPDSABase):
+class ProtPKPDNCAEV(ProtPKPDSABase):
     """ Non-compartmental analysis of a non-intravenous bolus.\n
         Protocol created by http://www.kinestatpharma.com\n"""
-    _label = 'nca non-iv'
+    _label = 'nca ev'
 
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):
@@ -67,7 +67,7 @@ class ProtPKPDNCANIV(ProtPKPDSABase):
         self.varNameY = self.protAbsorption.get().protElimination.get().predicted.get()
 
     def createAnalysis(self):
-        self.analysis = NCANIVModel()
+        self.analysis = NCAEVModel()
         self.analysis.setExperiment(self.experiment)
         self.analysis.setXVar(self.varNameX)
         self.analysis.setYVar(self.varNameY)
