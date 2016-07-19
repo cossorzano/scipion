@@ -48,6 +48,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDMergeLabels",
 		"text": "merge labels"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDCumulatedDose",
+		"text": "cumulated dose"
 	}]
     },
     {

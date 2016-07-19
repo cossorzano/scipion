@@ -364,6 +364,9 @@ class PKPDSample:
             doseAmount += dose.getDoseAt(t0,dt)
         return doseAmount
 
+    def getCumulatedDose(self,t0,tF):
+        return self.getDoseAt(t0,tF-t0)
+
     def getDoseUnits(self):
         return self.parsedDoseList[0].dunits.unit
 
