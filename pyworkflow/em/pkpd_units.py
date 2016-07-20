@@ -84,6 +84,21 @@ class PKPDUnit:
     UNIT_VOLUMEINVTIME_nL_SEC = 311
     UNIT_VOLUMEINVWEIGHT_L_kg = 312
     UNIT_VOLUMEINVWEIGHT_L_g = 313
+    UNIT_WEIGHTINVTIME_kg_H = 350
+    UNIT_WEIGHTINVTIME_g_H = 351
+    UNIT_WEIGHTINVTIME_mg_H = 352
+    UNIT_WEIGHTINVTIME_ug_H = 353
+    UNIT_WEIGHTINVTIME_ng_H = 354
+    UNIT_WEIGHTINVTIME_kg_MIN = 355
+    UNIT_WEIGHTINVTIME_g_MIN = 356
+    UNIT_WEIGHTINVTIME_mg_MIN = 357
+    UNIT_WEIGHTINVTIME_ug_MIN = 358
+    UNIT_WEIGHTINVTIME_ng_MIN = 359
+    UNIT_WEIGHTINVTIME_kg_SEC = 360
+    UNIT_WEIGHTINVTIME_g_SEC = 361
+    UNIT_WEIGHTINVTIME_mg_SEC = 362
+    UNIT_WEIGHTINVTIME_ug_SEC = 363
+    UNIT_WEIGHTINVTIME_ng_SEC = 364
     UNIT_NONE = 99999
 
     unitDictionary = {
@@ -149,6 +164,22 @@ class PKPDUnit:
         UNIT_VOLUMEINVTIME_nL_SEC: "nL/s",
         UNIT_VOLUMEINVWEIGHT_L_kg: "L/kg",
         UNIT_VOLUMEINVWEIGHT_L_g: "L/g",
+
+        UNIT_WEIGHTINVTIME_kg_H: "kg/h",
+        UNIT_WEIGHTINVTIME_g_H: "g/h",
+        UNIT_WEIGHTINVTIME_mg_H: "mg/h",
+        UNIT_WEIGHTINVTIME_ug_H: "ug/h",
+        UNIT_WEIGHTINVTIME_ng_H: "ng/h",
+        UNIT_WEIGHTINVTIME_kg_MIN: "kg/min",
+        UNIT_WEIGHTINVTIME_g_MIN: "g/min",
+        UNIT_WEIGHTINVTIME_mg_MIN: "mg/min",
+        UNIT_WEIGHTINVTIME_ug_MIN: "ug/min",
+        UNIT_WEIGHTINVTIME_ng_MIN: "ng/min",
+        UNIT_WEIGHTINVTIME_kg_SEC: "kg/s",
+        UNIT_WEIGHTINVTIME_g_SEC: "g/s",
+        UNIT_WEIGHTINVTIME_mg_SEC: "mg/s",
+        UNIT_WEIGHTINVTIME_ug_SEC: "ug/s",
+        UNIT_WEIGHTINVTIME_ng_SEC: "ng/s",
     }
 
     def __init__(self,unitString=""):
