@@ -30,18 +30,14 @@ from pyworkflow.em.data import PKPDExperiment, PKPDVariable, PKPDDose, PKPDSampl
 import sys
 
 
-class ProtPKPDImportFromCSV(ProtPKPD):
-    """ Import experiment from CSV.\n
-        Protocol created by http://www.kinestatpharma.com\n"""
-    _label = 'import from csv'
-
+class ProtPKPDImportFromText(ProtPKPD):
     #--------------------------- DEFINE param functions --------------------------------------------
 
-    def _defineParams(self, form):
+    def _defineParams(self, form, type):
         form.addSection('Input')
         form.addParam('inputFile', params.PathParam,
                       label="File path", allowsNull=False,
-                      help='Specify a path to desired CSV file.')
+                      help='Specify a path to desired %s file.'%type)
         form.addParam('title', params.StringParam, label="Title", default="My experiment")
         form.addParam('comment', params.StringParam, label="Comment", default="")
         form.addParam('variables', params.TextParam, label="Variables", default="",
@@ -64,8 +60,8 @@ class ProtPKPDImportFromCSV(ProtPKPD):
                            "\nIt is important that there are two semicolons.\n"\
                            "Examples:\n"\
                            "Infusion0 ; infusion t=0.500000...0.750000 d=60*weight/1000; mg\n"\
-                           "Bolus1 ; bolus t=2.000000 d=100; mg\n"\
-                           "Bolus0 ; bolus t=0.000000 d=60*weight/1000; mg\n")
+                           "Bolus1 ; bolus t=2.000000 d=100; h; mg\n"\
+                           "Bolus0 ; bolus t=0.000000 d=60*weight/1000; min; mg\n")
         form.addParam('dosesToSamples', params.TextParam, label="Assign doses to samples", default="",
                       help="Structure: [Sample Name] ; [DoseName1,DoseName2,...] \n"\
                            "The sample name should have no space or special character\n"\
@@ -80,30 +76,35 @@ class ProtPKPDImportFromCSV(ProtPKPD):
         self._insertFunctionStep('createOutputStep',self.inputFile.get())
 
     #--------------------------- STEPS functions --------------------------------------------
+    def readTextFile(self):
+        pass
+
     def createOutputStep(self, objId):
-        experiment = PKPDExperiment()
-        experiment.general["title"]=self.title.get()
-        experiment.general["comment"]=self.comment.get()
+        self.experiment = PKPDExperiment()
+        self.experiment.general["title"]=self.title.get()
+        self.experiment.general["comment"]=self.comment.get()
 
         # Read the variables
+        self.listOfVariables = []
         for line in self.variables.get().split(';;'):
             tokens = line.split(';')
             if len(tokens)!=5:
                 print("Skipping variable: ",line)
                 continue
             varname = tokens[0].strip()
-            experiment.variables[varname] = PKPDVariable()
-            experiment.variables[varname].parseTokens(tokens)
+            self.listOfVariables.append(varname)
+            self.experiment.variables[varname] = PKPDVariable()
+            self.experiment.variables[varname].parseTokens(tokens)
 
         # Read the doses
         for line in self.doses.get().split(';;'):
             tokens = line.split(';')
-            if len(tokens)!=3:
+            if len(tokens)!=4:
                 print("Skipping dose: ",line)
                 continue
             dosename = tokens[0].strip()
-            experiment.doses[dosename] = PKPDDose()
-            experiment.doses[dosename].parseTokens(tokens)
+            self.experiment.doses[dosename] = PKPDDose()
+            self.experiment.doses[dosename].parseTokens(tokens)
 
         # Read the sample doses
         for line in self.dosesToSamples.get().split(';;'):
@@ -113,10 +114,31 @@ class ProtPKPDImportFromCSV(ProtPKPD):
                 continue
             samplename = tokens[0].strip()
             tokens[1]="dose="+tokens[1]
-            experiment.samples[samplename] = PKPDSample()
-            experiment.samples[samplename].parseTokens(tokens,experiment.variables, experiment.doses)
+            self.experiment.samples[samplename] = PKPDSample()
+            self.experiment.samples[samplename].parseTokens(tokens,self.experiment.variables, self.experiment.doses)
 
         # Read the measurements
+        self.readTextFile()
+
+        self.experiment.write(self._getPath("experiment.pkpd"))
+        self.experiment._printToStream(sys.stdout)
+        self._defineOutputs(outputExperiment=self.experiment)
+
+    #--------------------------- INFO functions --------------------------------------------
+    def _summary(self):
+        return ["Input file: %s"%self.inputFile.get()]
+
+class ProtPKPDImportFromCSV(ProtPKPDImportFromText):
+    """ Import experiment from CSV.\n
+        Protocol created by http://www.kinestatpharma.com\n"""
+    _label = 'import from csv'
+
+    #--------------------------- DEFINE param functions --------------------------------------------
+
+    def _defineParams(self, form):
+        ProtPKPDImportFromText._defineParams(self,form,"CSV")
+
+    def readTextFile(self):
         fh=open(self.inputFile.get())
         lineNo = 1
         for line in fh.readlines():
@@ -133,7 +155,7 @@ class ProtPKPDImportFromCSV(ProtPKPD):
                     if varName=="SampleName":
                         iSampleName=varNo
                     listOfVariables.append(varName)
-                    listOfSkips.append(not (varName in experiment.variables))
+                    listOfSkips.append(not (varName in self.experiment.variables))
                     varNo+=1
                 if iSampleName==-1:
                     raise Exception("Cannot find the SampleName in: %s\n"%line)
@@ -144,14 +166,14 @@ class ProtPKPDImportFromCSV(ProtPKPD):
                     print("   It does not have the same number of values as the header")
                 varNo = 0
                 sampleName = tokens[iSampleName].strip()
-                if not sampleName in experiment.samples:
+                if not sampleName in self.experiment.samples:
                     print("Skipping sample: The sample %s does not have a dose"%varName)
                     continue
-                samplePtr=experiment.samples[sampleName]
+                samplePtr=self.experiment.samples[sampleName]
                 for skip in listOfSkips:
                     if not skip:
                         varName = listOfVariables[varNo]
-                        varRole = experiment.variables[listOfVariables[varNo]].role
+                        varRole = self.experiment.variables[listOfVariables[varNo]].role
                         if varRole == PKPDVariable.ROLE_LABEL:
                             samplePtr.descriptors[listOfVariables[varNo]] = tokens[varNo]
                         else:
@@ -168,11 +190,3 @@ class ProtPKPDImportFromCSV(ProtPKPD):
                                 raise Exception("Time measurements cannot be NA")
                     varNo+=1
             lineNo+=1
-
-        experiment.write(self._getPath("experiment.pkpd"))
-        experiment._printToStream(sys.stdout)
-        self._defineOutputs(outputExperiment=experiment)
-
-    #--------------------------- INFO functions --------------------------------------------
-    def _summary(self):
-        return ["Input file: %s"%self.inputFile.get()]
