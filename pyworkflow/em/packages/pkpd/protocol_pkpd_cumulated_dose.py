@@ -26,8 +26,6 @@
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment
-from pyworkflow.em.pkpd_units import PKPDUnit
 
 
 class ProtPKPDCumulatedDose(ProtPKPD):
