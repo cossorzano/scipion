@@ -27,7 +27,8 @@
 PD models
 """
 import numpy as np
-from pyworkflow.em.data import PKPDModel, PKPDUnit
+from pyworkflow.em.data import PKPDModel
+from pyworkflow.em.pkpd_units import PKPDUnit
 
 class PDModel(PKPDModel):
     pass
