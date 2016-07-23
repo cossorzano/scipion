@@ -118,6 +118,7 @@ class PKPDUnit:
         UNIT_VOLUME_mL: "mL",
         UNIT_VOLUME_uL: "uL",
         UNIT_VOLUME_nL: "nL",
+        UNIT_WEIGHT_kg: "kg",
         UNIT_WEIGHT_g: "g",
         UNIT_WEIGHT_mg: "mg",
         UNIT_WEIGHT_ug: "ug",
@@ -195,16 +196,7 @@ class PKPDUnit:
         return self.unit>=100 and self.unit<=109
 
     def _fromString(self, unitString):
-        if unitString =="":
-            return None
-        for _unitKey, _unitString in self.unitDictionary.items():
-            if _unitString == unitString:
-                return _unitKey
-        if unitString == "ug/mL":
-            return PKPDUnit.UNIT_CONC_mg_L
-        elif unitString == "mg/mL":
-            return PKPDUnit.UNIT_CONC_g_L
-        return None
+        return unitFromString(unitString)
 
     def _toString(self):
         if self.unit:
@@ -260,6 +252,80 @@ def convertUnits(x, unitsIn, unitsOut):
             return x
         else:
             raise Exception("Uknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
+
+    elif unitsIn == PKPDUnit.UNIT_CONC_g_L:
+        if unitsOut == PKPDUnit.UNIT_CONC_mg_L:
+            return 1e3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_ug_L:
+            return 1e6*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_ng_L:
+            return 1e9*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_g_mL:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_g_uL:
+            return 1e-6*x
+
+    elif unitsIn == PKPDUnit.UNIT_CONC_mg_L:
+        if unitsOut == PKPDUnit.UNIT_CONC_g_L:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_ug_L:
+            return 1e3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_ng_L:
+            return 1e6*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_g_mL:
+            return x
+        elif unitsOut == PKPDUnit.UNIT_CONC_g_uL:
+            return 1e-3*x
+
+    elif unitsIn == PKPDUnit.UNIT_CONC_ug_L:
+        if unitsOut == PKPDUnit.UNIT_CONC_g_L:
+            return 1e-6*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_ng_L:
+            return 1e3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_g_mL:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_g_uL:
+            return x
+
+    elif unitsIn == PKPDUnit.UNIT_CONC_ng_L:
+        if unitsOut == PKPDUnit.UNIT_CONC_g_L:
+            return 1e-9*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L:
+            return 1e-6*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_ug_L:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_g_mL:
+            return x
+        elif unitsOut == PKPDUnit.UNIT_CONC_g_uL:
+            return 1e3*x
+
+    elif unitsIn == PKPDUnit.UNIT_CONC_g_mL:
+        if unitsOut == PKPDUnit.UNIT_CONC_g_L:
+            return 1e3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L:
+            return x
+        elif unitsOut == PKPDUnit.UNIT_CONC_ug_L:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_ng_L:
+            return 1e-6*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_g_uL:
+            return 1e-3*x
+
+    elif unitsIn == PKPDUnit.UNIT_CONC_g_uL:
+        if unitsOut == PKPDUnit.UNIT_CONC_g_L:
+            return 1e6*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L:
+            return 1e3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_ug_L:
+            return x
+        elif unitsOut == PKPDUnit.UNIT_CONC_ng_L:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_g_mL:
+            return 1e3*x
+
+    return None
 
 def multiplyUnits(unitX,unitY):
     if unitX==PKPDUnit.UNIT_TIME_H:
@@ -476,3 +542,15 @@ def strUnit(unitCode):
     unit = PKPDUnit()
     unit.unit = unitCode
     return unit._toString()
+
+def unitFromString(unitString):
+    if unitString =="":
+        return None
+    for _unitKey, _unitString in PKPDUnit.unitDictionary.items():
+        if _unitString == unitString:
+            return _unitKey
+    if unitString == "ug/mL":
+        return PKPDUnit.UNIT_CONC_mg_L
+    elif unitString == "mg/mL":
+        return PKPDUnit.UNIT_CONC_g_L
+    return None
