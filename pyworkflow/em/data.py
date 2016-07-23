@@ -444,6 +444,9 @@ class PKPDSample:
         else:
             return getattr(self,"measurement_%s"%varName)
 
+    def setValues(self, varName, varValues):
+        setattr(self,"measurement_%s"%varName,varValues)
+
     def getXYValues(self,varNameX,varNameY):
         xl = []
         yl = []
