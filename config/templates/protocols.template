@@ -56,6 +56,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDCumulatedDose",
 		"text": "cumulated dose"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDChangeUnits",
+		"text": "change units"
 	}]
     },
     {
