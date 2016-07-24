@@ -268,6 +268,8 @@ class PKPDDose:
         if self.doseType == PKPDDose.TYPE_BOLUS:
             if t0<=self.t0 and self.t0<t1:
                 return self.doseAmount
+            else:
+                return 0.0
         elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
             doseAmount=0
             for t in np.arange(self.t0,self.tF,self.every):
@@ -337,6 +339,9 @@ class PKPDSample:
                     self.descriptors[varName] = varValue
 
         self.measurementPattern = []
+
+    def getSampleName(self):
+        return self.varName
 
     def interpretDose(self):
         self.parsedDoseList = []
@@ -728,7 +733,7 @@ class PKPDModelBase:
 
     def setYVar(self, y):
         if not y in self.experiment.variables:
-            raise Exception("Cannot find %s as a variable in the experiment"%x)
+            raise Exception("Cannot find %s as a variable in the experiment"%y)
         self.yName = y
         self.yRange = self.experiment.getRange(y)
 
@@ -756,15 +761,12 @@ class PKPDModelBase:
     def setParameters(self, parameters):
         self.parameters = parameters
 
-class PKPDModel(PKPDModelBase):
+class PKPDModelBase2(PKPDModelBase):
     def __init__(self):
         PKPDModelBase.__init__(self)
         self.bounds = None
 
     def forwardModel(self, parameters, x=None):
-        pass
-
-    def prepare(self):
         pass
 
     def printSetup(self):
@@ -798,7 +800,8 @@ class PKPDModel(PKPDModelBase):
                 raise Exception("The number of bound intervals does not match the number of exponential terms")
             self.bounds=[]
             for token in tokens:
-                self.bounds.append(token.strip())
+                values = token.strip().split(',')
+                self.bounds.append((float(values[0][1:]),float(values[1][:-1])))
 
     def getBounds(self):
         return self.bounds
@@ -824,6 +827,83 @@ class PKPDModel(PKPDModelBase):
                     self.yPredictedUpper[n]=y[n]
         self.yPredicted = yPredictedBackup.copy()
 
+class PKPDModel(PKPDModelBase2):
+    def prepare(self):
+        pass
+
+class PKPDODEModel(PKPDModelBase2):
+    def __init__(self):
+        PKPDModelBase2.__init__(self)
+        self.t0 = None # (min)
+        self.tF = None # (min)
+        self.deltaT = 0.25 # (min)
+        self.drugSource = None
+
+    def F(self, t, y):
+        return 0
+
+    def G(self, t, dD):
+        return 0
+
+    def getResponseDimension(self):
+        return None
+
+    def getStateDimension(self):
+        return None
+
+    def setSample(self, sample):
+        self.sample = sample
+        self.Dunits = sample.getDoseUnits()
+
+    def forwardModel(self, parameters, x=None):
+        self.parameters = parameters
+
+        # Simulate the system response
+        t = self.t0
+        Nsamples = (math.ceil((self.tF-self.t0)/self.deltaT))+1
+        if self.getStateDimension()>1:
+            yt = np.zeros(self.getStateDimension(),np.double)
+            Yt = np.zeros(Nsamples,self.getStateDimension())
+        else:
+            yt = 0.0
+            Yt = np.zeros(Nsamples)
+        Xt = np.zeros(Yt.shape[0])
+        delta_2 = 0.5*self.deltaT
+        K = self.deltaT/3
+        i = 0
+        while t<=self.tF:
+            # Internal evolution
+            # Runge Kutta's 4th order (http://lpsa.swarthmore.edu/NumInt/NumIntFourth.html)
+            k1 = self.F(t,yt)
+            k2 = self.F(t+delta_2,yt+k1*delta_2)
+            k3 = self.F(t+delta_2,yt+k2*delta_2)
+            k4 = self.F(t+self.deltaT,yt+k3*self.deltaT)
+
+            # External driving: Drug component
+            dD = self.drugSource.getAmountReleasedBetween(t,t+self.deltaT)
+            dyD = self.G(t, dD)
+
+            # Update state
+            yt += (0.5*(k1+k4)+k2+k3)*K+dyD
+
+            # Keep this result and go to next iteration
+            if self.getStateDimension()>1:
+                Yt[i,:]=yt
+            else:
+                Yt[i]=yt
+            Xt[i]=t
+            i += 1
+            t = self.t0 + i*self.deltaT # More accurate than t+= self.deltaT
+
+        # Get the values at x
+        if x==None:
+            x = self.x
+
+        if self.getResponseDimension()==1:
+            self.yPredicted = np.interp(x,Xt,Yt)
+        else:
+            raise "Not yet implemented"
+        return self.yPredicted
 
 class PKPDOptimizer:
     def __init__(self,model,fitType,goalFunction="RMSE"):

@@ -19,71 +19,87 @@
 # * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
 # * 02111-1307  USA
 # *
-# *  All comments concerning this program package may be sent to the
+# *  All comments concerning this program package may be sent to thes
 # *  e-mail address 'info@kinestat.com'
 # *
 # **************************************************************************
 
-import math
-
 import pyworkflow.protocol.params as params
-from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, PKPDSampleFit
-from pyworkflow.protocol.constants import LEVEL_ADVANCED
-from pyworkflow.object import String, Integer
-from utils import parseRange
-from pk_models import PKPDExponentialModel
-from protocol_pkpd_fit_base import ProtPKPDFitBase
+from protocol_pkpd_ode_base import ProtPKPDODEBase
+from pk_models import PK_Monocompartment
+import biopharmaceutics
 
 
-class ProtPKPDIVMonoCompartment(ProtPKPDFitBase):
-    """ Fit a set of exponentials. The observed measurement is modelled as Y=sum_{i=1}^N c_i exp(-lambda_i * X).\n
+class ProtPKPDIVMonoCompartment(ProtPKPDODEBase):
+    """ Fit a monocompartmental model to a set of measurements obtained by intravenous doses (any arbitrary dosing regimen is allowed)\n
+        The differential equation is dC/dt = -Cl * C + 1/V * dD/dt\n
+        where C is the concentration, Cl the clearance, V the distribution volume, and D the input dosing regime.
 Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
 are independent, which are not. Use Bootstrap estimates instead.\n
         Protocol created by http://www.kinestatpharma.com\n"""
     _label = 'iv monocompartment'
 
+    def __init__(self, **kwargs):
+        ProtPKPDODEBase.__init__(self, **kwargs)
+        self.ncaProt = None
+
     #--------------------------- DEFINE param functions --------------------------------------------
-    def _defineParams(self, form, fullForm=True):
-        self._defineParams1(form,"t","Cp")
-        if fullForm:
-            form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic","Relative"], label="Fit mode", default=1,
-                          help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2\n'\
-                               "Relative: sum ((Cobserved-Cpredicted)/Cobserved)^2")
-        else:
-            self.fitType=Integer()
-            self.fitType.set(1)
-            self.Nexp=Integer()
-            self.Nexp.set(1)
-        form.addParam('bounds', params.StringParam, label="Amplitude and time constant bounds", default="", expertLevel=LEVEL_ADVANCED,
-                      help='Bounds for the c_i amplitudes.\nExample 1: (0,10);(0,1e-2) -> c1 in (0,10), lambda1 in (0,1e-2)\n'\
-                           'Example 2: (0,10);(0,1e-2);(0,1);(0,1e-1) -> c1 in (0,10), lambda1 in (0,1e-2), c2 in (0,1), lambda2 in (0,1e-1)')
-        form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
-                      help='Confidence interval for the fitted parameters')
-        if fullForm:
-            form.addParam('reportX', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
-                          help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: 0:0.55:10, from 0 to 10 in steps of 0.5')
-        else:
-            self.reportX=String()
-            self.reportX.set("")
+    def _defineParams(self, form):
+        self._defineParams1(form)
+        form.addParam('initType', params.EnumParam, choices=["From NCA","Specify bounds"], label="Initialize from", default=0,
+                      help='You may initialize the model from NCA estimates or by giving the bounds for the different parameters')
+        form.addParam('ncaProtocol', params.PointerParam, label="NCA protocol",
+                      pointerClass='ProtPKPDNCAIVExp, ProtPKPDNCAIVObs', allowsNull = True, condition="initType==0",
+                      help='NCA Protocol')
+        form.addParam('bounds', params.StringParam, label="Parameter bounds (Cl, V)", default="", condition="initType==1",
+                      help='Bounds for the clearance and volume. Example: (0.1,0.2);(10,20). Make sure that the bounds are expressed in the expected units (estimated from the sample itself)')
+        form.addParam('predictor', params.StringParam, label="Predictor variable (X)", default="t", condition="initType==1",
+                      help='Y is predicted as an exponential function of X, Y=f(X)')
+        form.addParam('predicted', params.StringParam, label="Predicted variable (Y)", default="Cp", condition="initType==1",
+                      help='Y is predicted as an exponential function of X, Y=f(X)')
 
     def getListOfFormDependencies(self):
-        return [self.predictor.get(), self.predicted.get(), self.fitType.get(), self.bounds.get()]
-
-    def createModel(self):
-        return PKPDExponentialModel()
+        retval = ProtPKPDODEBase.getListOfFormDependencies(self)
+        return retval + [self.initType.get(), self.ncaProtocol.get()]
 
     def setupFromFormParameters(self):
-        self.model.Nexp=self.Nexp.get()
+        if self.initType==0:
+            self.ncaProt = self.ncaProtocol.get()
+            self.ncaExperiment = self.readExperiment(self.ncaProt.outputExperiment.fnPKPD)
+        else:
+            self.ncaProt = None
 
-    #--------------------------- INFO functions --------------------------------------------
-    def _validate(self):
-        errors=ProtPKPDFitBase._validate(self)
-        if self.Nexp.get()<1:
-            errors.append("The number of exponentials has to be larger than 0")
+    def getXYvars(self):
+        if self.initType == 1:
+            self.varNameX = self.predictor.get()
+            self.varNameY = self.predicted.get()
+        else:
+            if self.ncaProt != None:
+                self.ncaProt.getXYvars()
+                self.varNameX = self.ncaProt.varNameX
+                self.varNameY = self.ncaProt.varNameY
+            else:
+                self.varNameX = None
+                self.varNameY = None
 
-        experiment = self.readExperiment(self.getInputExperiment().fnPKPD,show=False)
-        incorrectList = experiment.getNonBolusDoses()
-        if len(incorrectList)>0:
-            errors.append("This protocol is meant only for intravenous bolus regimens. Check the doses for %s"%(','.join(incorrectList)))
-        return errors
+    def configureSource(self):
+        self.drugSource.type = biopharmaceutics.DrugSource.IV
+
+    def createModel(self):
+        return PK_Monocompartment()
+
+    def setBounds(self,sample):
+        if self.initType == 0:
+            boundsString = ""
+            if sample.getSampleName() in self.ncaExperiment.samples:
+                sampleNCA = self.ncaExperiment.samples[sample.getSampleName()]
+                if "CL" in sampleNCA.descriptors:
+                    Cl = float(sampleNCA.descriptors["CL"]) # NCA from exponential fitting
+                    V  = float(sampleNCA.descriptors["Vd"])
+                elif "CL_0inf" in sampleNCA.descriptors:
+                    Cl = float(sampleNCA.descriptors["CL_0inf"]) # NCA from observations
+                    V  = float(sampleNCA.descriptors["Vd_0inf"])
+                boundsString = "(%f,%f);(%f,%f)"%(Cl/3,Cl*3,V/3,V*3)
+            self.model.setBounds(boundsString)
+        else:
+            self.model.setBounds(self.bounds.get())

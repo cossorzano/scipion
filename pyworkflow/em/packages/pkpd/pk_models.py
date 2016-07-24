@@ -24,13 +24,13 @@
 # *
 # **************************************************************************
 """
-PD models
+PK models
 """
 import math
 
 import numpy as np
 
-from pyworkflow.em.data import PKPDModel
+from pyworkflow.em.data import PKPDModel, PKPDODEModel
 from pyworkflow.em.pkpd_units import inverseUnits, createUnit, divideUnits
 
 
@@ -235,6 +235,77 @@ class PKPDSimpleEVModel(PKModel):
             else:
                 retval.append("True")
 
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p[0:1]<0)==0
+
+class PK_Monocompartment(PKPDODEModel):
+    def __init__(self):
+        PKPDODEModel.__init__(self)
+
+    def F(self, t, y):
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        return -Cl/V*y
+
+    def G(self, t, dD):
+        V=self.parameters[1]
+        return dD/V
+
+    def getResponseDimension(self):
+        return 1
+
+    def getStateDimension(self):
+        return 1
+
+    def getDescription(self):
+        return "Monocompartmental model (%s)"%self.__class__.__name__
+
+    def printSetup(self):
+        print("Model: %s"%self.getModelEquation())
+        print("Bounds: "+str(self.bounds))
+
+    def getModelEquation(self):
+        return "dC/dt = -Cl/V * C + 1/V * dD/dt"
+
+    def getEquation(self):
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        return "dC/dt = -(%f)/(%f) * C + 1/(%f) dD/dt"%(Cl,V,V)
+
+    def getParameterNames(self):
+        return ['Cl','V']
+
+    def calculateParameterUnits(self,sample):
+        xunits = self.experiment.getVarUnits(self.xName)
+        yunits = self.experiment.getVarUnits(self.yName)
+        Vunits = divideUnits(self.Dunits,yunits)
+        self.parameterUnits = [inverseUnits(xunits),Vunits]
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        # Cl
+        ClLower = lowerBound[0]
+        ClUpper = upperBound[0]
+        if ClLower<0 and ClUpper>0:
+            retval.append("Suspicious, Ka looks like a constant")
+        elif ClLower<0:
+            retval.append("Suspicious, Ka may be unstable")
+        elif ClLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # V
+        VLower = lowerBound[1]
+        VUpper = upperBound[1]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, V looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, V seems to be negative")
+        else:
+            retval.append("True")
         return retval
 
     def areParametersValid(self, p):
