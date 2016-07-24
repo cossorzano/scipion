@@ -131,13 +131,13 @@ class DrugSource:
 
     def getAmountReleasedAt(self,t0,dt=0.5):
         if self.type == DrugSource.IV:
-            return self.getDoseAt(t0,dt)
+            return self.getDoseAt(t0-self.tlag,dt)
         else:
-            return self.evProfile.getAg(t0+dt)-self.evProfile.getAg(t0)
+            return self.evProfile.getAg(t0-self.tlag+dt)-self.evProfile.getAg(t0)
 
     def getAmountReleasedBetween(self,t0,tF):
         if self.type == DrugSource.IV:
             return self.getDoseAt(t0,tF-t0)
         else:
-            return self.evProfile.getAg(tF)-self.evProfile.getAg(t0)
+            return self.evProfile.getAg(tF-self.tlag)-self.evProfile.getAg(t0-self.tlag)
 
