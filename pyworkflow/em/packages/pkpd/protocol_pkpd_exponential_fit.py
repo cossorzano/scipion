@@ -58,7 +58,7 @@ are independent, which are not. Use Bootstrap estimates instead.\n
             self.Nexp=Integer()
             self.Nexp.set(1)
         form.addParam('bounds', params.StringParam, label="Amplitude and time constant bounds", default="", expertLevel=LEVEL_ADVANCED,
-                      help='Bounds for the c_i amplitudes.\nExample 1: (0,10);(0,1e-2) -> c1 in (0,10), lambda1 in (0,1e-2)\n'\
+                      help='Bounds for the c_i amplitudes and lambdas.\nExample 1: (0,10);(0,1e-2) -> c1 in (0,10), lambda1 in (0,1e-2)\n'\
                            'Example 2: (0,10);(0,1e-2);(0,1);(0,1e-1) -> c1 in (0,10), lambda1 in (0,1e-2), c2 in (0,1), lambda2 in (0,1e-1)')
         form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
