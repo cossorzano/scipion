@@ -65,6 +65,7 @@ class NCAObsIVModel(SAModel):
         Vunits = divideUnits(Dunits,Cunits)
         CLunits = divideUnits(Vunits,tunits)
         self.parameterUnits = [AUCunits, AUCunits, AUMCunits, AUMCunits, tunits, Vunits, Vunits, Vunits, CLunits, CLunits, tunits]
+        return self.parameterUnits
 
     def calculateParameters(self, show=True):
         t = self.x
@@ -160,6 +161,7 @@ class NCAExpIVModel(SAModel):
         CLunits = divideUnits(Vunits,tunits)
         lambdaUnits = self.lambdanUnits.unit
         self.parameterUnits = [lambdaUnits, lambdaUnits, Cunits, AUCunits, AUMCunits, tunits, Vunits, Vunits, Vunits, CLunits, tunits]
+        return self.parameterUnits
 
     def calculateParameters(self, show=True):
         Cn = self.Cn
