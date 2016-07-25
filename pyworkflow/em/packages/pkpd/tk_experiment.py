@@ -291,11 +291,23 @@ class ExperimentWindow(gui.Window):
             for s in samples:
                 if not s.varName in self.plotDict:
                     x, y = s.getXYValues(timeVarName, measureVarName)
+                    idx = [True]*len(x)
                     if self.timeWidget[2].get():
-                        x = [math.log10(v) for v in x]
+                        for i in range(len(x)):
+                            if x[i]>0:
+                                x[i] = math.log10(x[i])
+                            else:
+                                idx[i] = False
                     if self.measureWidget[2].get():
-                        y = [math.log10(v) for v in y]
-                    ax.plot(x, y, label=s.varName)
+                        for i in range(len(y)):
+                            if y[i]>0:
+                                y[i] = math.log10(y[i])
+                            else:
+                                idx[i] = False
+                    idx = [i for i, elem in enumerate(idx, 1) if elem]
+                    xidx = [x[i-1] for i in idx]
+                    yidx = [y[i-1] for i in idx]
+                    ax.plot(xidx, yidx, label=s.varName)
                     self.plotDict[s.varName] = True
             ax.legend()
 
