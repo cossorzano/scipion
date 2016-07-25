@@ -78,14 +78,6 @@ class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
         return PKPDSimpleEVModel(self.includeTlag.get())
 
     def prepareForSampleAnalysis(self, sampleName):
-        # Keep only the ascending part of the curve
-        idx = []
-        for i in range(1,self.model.y.shape[0]):
-            idx.append(i-1)
-            if self.model.y[i-1]>self.model.y[i]:
-                break
-        self.model.setXYValues(self.model.x[idx],self.model.y[idx])
-
         sample = self.experiment.samples[sampleName]
         sampleFit = self.eliminationFitting.getSampleFit(sampleName)
         sample.interpretDose()
@@ -113,7 +105,7 @@ class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
         tmax = math.log(Ka/Ke)/(Ka-Ke)
 
         self.experiment.addParameterToSample(sampleName, "tmax", xunits, "Estimated time of the Maximum of the non-iv peak", tmax)
-        Cmax = self.model.forwardModel(self.model.parameters,tmax)
+        Cmax = self.model.forwardModel(self.model.parameters,x=[tmax])[0]
         self.experiment.addParameterToSample(sampleName, "Cmax", Cunits, "Estimated concentration of the Maximum of the non-iv peak", Cmax)
         print("tmax = %f [%s]"%(tmax,strUnit(xunits)))
         print("Cmax = %f [%s]"%(Cmax,strUnit(Cunits)))
