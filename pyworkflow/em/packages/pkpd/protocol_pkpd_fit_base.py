@@ -135,15 +135,7 @@ class ProtPKPDFitBase(ProtPKPD):
             optimizer2 = PKPDLSOptimizer(self.model,fitType)
             optimizer2.optimize()
             optimizer2.setConfidenceInterval(self.confidenceInterval.get())
-            if reportX!=None:
-                print("Evaluation of the model at specified time points")
-                yreportX = self.model.forwardModel(self.model.parameters, reportX)
-                print("==========================================")
-                print("X     Ypredicted     log10(Ypredicted)")
-                print("==========================================")
-                for n in range(0,reportX.shape[0]):
-                    print("%f %f %f"%(reportX[n],yreportX[n],math.log10(yreportX[n])))
-                print(' ')
+            self.model.setParameters(optimizer2.optimum)
 
             # Keep this result
             sampleFit = PKPDSampleFit()
@@ -163,6 +155,16 @@ class ProtPKPDFitBase(ProtPKPD):
                 self.experiment.addParameterToSample(sampleName, varName, varUnits, description, varValue)
 
             self.postSampleAnalysis(sampleName)
+
+            if reportX!=None:
+                print("Evaluation of the model at specified time points")
+                yreportX = self.model.forwardModel(self.model.parameters, reportX)
+                print("==========================================")
+                print("X     Ypredicted     log10(Ypredicted)")
+                print("==========================================")
+                for n in range(0,reportX.shape[0]):
+                    print("%f %f %f"%(reportX[n],yreportX[n],math.log10(yreportX[n])))
+                print(' ')
 
         self.fitting.write(self._getPath("fitting.pkpd"))
         self.experiment.write(self._getPath("experiment.pkpd"))
