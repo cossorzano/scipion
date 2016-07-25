@@ -30,16 +30,21 @@ import numpy as np
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, PKPDSampleFit, PKPDVariable
+from pyworkflow.em.data import PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, PKPDSampleFit, PKPDModelBase, PKPDModelBase2
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from utils import parseRange
 from biopharmaceutics import DrugSource
+from pyworkflow.em.pkpd_units import PKPDUnit
 
-class ProtPKPDODEBase(ProtPKPD):
+class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
     """ Base ODE protocol"""
 
+    def __init__(self,**kwargs):
+        ProtPKPD.__init__(self,**kwargs)
+        self.boundsList = None
+
     #--------------------------- DEFINE param functions --------------------------------------------
-    def _defineParams1(self, form, addXY=False, addBounds = False, defaultPredictor="", defaultPredicted=""):
+    def _defineParams1(self, form, addXY=False, defaultPredictor="", defaultPredicted=""):
         form.addSection('Input')
         form.addParam('inputExperiment', params.PointerParam, label="Input experiment",
                       pointerClass='PKPDExperiment',
@@ -61,18 +66,16 @@ class ProtPKPDODEBase(ProtPKPD):
                       expertLevel=LEVEL_ADVANCED,
                       help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2\n'\
                            "Relative: sum ((Cobserved-Cpredicted)/Cobserved)^2")
-        if addBounds:
-            form.addParam('bounds', params.StringParam, label="Amplitude and time constant bounds", default="", expertLevel=LEVEL_ADVANCED,
-                          help='Bounds for the c_i amplitudes.\nExample 1: (0,10);(0,1e-2) -> c1 in (0,10), lambda1 in (0,1e-2)\n'\
-                               'Example 2: (0,10);(0,1e-2);(0,1);(0,1e-1) -> c1 in (0,10), lambda1 in (0,1e-2), c2 in (0,1), lambda2 in (0,1e-1)')
-        form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
+        form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
-        form.addParam('reportX', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
+        form.addParam('reportX', params.StringParam, label="Evaluate at X", default="", expertLevel=LEVEL_ADVANCED,
                       help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: 0:0.55:10, from 0 to 10 in steps of 0.5')
+        form.addParam('findtlag', params.BooleanParam, label="Find delay (tlag)", default=False,
+                      help='Confidence interval for the fitted parameters')
 
     #--------------------------- INSERT steps functions --------------------------------------------
     def getListOfFormDependencies(self):
-        retval = [self.fitType.get(), self.confidenceInterval.get(), self.reportX.get()]
+        retval = [self.fitType.get(), self.confidenceInterval.get(), self.reportX.get(), self.findtlag.get()]
         if hasattr(self,"predictor"):
             retval.append(self.predictor.get())
             retval.append(self.predicted.get())
@@ -136,9 +139,103 @@ class ProtPKPDODEBase(ProtPKPD):
 
         self.model.deltaT = self.deltaT.get()
 
+    # As model --------------------------------------------
+    def parseBounds(self, boundsString):
+        if boundsString!="" and boundsString!=None:
+            tokens=boundsString.split(';')
+            if len(tokens)!=self.getNumberOfParameters():
+                raise Exception("The number of bound intervals does not match the number of exponential terms")
+            self.boundsList=[]
+            for token in tokens:
+                values = token.strip().split(',')
+                self.boundsList.append((float(values[0][1:]),float(values[1][:-1])))
+
+    def setBounds(self):
+        Nbounds = len(self.boundsList)
+        Nparameters = self.model.getNumberOfParameters()
+        if self.findtlag:
+            Nparameters+=1
+        if Nbounds!=Nparameters:
+            raise "The number of parameters (%d) and bounds (%d) are different"%(Nparameters,Nbounds)
+
+        self.boundsSource = []
+        if self.findtlag:
+            if len(self.boundsList)>=1:
+                self.boundsSource = [self.boundsList[0]]
+
+        Nsource = len(self.boundsSource)
+        self.boundsPK = []
+        if Nbounds>Nsource:
+            self.boundsPK=self.boundsList[Nsource:]
+
+    def getBounds(self):
+        return self.boundsList
+
+    def setParameters(self, parameters):
+        self.parameters = parameters
+        self.setParametersSource()
+        self.setParametersPK()
+
+    def setParametersSource(self):
+        if self.findtlag:
+            self.drugSource.tlag = self.parameters[0]
+
+    def setParametersPK(self):
+        self.parametersPK = self.parameters[len(self.boundsSource):]
+
+    def setXYValues(self, x, y):
+        PKPDModelBase.setXYValues(self,x,y)
+        self.model.setXYValues(x, y)
+
+    def setSample(self, sample):
+        self.sample = sample
+        self.model.setSample(sample)
+
+    def forwardModel(self, parameters, x=None):
+        self.setParameters(parameters)
+        retval = self.model.forwardModel(self.parametersPK,x)
+        self.yPredicted = self.model.yPredicted
+        return retval
+
+    def getEquation(self):
+        return self.drugSource.getEquation()+" and "+self.model.getEquation()
+
+    def getModelEquation(self):
+        return self.drugSource.getModelEquation()+" and "+self.model.getModelEquation()
+
+    def getDescription(self):
+        return self.drugSource.getDescription()+"; "+self.model.getDescription()
+
+    def getParameterNames(self):
+        retval = []
+        if self.findtlag:
+            retval.append('tlag')
+        retval += self.drugSource.getParameterNames()
+        retval += self.model.getParameterNames()
+        return retval
+
+    def calculateParameterUnits(self,sample):
+        retval = []
+        if self.findtlag:
+            retval.append(PKPDUnit.UNIT_TIME_MIN)
+        retval += self.drugSource.calculateParameterUnits(sample)
+        retval += self.model.calculateParameterUnits(sample)
+        self.parameterUnits = retval
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        return self.drugSource.areParametersSignificant(lowerBound[0:len(self.boundsSource)],
+                                                        upperBound[0:len(self.boundsSource)]) and \
+               self.model.areParametersSignificant(lowerBound[len(self.boundsSource):],
+                                                   upperBound[len(self.boundsSource):])
+
+    def areParametersValid(self, p):
+        return self.drugSource.areParametersValid(p[0:len(self.boundsSource)]) and \
+               self.model.areParametersValid(p[len(self.boundsSource):])
+
+    # Really fit ---------------------------------------------------------
     def runFit(self, objId, otherDependencies):
         reportX = parseRange(self.reportX.get())
-        self.experiment = self.readExperiment(self.getInputExperiment().fnPKPD)
+        self.setExperiment(self.readExperiment(self.getInputExperiment().fnPKPD))
 
         # Create drug source
         self.drugSource = DrugSource()
@@ -180,25 +277,25 @@ class ProtPKPDODEBase(ProtPKPD):
             # Interpret the dose
             sample.interpretDose()
             self.drugSource.parsedDoseList = sample.parsedDoseList
+            self.configureSource()
+            self.model.drugSource = self.drugSource
 
             # Prepare the model
             self.setTimeRange(sample)
             self.setBounds(sample)
-            self.model.setXYValues(x, y)
-            self.model.setSample(sample)
+            self.setXYValues(x, y)
+            self.setSample(sample)
             self.prepareForSampleAnalysis(sampleName)
-            self.model.calculateParameterUnits(sample)
+            self.calculateParameterUnits(sample)
             if self.fitting.modelParameterUnits==None:
-                self.fitting.modelParameterUnits = self.model.parameterUnits
-            self.model.printSetup()
+                self.fitting.modelParameterUnits = self.parameterUnits
+            self.printSetup()
 
-            self.configureSource()
-            self.model.drugSource = self.drugSource
             print(" ")
 
-            optimizer1 = PKPDDEOptimizer(self.model,fitType)
+            optimizer1 = PKPDDEOptimizer(self,fitType)
             optimizer1.optimize()
-            optimizer2 = PKPDLSOptimizer(self.model,fitType)
+            optimizer2 = PKPDLSOptimizer(self,fitType)
             optimizer2.optimize()
             optimizer2.setConfidenceInterval(self.confidenceInterval.get())
 
@@ -207,11 +304,11 @@ class ProtPKPDODEBase(ProtPKPD):
             sampleFit.sampleName = sample.varName
             sampleFit.x = x
             sampleFit.y = y
-            sampleFit.yp = self.model.yPredicted
-            sampleFit.yl = self.model.yPredictedLower
-            sampleFit.yu = self.model.yPredictedUpper
-            sampleFit.parameters = self.model.parameters
-            sampleFit.modelEquation = self.model.getEquation()
+            sampleFit.yp = self.yPredicted
+            sampleFit.yl = self.yPredictedLower
+            sampleFit.yu = self.yPredictedUpper
+            sampleFit.parameters = self.parameters
+            sampleFit.modelEquation = self.getEquation()
             sampleFit.copyFromOptimizer(optimizer2)
             self.fitting.sampleFits.append(sampleFit)
 
@@ -258,6 +355,8 @@ class ProtPKPDODEBase(ProtPKPD):
                 errors.append("Cannot find %s as variable"%self.varNameX)
             if not self.varNameY in experiment.variables:
                 errors.append("Cannot find %s as variable"%self.varNameY)
+        if self.findtlag and self.bounds.get()=="":
+            errors.append("Empty bound for tlag")
         return errors
 
     def _citations(self):

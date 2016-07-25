@@ -101,6 +101,7 @@ class PKPDExponentialModel(PKGenericModel):
         xunits = self.experiment.getVarUnits(self.xName)
         yunits = self.experiment.getVarUnits(self.yName)
         self.parameterUnits = [yunits,inverseUnits(xunits)]*self.Nexp
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
@@ -199,6 +200,7 @@ class PKPDSimpleEVModel(PKModel):
         self.parameterUnits = [inverseUnits(xunits),Vunits]
         if self.includeTlag:
             self.parameterUnits.append(xunits)
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
@@ -241,9 +243,6 @@ class PKPDSimpleEVModel(PKModel):
         return np.sum(p[0:1]<0)==0
 
 class PK_Monocompartment(PKPDODEModel):
-    def __init__(self):
-        PKPDODEModel.__init__(self)
-
     def F(self, t, y):
         Cl=self.parameters[0]
         V=self.parameters[1]
@@ -262,10 +261,6 @@ class PK_Monocompartment(PKPDODEModel):
     def getDescription(self):
         return "Monocompartmental model (%s)"%self.__class__.__name__
 
-    def printSetup(self):
-        print("Model: %s"%self.getModelEquation())
-        print("Bounds: "+str(self.bounds))
-
     def getModelEquation(self):
         return "dC/dt = -Cl/V * C + 1/V * dD/dt"
 
@@ -282,6 +277,7 @@ class PK_Monocompartment(PKPDODEModel):
         yunits = self.experiment.getVarUnits(self.yName)
         Vunits = divideUnits(self.Dunits,yunits)
         self.parameterUnits = [inverseUnits(xunits),Vunits]
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]

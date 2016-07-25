@@ -753,7 +753,6 @@ class PKPDModelBase:
 
     def getParameterDescriptions(self):
         return ['Automatically fitted model of the form %s'%self.getModelEquation()]*self.getNumberOfParameters()
-        pass
 
     def calculateParameterUnits(self,sample):
         pass
@@ -770,7 +769,8 @@ class PKPDModelBase2(PKPDModelBase):
         pass
 
     def printSetup(self):
-        pass
+        print("Model: %s"%self.getModelEquation())
+        print("Bounds: "+str(self.getBounds()))
 
     def getEquation(self):
         pass
@@ -826,6 +826,10 @@ class PKPDModelBase2(PKPDModelBase):
                 if y[n]>self.yPredictedUpper[n]:
                     self.yPredictedUpper[n]=y[n]
         self.yPredicted = yPredictedBackup.copy()
+
+    def setConfidenceIntervalNA(self):
+        self.yPredictedUpper = ["NA"]*len(self.yPredicted)
+        self.yPredictedLower = ["NA"]*len(self.yPredicted)
 
 class PKPDModel(PKPDModelBase2):
     def prepare(self):
@@ -1007,10 +1011,12 @@ class PKPDLSOptimizer(PKPDOptimizer):
         self.optimum, self.cov_x, self.info, _, _ = leastsq(self.getResiduals, self.model.parameters, full_output=True)
         print("Best LS function value: "+str(self.goalFunction(self.optimum)))
         print("Best LS parameters: "+str(self.optimum))
-        self.cov_x *= np.var(self.info["fvec"])
-
         print("Covariance matrix:")
-        print(np.array_str(self.cov_x,max_line_width=120))
+        if self.cov_x!=None:
+            self.cov_x *= np.var(self.info["fvec"])
+            print(np.array_str(self.cov_x,max_line_width=120))
+        else:
+            print("Singular covariance matrix, at least one of the variables seems to be irrelevant")
         self.model.setParameters(self.optimum)
         print(self.model.getEquation())
         self.printFitting()
@@ -1018,19 +1024,26 @@ class PKPDLSOptimizer(PKPDOptimizer):
         return self.optimum
 
     def setConfidenceInterval(self,confidenceInterval):
-        from scipy.stats import norm
-        nstd = norm.ppf(1-(1-confidenceInterval/100)/2)
-        perr = np.sqrt(np.diag(self.cov_x))
-        self.lowerBound = self.optimum-nstd*perr
-        self.upperBound = self.optimum+nstd*perr
+        if self.cov_x!=None:
+            from scipy.stats import norm
+            nstd = norm.ppf(1-(1-confidenceInterval/100)/2)
+            perr = np.sqrt(np.diag(self.cov_x))
+            self.lowerBound = self.optimum-nstd*perr
+            self.upperBound = self.optimum+nstd*perr
 
-        self.significance = self.model.areParametersSignificant(self.lowerBound,self.upperBound)
-        print("Confidence intervals %f%% --------------------------"%confidenceInterval)
-        print("ParameterValue   ParameterConfidenceInterval  IsStatisticallySignificant")
-        for n in range(0,len(self.optimum)):
-            print("%f [%f,%f] %s"%(self.optimum[n],self.lowerBound[n],self.upperBound[n],self.significance[n]))
+            self.significance = self.model.areParametersSignificant(self.lowerBound,self.upperBound)
+            parameterNames = self.model.getParameterNames()
+            print("Confidence intervals %f%% --------------------------"%confidenceInterval)
+            print("ParameterName ParameterValue   ParameterConfidenceInterval  IsStatisticallySignificant")
+            for n in range(0,len(self.optimum)):
+                print("%s %f [%f,%f] %s"%(parameterNames[n],self.optimum[n],self.lowerBound[n],self.upperBound[n],self.significance[n]))
 
-        self.model.setConfidenceInterval(self.lowerBound,self.upperBound)
+            self.model.setConfidenceInterval(self.lowerBound,self.upperBound)
+        else:
+            self.lowerBound=["NA"]*len(self.optimum)
+            self.upperBound=["NA"]*len(self.optimum)
+            self.significance=["NA"]*len(self.optimum)
+            self.model.setConfidenceIntervalNA()
 
 class PKPDSampleFit:
     def __init__(self):
@@ -1064,10 +1077,10 @@ class PKPDSampleFit:
         fh.write("Parameter lowerBound upperBound IsStatisticallySignificant -------\n")
         for parameter, lower, upper, significance in izip(self.parameters,self.lowerBound,self.upperBound,\
                                                           self.significance):
-            fh.write("%f [%f,%f] %s\n"%(parameter,lower,upper,significance))
+            fh.write("%f [%s,%s] %s\n"%(parameter,str(lower),str(upper),significance))
         fh.write("X   Y   Ypredicted [Ylower,Yupper] -------\n")
         for x,y,yp,yl,yu in izip(self.x,self.y,self.yp,self.yl,self.yu):
-            fh.write("%f %f %f [%f,%f]\n"%(x,y,yp,yl,yu))
+            fh.write("%f %f %f [%s,%s]\n"%(x,y,yp,str(yl),str(yu)))
         fh.write("\n")
 
     def copyFromOptimizer(self,optimizer):
@@ -1295,8 +1308,8 @@ class PKPDFitting(EMObject):
                 self.sampleFits[-1].y.append(float(tokens[1]))
                 self.sampleFits[-1].yp.append(float(tokens[2]))
                 tokens=(tokens[3])[1:-1].split(',')
-                self.sampleFits[-1].yl.append(float(tokens[0]))
-                self.sampleFits[-1].yu.append(float(tokens[1]))
+                self.sampleFits[-1].yl.append(tokens[0])
+                self.sampleFits[-1].yu.append(tokens[1])
 
         fh.close()
 

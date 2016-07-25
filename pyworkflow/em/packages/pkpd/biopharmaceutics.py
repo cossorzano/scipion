@@ -53,6 +53,31 @@ class BiopharmaceuticsModel:
         # Total amount of drug absorbed from time 0 to time t
         return 0.0
 
+    def getEquation(self):
+        return ""
+
+    def getModelEquation(self):
+        return ""
+
+    def getDescription(self):
+        return ""
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        for i in range(self.parameters):
+            lower = lowerBound[2*i]
+            upper = upperBound[2*i]
+            if lower<0 and upper>0:
+                retval.append("False")
+            elif lower>0 or upper<0:
+                retval.append("True")
+            else:
+                retval.append("NA")
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p<0)==0
+
 class BiopharmaceuticsModelOrder0(BiopharmaceuticsModel):
     def getDescription(self):
         return ['Constant absorption rate']
@@ -61,13 +86,27 @@ class BiopharmaceuticsModelOrder0(BiopharmaceuticsModel):
         return ['K']
 
     def calculateParameterUnits(self,sample):
-        return [PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN]
+        self.parameterUnits = [PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN]
+        return self.parameterUnits
 
     def getAg(self,t):
         if t<=0:
             return 0.0
         K = self.parameters[0]
         return K*t
+
+    def getEquation(self):
+        K = self.parameters[0]
+        return "D(t)=(%f)*t"%K
+
+    def getModelEquation(self):
+        return "D(t)=K*t"
+
+    def getDescription(self):
+        return "Zero order absorption (%s)"%self.__class__.__name__
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        return True
 
 class BiopharmaceuticsModelOrder1(BiopharmaceuticsModel):
     def getDescription(self):
@@ -77,7 +116,8 @@ class BiopharmaceuticsModelOrder1(BiopharmaceuticsModel):
         return ['Amax','Ka']
 
     def calculateParameterUnits(self,sample):
-        return [PKPDUnit.UNIT_WEIGHT_mg,PKPDUnit.UNIT_INVTIME_MIN]
+        self.parameterUnits = [PKPDUnit.UNIT_WEIGHT_mg,PKPDUnit.UNIT_INVTIME_MIN]
+        return self.parameterUnits
 
     def getAg(self,t):
         if t<=0:
@@ -85,6 +125,17 @@ class BiopharmaceuticsModelOrder1(BiopharmaceuticsModel):
         Amax = self.parameters[0]
         Ka = self.parameters[1]
         return Amax*(1-math.exp(-Ka*t))
+
+    def getEquation(self):
+        Amax = self.parameters[0]
+        Ka = self.parameters[1]
+        return "D(t)=(%f)*(1-exp(-(%f)*t)"%(Amax,Ka)
+
+    def getModelEquation(self):
+        return "D(t)=Amax*(1-exp(-Ka*t))"
+
+    def getDescription(self):
+        return "First order absorption (%s)"%self.__class__.__name__
 
 class BiopharmaceuticsModelOrderFractional(BiopharmaceuticsModel):
     def getDescription(self):
@@ -94,7 +145,8 @@ class BiopharmaceuticsModelOrderFractional(BiopharmaceuticsModel):
         return ['Amax','K','alpha']
 
     def calculateParameterUnits(self,sample):
-        return [PKPDUnit.UNIT_WEIGHT_mg,PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN,PKPDUnit.UNIT_NONE]
+        self.parameterUnits = [PKPDUnit.UNIT_WEIGHT_mg,PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN,PKPDUnit.UNIT_NONE]
+        return self.paramterUnits
 
     def getAg(self,t):
         if t<=0:
@@ -106,6 +158,21 @@ class BiopharmaceuticsModelOrderFractional(BiopharmaceuticsModel):
         if aux>Amax:
             return Amax
         return Amax-math.pow(math.pow(Amax,alpha)-aux,1.0/alpha)
+
+    def getEquation(self):
+        Amax = self.parameters[0]
+        K = self.parameters[1]
+        alpha = self.parameters[2]
+        return "D(t)=(%f)-((%f)^(%f)-(%f)*(%f)*t)^(1/(%f))"%(Amax,Amax,alpha,K,alpha,alpha)
+
+    def getModelEquation(self):
+        return "D(t)=Amax-(Amax^alpha-alpha*K*t)^(1/alpha)"
+
+    def getDescription(self):
+        return "Fractional order absorption (%s)"%self.__class__.__name__
+
+    def areParametersValid(self, p):
+        return np.sum(p<0)==0 and p[2]>0 and p[2]<1
 
 class DrugSource:
     IV = 0
@@ -137,7 +204,49 @@ class DrugSource:
 
     def getAmountReleasedBetween(self,t0,tF):
         if self.type == DrugSource.IV:
-            return self.getDoseAt(t0,tF-t0)
+            return self.getDoseAt(t0-self.tlag,tF-t0)
         else:
             return self.evProfile.getAg(tF-self.tlag)-self.evProfile.getAg(t0-self.tlag)
 
+    def getEquation(self):
+        if self.type == DrugSource.IV:
+            retval = "D=Div(t)"
+        else:
+            retval = self.evProfile.getEquation()
+        return "%s (tlag=%f)"%(retval,self.tlag)
+
+    def getModelEquation(self):
+        if self.type == DrugSource.IV:
+            return "D=Div(t)"
+        else:
+            return self.evProfile.getModelEquation()
+
+    def getDescription(self):
+        if self.type == DrugSource.IV:
+            return "Intravenous dose"
+        else:
+            return self.evProfile.getDescription()
+
+    def getParameterNames(self):
+        if self.type == DrugSource.IV:
+            return []
+        else:
+            return self.evProfile.getParameterNames()
+
+    def calculateParameterUnits(self,sample):
+        if self.type == DrugSource.IV:
+            return []
+        else:
+            return self.evProfile.calculateParameterUnits(sample)
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        if self.type == DrugSource.IV:
+            return True
+        else:
+            return self.evProfile.areParametersSignificant(lowerBound, upperBound)
+
+    def areParametersValid(self, p):
+        if self.type == DrugSource.IV:
+            return True
+        else:
+            return self.evProfile.areParametersValid(p)

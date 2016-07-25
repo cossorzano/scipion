@@ -51,8 +51,10 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         form.addParam('ncaProtocol', params.PointerParam, label="NCA protocol",
                       pointerClass='ProtPKPDNCAIVExp, ProtPKPDNCAIVObs', allowsNull = True, condition="initType==0",
                       help='NCA Protocol')
-        form.addParam('bounds', params.StringParam, label="Parameter bounds (Cl, V)", default="", condition="initType==1",
-                      help='Bounds for the clearance and volume. Example: (0.1,0.2);(10,20). Make sure that the bounds are expressed in the expected units (estimated from the sample itself)')
+        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Cl, V)", default="",
+                      help="Bounds for the tlag (if it must be estimated), clearance and volume. Example: (0,2);(0.1,0.2);(10,20). "\
+                      'Make sure that the bounds are expressed in the expected units (estimated from the sample itself).'\
+                      'If tlag must be estimated, its bounds must always be specified')
         form.addParam('predictor', params.StringParam, label="Predictor variable (X)", default="t", condition="initType==1",
                       help='Y is predicted as an exponential function of X, Y=f(X)')
         form.addParam('predicted', params.StringParam, label="Predicted variable (Y)", default="Cp", condition="initType==1",
@@ -100,6 +102,10 @@ are independent, which are not. Use Bootstrap estimates instead.\n
                     Cl = float(sampleNCA.descriptors["CL_0inf"]) # NCA from observations
                     V  = float(sampleNCA.descriptors["Vd_0inf"])
                 boundsString = "(%f,%f);(%f,%f)"%(Cl/3,Cl*3,V/3,V*3)
-            self.model.setBounds(boundsString)
+                if self.findtlag:
+                    boundsString = self.bounds.get()+";"+boundsString
+            self.parseBounds(boundsString)
         else:
-            self.model.setBounds(self.bounds.get())
+            self.parseBounds(self.bounds.get())
+        ProtPKPDODEBase.setBounds(self)
+        self.model.bounds = self.boundsPK
