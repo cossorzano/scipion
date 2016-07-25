@@ -51,6 +51,7 @@ from protocol_pkpd_cumulated_dose import ProtPKPDCumulatedDose
 from protocol_pkpd_iv_monocompartment import ProtPKPDIVMonoCompartment
 from protocol_pkpd_import_from_winnonlin import ProtPKPDImportFromWinnonlin
 from protocol_pkpd_change_units import ProtPKPDChangeUnits
+from protocol_pkpd_ev_monocompartment import ProtPKPDEV1MonoCompartment
 
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment

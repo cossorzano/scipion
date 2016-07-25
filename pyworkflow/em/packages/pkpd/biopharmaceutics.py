@@ -64,9 +64,9 @@ class BiopharmaceuticsModel:
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
-        for i in range(self.parameters):
-            lower = lowerBound[2*i]
-            upper = upperBound[2*i]
+        for i in range(len(self.parameters)):
+            lower = lowerBound[i]
+            upper = upperBound[i]
             if lower<0 and upper>0:
                 retval.append("False")
             elif lower>0 or upper<0:
@@ -110,10 +110,10 @@ class BiopharmaceuticsModelOrder0(BiopharmaceuticsModel):
 
 class BiopharmaceuticsModelOrder1(BiopharmaceuticsModel):
     def getDescription(self):
-        return ['Initial amount','Absorption rate']
+        return ['Absorption rate']
 
     def getParameterNames(self):
-        return ['Amax','Ka']
+        return ['Ka']
 
     def calculateParameterUnits(self,sample):
         self.parameterUnits = [PKPDUnit.UNIT_WEIGHT_mg,PKPDUnit.UNIT_INVTIME_MIN]
@@ -122,14 +122,12 @@ class BiopharmaceuticsModelOrder1(BiopharmaceuticsModel):
     def getAg(self,t):
         if t<=0:
             return 0.0
-        Amax = self.parameters[0]
-        Ka = self.parameters[1]
-        return Amax*(1-math.exp(-Ka*t))
+        Ka = self.parameters[0]
+        return self.Amax*(1-math.exp(-Ka*t))
 
     def getEquation(self):
-        Amax = self.parameters[0]
-        Ka = self.parameters[1]
-        return "D(t)=(%f)*(1-exp(-(%f)*t)"%(Amax,Ka)
+        Ka = self.parameters[0]
+        return "D(t)=(%f)*(1-exp(-(%f)*t)"%(self.Amax,Ka)
 
     def getModelEquation(self):
         return "D(t)=Amax*(1-exp(-Ka*t))"
@@ -232,6 +230,9 @@ class DrugSource:
             return []
         else:
             return self.evProfile.getParameterNames()
+
+    def getNumberOfParameters(self):
+        return len(self.getParameterNames())
 
     def calculateParameterUnits(self,sample):
         if self.type == DrugSource.IV:

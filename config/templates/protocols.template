@@ -118,6 +118,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDIVMonoCompartment",
 		"text": "iv monocompartment"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDEV1MonoCompartment",
+		"text": "ev1 monocompartment"
 	}]
     },
     {

@@ -144,29 +144,24 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         if boundsString!="" and boundsString!=None:
             tokens=boundsString.split(';')
             if len(tokens)!=self.getNumberOfParameters():
-                raise Exception("The number of bound intervals does not match the number of exponential terms")
+                raise Exception("The number of bound intervals does not match the number of parameters")
             self.boundsList=[]
             for token in tokens:
                 values = token.strip().split(',')
                 self.boundsList.append((float(values[0][1:]),float(values[1][:-1])))
 
-    def setBounds(self):
+    def setBounds(self,sample):
+        self.parseBounds(self.bounds.get())
         Nbounds = len(self.boundsList)
-        Nparameters = self.model.getNumberOfParameters()
+        Nsource = self.drugSource.getNumberOfParameters()
+        Nmodel = self.model.getNumberOfParameters()
         if self.findtlag:
-            Nparameters+=1
-        if Nbounds!=Nparameters:
-            raise "The number of parameters (%d) and bounds (%d) are different"%(Nparameters,Nbounds)
-
-        self.boundsSource = []
-        if self.findtlag:
-            if len(self.boundsList)>=1:
-                self.boundsSource = [self.boundsList[0]]
-
-        Nsource = len(self.boundsSource)
-        self.boundsPK = []
-        if Nbounds>Nsource:
-            self.boundsPK=self.boundsList[Nsource:]
+            Nsource+=1
+        if Nbounds!=Nsource+Nmodel:
+            raise "The number of parameters (%d) and bounds (%d) are different"%(Nsource+Nmodel,Nbounds)
+        self.boundsSource = self.boundsList[0:Nsource]
+        self.boundsPK = self.boundsList[Nsource:]
+        self.model.bounds = self.boundsPK
 
     def getBounds(self):
         return self.boundsList
@@ -177,8 +172,11 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         self.setParametersPK()
 
     def setParametersSource(self):
+        idx = 0
         if self.findtlag:
-            self.drugSource.tlag = self.parameters[0]
+            self.drugSource.tlag = self.parameters[idx]
+            idx+=1
+        self.drugSource.evProfile.setParameters(self.parameters[idx:len(self.boundsSource)])
 
     def setParametersPK(self):
         self.parametersPK = self.parameters[len(self.boundsSource):]
@@ -223,13 +221,20 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         self.parameterUnits = retval
 
     def areParametersSignificant(self, lowerBound, upperBound):
-        return self.drugSource.areParametersSignificant(lowerBound[0:len(self.boundsSource)],
-                                                        upperBound[0:len(self.boundsSource)]) and \
-               self.model.areParametersSignificant(lowerBound[len(self.boundsSource):],
-                                                   upperBound[len(self.boundsSource):])
+        retval = []
+        idx=0
+        if self.findtlag:
+            idx=1
+            retval=['True']
+        retval+=self.drugSource.areParametersSignificant(lowerBound[idx:len(self.boundsSource)],
+                                                         upperBound[idx:len(self.boundsSource)])
+        retval+=self.model.areParametersSignificant(lowerBound[len(self.boundsSource):],
+                                                    upperBound[len(self.boundsSource):])
+        return retval
 
     def areParametersValid(self, p):
-        return self.drugSource.areParametersValid(p[0:len(self.boundsSource)]) and \
+        idx = 1 if self.findtlag else 0
+        return self.drugSource.areParametersValid(p[idx:len(self.boundsSource)]) and \
                self.model.areParametersValid(p[len(self.boundsSource):])
 
     # Really fit ---------------------------------------------------------
@@ -275,13 +280,13 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
             print(" ")
 
             # Interpret the dose
+            self.setTimeRange(sample)
             sample.interpretDose()
             self.drugSource.parsedDoseList = sample.parsedDoseList
             self.configureSource()
             self.model.drugSource = self.drugSource
 
             # Prepare the model
-            self.setTimeRange(sample)
             self.setBounds(sample)
             self.setXYValues(x, y)
             self.setSample(sample)
@@ -298,6 +303,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
             optimizer2 = PKPDLSOptimizer(self,fitType)
             optimizer2.optimize()
             optimizer2.setConfidenceInterval(self.confidenceInterval.get())
+            self.setParameters(optimizer2.optimum)
 
             # Keep this result
             sampleFit = PKPDSampleFit()
@@ -313,7 +319,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
             self.fitting.sampleFits.append(sampleFit)
 
             # Add the parameters to the sample and experiment
-            for varName, varUnits, description, varValue in izip(self.model.getParameterNames(), self.model.parameterUnits, self.model.getParameterDescriptions(), self.model.parameters):
+            for varName, varUnits, description, varValue in izip(self.getParameterNames(), self.parameterUnits, self.getParameterDescriptions(), self.parameters):
                 self.experiment.addParameterToSample(sampleName, varName, varUnits, description, varValue)
 
             self.postSampleAnalysis(sampleName)
