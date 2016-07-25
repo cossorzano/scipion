@@ -148,7 +148,11 @@ class PKPDSimpleEVModel(PKModel):
         else:
             tlag = 0.0
 
-        self.yPredicted = Ka*self.F*self.D/(Vd*(Ka-self.Ke))*(np.exp(-self.Ke*x)-np.exp(-Ka*(x-tlag)))
+        self.yPredicted = np.zeros(len(x))
+        for i in range(len(x)):
+            if x[i]>=tlag:
+                td=x[i]-tlag
+                self.yPredicted[i] = Ka*self.F*self.D/(Vd*(Ka-self.Ke))*(np.exp(-self.Ke*td)-np.exp(-Ka*td))
         return self.yPredicted
 
     def getDescription(self):
@@ -156,12 +160,21 @@ class PKPDSimpleEVModel(PKModel):
 
     def prepare(self):
         if self.bounds == None:
-            ylogE = np.polyval(np.asarray([-self.Ke,math.log(self.C0)],np.double),self.x)
-            ylogToFit = self.ylog-ylogE
-            p = np.polyfit(self.x,-ylogToFit,1)
+            # Keep only the ascending part of the curve
+            idx = []
+            for i in range(1,self.y.shape[0]):
+                idx.append(i-1)
+                if self.y[i-1]>self.y[i]:
+                    break
+            xAscending = self.x[idx]
+            yAscending = self.y[idx]
+
+            ylogE = np.polyval(np.asarray([-self.Ke,math.log(self.C0)],np.double),xAscending)
+            ylogToFit = np.log(yAscending)-ylogE
+            p = np.polyfit(xAscending,-ylogToFit,1)
             Ka = -p[0]
-            Vd = (Ka*self.F*self.D)/(math.exp(p[1])*(Ka-self.Ke))
-            self.bounds=[(Ka*0.01,Ka*100),(0.01*Vd,100*Vd)]
+            Vd = self.D / np.max(self.y) # Incorrect: (Ka*self.F*self.D)/(math.exp(p[1])*(Ka-self.Ke))
+            self.bounds=[(Ka*0.2,Ka*5),(0.2*Vd,5*Vd)]
             print("First estimate of Ka: %f"%Ka)
             print("First estimate of Vd: %f"%Vd)
             if self.includeTlag:
@@ -175,7 +188,7 @@ class PKPDSimpleEVModel(PKModel):
 
     def getModelEquation(self):
         if self.includeTlag:
-            return "Y=Ka*F*D/(Vd*(Ka-Ke))*(exp(-Ke*t)-exp(-Ka*(t-tlag))"
+            return "Y=Ka*F*D/(Vd*(Ka-Ke))*(exp(-Ke*(t-tlag))-exp(-Ka*(t-tlag))"
         else:
             return "Y=Ka*F*D/(Vd*(Ka-Ke))*(exp(-Ke*t)-exp(-Ka*t)"
 
@@ -184,7 +197,7 @@ class PKPDSimpleEVModel(PKModel):
         Vd=self.parameters[1]
         if self.includeTlag:
             tlag=self.parameters[2]
-            return "Y=%f*%f*D/(%f*(%f-%f))*(exp(-%f*t)-exp(-%f*(t-(%f))))"%(Ka,self.F,Vd,Ka,self.Ke,self.Ke,Ka,tlag)
+            return "Y=%f*%f*D/(%f*(%f-%f))*(exp(-%f*(t-(%f)))-exp(-%f*(t-(%f))))"%(Ka,self.F,Vd,Ka,self.Ke,self.Ke,tlag,Ka,tlag)
         else:
             return "Y=%f*%f*D/(%f*(%f-%f))*(exp(-%f*t)-exp(-%f*t))"%(Ka,self.F,Vd,Ka,self.Ke,self.Ke,Ka)
 
