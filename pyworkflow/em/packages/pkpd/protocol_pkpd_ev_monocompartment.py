@@ -44,9 +44,10 @@ are independent, which are not. Use Bootstrap estimates instead.\n
     def _defineParams(self, form):
         self._defineParams1(form, True, "t", "Cp")
         form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Ka, Cl, V)", default="",
-                      help="Bounds for the tlag (if it must be estimated), absorption, clearance and volume. Example: (0,2);(0.1,0.2);(10,20). "\
+                      help="Bounds for the tlag (if it must be estimated), absorption, clearance and volume. Example: (0.01,0.04);(0.2,0.4);(10,20). "\
                       'Make sure that the bounds are expressed in the expected units (estimated from the sample itself).'\
-                      'If tlag must be estimated, its bounds must always be specified')
+                      'If tlag must be estimated, its bounds must always be specified. '\
+                      'Be careful that Cl bounds must be given here. If you have an estimate of the elimination rate, this is Ke=Cl/V. Consequently, Cl=Ke*V ')
 
     def configureSource(self):
         self.drugSource.type = biopharmaceutics.DrugSource.EV
