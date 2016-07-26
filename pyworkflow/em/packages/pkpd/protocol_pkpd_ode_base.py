@@ -180,6 +180,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def setParametersPK(self):
         self.parametersPK = self.parameters[len(self.boundsSource):]
+        self.model.setParameters(self.parametersPK)
 
     def setXYValues(self, x, y):
         PKPDModelBase.setXYValues(self,x,y)
@@ -258,8 +259,6 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         self.fitting.fnExperiment.set(self.getInputExperiment().fnPKPD.get())
         self.fitting.predictor=self.experiment.variables[self.varNameX]
         self.fitting.predicted=self.experiment.variables[self.varNameY]
-        self.fitting.modelDescription=self.model.getDescription()
-        self.fitting.modelParameters = self.model.getParameterNames()
         self.fitting.modelParameterUnits = None
 
         # Actual fitting
@@ -335,6 +334,8 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                     print("%f %f %f"%(reportX[n],yreportX[n],math.log10(yreportX[n])))
                 print(' ')
 
+        self.fitting.modelParameters = self.getParameterNames()
+        self.fitting.modelDescription=self.getDescription()
         self.fitting.write(self._getPath("fitting.pkpd"))
         self.experiment.write(self._getPath("experiment.pkpd"))
 
