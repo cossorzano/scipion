@@ -116,7 +116,7 @@ class BiopharmaceuticsModelOrder1(BiopharmaceuticsModel):
         return ['Ka']
 
     def calculateParameterUnits(self,sample):
-        self.parameterUnits = [PKPDUnit.UNIT_WEIGHT_mg,PKPDUnit.UNIT_INVTIME_MIN]
+        self.parameterUnits = [PKPDUnit.UNIT_INVTIME_MIN]
         return self.parameterUnits
 
     def getAg(self,t):
