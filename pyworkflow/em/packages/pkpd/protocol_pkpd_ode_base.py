@@ -152,6 +152,9 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def setBounds(self,sample):
         self.parseBounds(self.bounds.get())
+        self.setBoundsFromBoundsList(self)
+
+    def setBoundsFromBoundsList(self):
         Nbounds = len(self.boundsList)
         Nsource = self.drugSource.getNumberOfParameters()
         Nmodel = self.model.getNumberOfParameters()
