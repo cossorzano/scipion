@@ -43,11 +43,40 @@ are independent, which are not. Use Bootstrap estimates instead.\n
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):
         self._defineParams1(form, True, "t", "Cp")
-        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Ka, Cl, V)", default="",
+        form.addParam('initType', params.EnumParam, choices=["From absorption protocol","Specify bounds"], label="Initialize from", default=0,
+                      help='You may initialize the model from estimates of a previous protocol or by giving the bounds for the different parameters')
+        form.addParam('absorptionProtocol', params.PointerParam, label="Absorption rate protocol",
+                      pointerClass='ProtPKPDAbsorptionRate', allowsNull = True, condition="initType==0",
+                      help='Absorption rate Protocol')
+        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Ka, Cl, V)", default="", condition="initType==1",
                       help="Bounds for the tlag (if it must be estimated), absorption, clearance and volume. Example: (0.01,0.04);(0.2,0.4);(10,20). "\
                       'Make sure that the bounds are expressed in the expected units (estimated from the sample itself).'\
-                      'If tlag must be estimated, its bounds must always be specified. '\
                       'Be careful that Cl bounds must be given here. If you have an estimate of the elimination rate, this is Ke=Cl/V. Consequently, Cl=Ke*V ')
+
+    def setupFromFormParameters(self):
+        if self.initType==0:
+            self.absProt = self.absorptionProtocol.get()
+            self.absExperiment = self.readExperiment(self.absProt.outputExperiment.fnPKPD)
+        else:
+            self.ncaProt = None
+
+    def setBounds(self,sample):
+        if self.initType == 0:
+            boundsString = ""
+            if sample.getSampleName() in self.absExperiment.samples:
+                sampleAbs = self.absExperiment.samples[sample.getSampleName()]
+                Ka = float(sampleAbs.descriptors["Ka"])
+                Ke = float(sampleAbs.descriptors["Ke"])
+                V = float(sampleAbs.descriptors["Vd"])
+                Cl = Ke*V
+                boundsString = "(%f,%f);(%f,%f);(%f,%f)"%(Ka/3,Ka*3,Cl/3,Cl*3,V/3,V*3)
+                if self.findtlag:
+                    tlag = float(sampleAbs.descriptors["tlag"])
+                    boundsString = "(%f,%f);%s"%(tlag/3,tlag*3,boundsString)
+            self.parseBounds(boundsString)
+            self.setBoundsFromBoundsList()
+        else:
+            ProtPKPDODEBase.setBounds(self,sample)
 
     def configureSource(self):
         self.drugSource.type = biopharmaceutics.DrugSource.EV
@@ -57,3 +86,13 @@ are independent, which are not. Use Bootstrap estimates instead.\n
     def createModel(self):
         return PK_Monocompartment()
 
+    def _validate(self):
+        self.getXYvars()
+        errors=[]
+        if self.varNameX!=None:
+            experiment = self.readExperiment(self.getInputExperiment().fnPKPD, False)
+            if not self.varNameX in experiment.variables:
+                errors.append("Cannot find %s as variable"%self.varNameX)
+            if not self.varNameY in experiment.variables:
+                errors.append("Cannot find %s as variable"%self.varNameY)
+        return errors
