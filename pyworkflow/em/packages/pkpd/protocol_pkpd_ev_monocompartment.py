@@ -81,7 +81,6 @@ are independent, which are not. Use Bootstrap estimates instead.\n
     def configureSource(self):
         self.drugSource.type = biopharmaceutics.DrugSource.EV
         self.drugSource.evProfile = biopharmaceutics.BiopharmaceuticsModelOrder1()
-        self.drugSource.evProfile.Amax = self.drugSource.getCumulatedDose(self.model.t0,self.model.tF)
 
     def createModel(self):
         return PK_Monocompartment()
