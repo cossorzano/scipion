@@ -26,9 +26,11 @@
 """
 Biopharmaceutics: Drug sources and how they dissolve
 """
+import copy
 import math
 import numpy as np
 from pyworkflow.em.pkpd_units import PKPDUnit
+from pyworkflow.em.data import PKPDDose
 
 class BiopharmaceuticsModel:
     def __init__(self):
@@ -182,6 +184,19 @@ class DrugSource:
         self.tlag = 0
         self.evProfile = None
 
+    def setDoses(self, parsedDoseList, t0, tF):
+        self.parsedDoseList = []
+        for dose in parsedDoseList:
+            if dose.doseType != PKPDDose.TYPE_REPEATED_BOLUS:
+                self.parsedDoseList.append(dose)
+            else:
+                for t in np.arange(dose.t0,dose.tF,dose.every):
+                    if t0<=t and t<=tF:
+                        newDose = copy.copy(dose)
+                        newDose.doseType = PKPDDose.TYPE_BOLUS
+                        newDose.t0 = t
+                        self.parsedDoseList.append(newDose)
+
     def getDoseAt(self,t0,dt=0.5):
         doseAmount = 0.0
         for dose in self.parsedDoseList:
@@ -195,16 +210,20 @@ class DrugSource:
         return self.parsedDoseList[0].dunits.unit
 
     def getAmountReleasedAt(self,t0,dt=0.5):
-        if self.type == DrugSource.IV:
-            return self.getDoseAt(t0-self.tlag,dt)
-        else:
-            return self.evProfile.getAg(t0-self.tlag+dt)-self.evProfile.getAg(t0)
+        doseAmount = 0.0
+        for dose in self.parsedDoseList:
+            if self.type == DrugSource.IV:
+                doseAmount += dose.getDoseAt(t0-self.tlag,dt)
+            else:
+                if dose.doseType!=PKPDDose.TYPE_INFUSION:
+                    self.evProfile.Amax = dose.doseAmount
+                    doseAmount += self.evProfile.getAg(t0-self.tlag+dt)-self.evProfile.getAg(t0-self.tlag)
+                else:
+                    raise Exception("getAmountReleasedAt not implemented for infusion")
+        return doseAmount
 
     def getAmountReleasedBetween(self,t0,tF):
-        if self.type == DrugSource.IV:
-            return self.getDoseAt(t0-self.tlag,tF-t0)
-        else:
-            return self.evProfile.getAg(tF-self.tlag)-self.evProfile.getAg(t0-self.tlag)
+        return self.getAmountReleasedAt(t0,tF-t0)
 
     def getEquation(self):
         if self.type == DrugSource.IV:
