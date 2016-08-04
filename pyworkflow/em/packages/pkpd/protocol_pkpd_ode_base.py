@@ -284,7 +284,8 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
             # Interpret the dose
             self.setTimeRange(sample)
             sample.interpretDose()
-            self.drugSource.parsedDoseList = sample.parsedDoseList
+
+            self.drugSource.setDoses(sample.parsedDoseList, self.model.t0, self.model.tF)
             self.configureSource()
             self.model.drugSource = self.drugSource
 
