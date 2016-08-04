@@ -1046,6 +1046,16 @@ class PKPDLSOptimizer(PKPDOptimizer):
             self.model.setConfidenceIntervalNA()
 
 class PKPDSampleFit:
+    READING_SAMPLEFITTINGS_NAME = 0
+    READING_SAMPLEFITTINGS_MODELEQ = 1
+    READING_SAMPLEFITTINGS_R2 = 2
+    READING_SAMPLEFITTINGS_R2ADJ = 3
+    READING_SAMPLEFITTINGS_AIC = 4
+    READING_SAMPLEFITTINGS_AICc = 5
+    READING_SAMPLEFITTINGS_BIC = 6
+    READING_SAMPLEFITTINGS_PARAMETER_BOUNDS = 7
+    READING_SAMPLEFITTINGS_SAMPLE_VALUES = 8
+
     def __init__(self):
         self.sampleName = ""
         self.x = None
@@ -1083,6 +1093,75 @@ class PKPDSampleFit:
             fh.write("%f %f %f [%s,%s]\n"%(x,y,yp,str(yl),str(yu)))
         fh.write("\n")
 
+    def restartReadingState(self):
+        self.state = PKPDSampleFit.READING_SAMPLEFITTINGS_NAME
+
+    def readFromLine(self, line):
+        if self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_NAME:
+            tokens = line.split(':')
+            self.sampleName = tokens[1].strip()
+            self.state = PKPDSampleFit.READING_SAMPLEFITTINGS_MODELEQ
+
+        elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_MODELEQ:
+            tokens = line.split(':')
+            self.modelEquation = tokens[1].strip()
+            self.state = PKPDSampleFit.READING_SAMPLEFITTINGS_R2
+
+        elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_R2:
+            tokens = line.split(':')
+            self.R2 = float(tokens[1])
+            self.state = PKPDSampleFit.READING_SAMPLEFITTINGS_R2ADJ
+
+        elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_R2ADJ:
+            tokens = line.split(':')
+            self.R2adj = float(tokens[1])
+            self.state = PKPDSampleFit.READING_SAMPLEFITTINGS_AIC
+
+        elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_AIC:
+            tokens = line.split(':')
+            self.AIC = float(tokens[1])
+            self.state = PKPDSampleFit.READING_SAMPLEFITTINGS_AICc
+
+        elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_AICc:
+            tokens = line.split(':')
+            self.AICc = float(tokens[1])
+            self.state = PKPDSampleFit.READING_SAMPLEFITTINGS_BIC
+
+        elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_BIC:
+            tokens = line.split(':')
+            self.BIC = float(tokens[1])
+            self.state = PKPDSampleFit.READING_SAMPLEFITTINGS_PARAMETER_BOUNDS
+
+        elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_PARAMETER_BOUNDS:
+            if line.startswith("Parameter lowerBound upperBound"):
+                self.parameters=[]
+                self.lowerBound=[]
+                self.upperBound=[]
+                self.significance=[]
+            elif line.startswith("X   Y   Ypredicted"):
+                self.state=PKPDSampleFit.READING_SAMPLEFITTINGS_SAMPLE_VALUES
+                self.x=[]
+                self.y=[]
+                self.yp=[]
+                self.yl=[]
+                self.yu=[]
+            else:
+                tokens=line.split()
+                self.parameters.append(float(tokens[0]))
+                self.significance.append(tokens[2])
+                tokens=(tokens[1])[1:-1].split(',')
+                self.lowerBound.append(float(tokens[0]))
+                self.upperBound.append(float(tokens[1]))
+
+        elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_SAMPLE_VALUES:
+            tokens=line.split()
+            self.x.append(float(tokens[0]))
+            self.y.append(float(tokens[1]))
+            self.yp.append(float(tokens[2]))
+            tokens=(tokens[3])[1:-1].split(',')
+            self.yl.append(tokens[0])
+            self.yu.append(tokens[1])
+
     def copyFromOptimizer(self,optimizer):
         self.R2 = optimizer.R2
         self.R2adj = optimizer.R2adj
@@ -1093,7 +1172,6 @@ class PKPDSampleFit:
         self.lowerBound = optimizer.lowerBound
         self.upperBound = optimizer.upperBound
 
-
 class PKPDFitting(EMObject):
     READING_FITTING_EXPERIMENT = 1
     READING_FITTING_PREDICTOR = 2
@@ -1101,17 +1179,10 @@ class PKPDFitting(EMObject):
     READING_FITTING_MODEL = 4
     READING_POPULATION_HEADER = 5
     READING_POPULATION = 6
-    READING_SAMPLEFITTINGS_NAME = 7
-    READING_SAMPLEFITTINGS_MODELEQ = 8
-    READING_SAMPLEFITTINGS_R2 = 9
-    READING_SAMPLEFITTINGS_R2ADJ = 10
-    READING_SAMPLEFITTINGS_AIC = 11
-    READING_SAMPLEFITTINGS_AICc = 12
-    READING_SAMPLEFITTINGS_BIC = 13
-    READING_SAMPLEFITTINGS_PARAMETER_BOUNDS = 14
-    READING_SAMPLEFITTINGS_SAMPLE_VALUES = 15
+    READING_SAMPLEFITTINGS_BEGIN = 7
+    READING_SAMPLEFITTINGS_CONTINUE = 8
 
-    def __init__(self, **args):
+    def __init__(self, cls="", **args):
         EMObject.__init__(self, **args)
         self.fnFitting = String()
         self.fnExperiment = String()
@@ -1122,6 +1193,10 @@ class PKPDFitting(EMObject):
         self.modelParameterUnits = []
         self.sampleFits = []
         self.summaryLines = []
+        if cls=="":
+            self.sampleFittingClass = "PKPDSampleFit"
+        else:
+            self.sampleFittingClass = cls
 
     def write(self, fnFitting):
         fh=open(fnFitting,'w')
@@ -1180,6 +1255,8 @@ class PKPDFitting(EMObject):
             sampleFitting._printToStream(fh)
 
     def load(self,fnFitting):
+        if isinstance(fnFitting,String):
+            fnFitting =  fnFitting.get()
         fh=open(fnFitting)
         if not fh:
             raise Exception("Cannot open %s"%fnFitting)
@@ -1191,8 +1268,8 @@ class PKPDFitting(EMObject):
         for line in fh.readlines():
             line=line.strip()
             if line=="":
-                if state==PKPDFitting.READING_SAMPLEFITTINGS_SAMPLE_VALUES:
-                     state=PKPDFitting.READING_SAMPLEFITTINGS_NAME
+                if state==PKPDFitting.READING_SAMPLEFITTINGS_CONTINUE:
+                     state=PKPDFitting.READING_SAMPLEFITTINGS_BEGIN
                 continue
             if line.startswith('[') and line.endswith('='):
                 section = line.split('=')[0].strip().lower()
@@ -1203,7 +1280,7 @@ class PKPDFitting(EMObject):
                     state=PKPDFitting.READING_POPULATION_HEADER
                     self.summaryLines.append(line)
                 elif section=="[sample fittings]":
-                    state=PKPDFitting.READING_SAMPLEFITTINGS_NAME
+                    state=PKPDFitting.READING_SAMPLEFITTINGS_BEGIN
                 else:
                     print("Skipping: ",line)
 
@@ -1245,71 +1322,15 @@ class PKPDFitting(EMObject):
             elif state==PKPDFitting.READING_POPULATION:
                 self.summaryLines.append(line)
 
-            elif state==PKPDFitting.READING_SAMPLEFITTINGS_NAME:
-                tokens = line.split(':')
-                self.sampleFits.append(PKPDSampleFit())
-                self.sampleFits[-1].sampleName = tokens[1].strip()
-                state = PKPDFitting.READING_SAMPLEFITTINGS_MODELEQ
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_BEGIN:
+                newSampleFit = eval("%s()"%self.sampleFittingClass)
+                self.sampleFits.append(newSampleFit)
+                self.sampleFits[-1].restartReadingState()
+                self.sampleFits[-1].readFromLine(line)
+                state = PKPDFitting.READING_SAMPLEFITTINGS_CONTINUE
 
-            elif state==PKPDFitting.READING_SAMPLEFITTINGS_MODELEQ:
-                tokens = line.split(':')
-                self.sampleFits[-1].modelEquation = tokens[1].strip()
-                state = PKPDFitting.READING_SAMPLEFITTINGS_R2
-
-            elif state==PKPDFitting.READING_SAMPLEFITTINGS_R2:
-                tokens = line.split(':')
-                self.sampleFits[-1].R2 = float(tokens[1])
-                state = PKPDFitting.READING_SAMPLEFITTINGS_R2ADJ
-
-            elif state==PKPDFitting.READING_SAMPLEFITTINGS_R2ADJ:
-                tokens = line.split(':')
-                self.sampleFits[-1].R2adj = float(tokens[1])
-                state = PKPDFitting.READING_SAMPLEFITTINGS_AIC
-
-            elif state==PKPDFitting.READING_SAMPLEFITTINGS_AIC:
-                tokens = line.split(':')
-                self.sampleFits[-1].AIC = float(tokens[1])
-                state = PKPDFitting.READING_SAMPLEFITTINGS_AICc
-
-            elif state==PKPDFitting.READING_SAMPLEFITTINGS_AICc:
-                tokens = line.split(':')
-                self.sampleFits[-1].AICc = float(tokens[1])
-                state = PKPDFitting.READING_SAMPLEFITTINGS_BIC
-
-            elif state==PKPDFitting.READING_SAMPLEFITTINGS_BIC:
-                tokens = line.split(':')
-                self.sampleFits[-1].BIC = float(tokens[1])
-                state = PKPDFitting.READING_SAMPLEFITTINGS_PARAMETER_BOUNDS
-
-            elif state==PKPDFitting.READING_SAMPLEFITTINGS_PARAMETER_BOUNDS:
-                if line.startswith("Parameter lowerBound upperBound"):
-                    self.sampleFits[-1].parameters=[]
-                    self.sampleFits[-1].lowerBound=[]
-                    self.sampleFits[-1].upperBound=[]
-                    self.sampleFits[-1].significance=[]
-                elif line.startswith("X   Y   Ypredicted"):
-                    state=PKPDFitting.READING_SAMPLEFITTINGS_SAMPLE_VALUES
-                    self.sampleFits[-1].x=[]
-                    self.sampleFits[-1].y=[]
-                    self.sampleFits[-1].yp=[]
-                    self.sampleFits[-1].yl=[]
-                    self.sampleFits[-1].yu=[]
-                else:
-                    tokens=line.split()
-                    self.sampleFits[-1].parameters.append(float(tokens[0]))
-                    self.sampleFits[-1].significance.append(tokens[2])
-                    tokens=(tokens[1])[1:-1].split(',')
-                    self.sampleFits[-1].lowerBound.append(float(tokens[0]))
-                    self.sampleFits[-1].upperBound.append(float(tokens[1]))
-
-            elif state==PKPDFitting.READING_SAMPLEFITTINGS_SAMPLE_VALUES:
-                tokens=line.split()
-                self.sampleFits[-1].x.append(float(tokens[0]))
-                self.sampleFits[-1].y.append(float(tokens[1]))
-                self.sampleFits[-1].yp.append(float(tokens[2]))
-                tokens=(tokens[3])[1:-1].split(',')
-                self.sampleFits[-1].yl.append(tokens[0])
-                self.sampleFits[-1].yu.append(tokens[1])
+            elif state==PKPDFitting.READING_SAMPLEFITTINGS_CONTINUE:
+                self.sampleFits[-1].readFromLine(line)
 
         fh.close()
 
@@ -1318,6 +1339,7 @@ class PKPDFitting(EMObject):
             if sampleFit.sampleName == sampleName:
                 return sampleFit
         return None
+
 
 class PKPDSampleSignalAnalysis:
     def __init__(self):
