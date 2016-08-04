@@ -51,8 +51,8 @@ class ProtPKPD(EMProtocol):
         experiment._printToStream(sys.stdout)
         experiment.write(fnOut)
 
-    def readFitting(self,fnIn, show=True):
-        fitting = PKPDFitting()
+    def readFitting(self, fnIn, show=True, cls=""):
+        fitting = PKPDFitting(cls)
         fitting.load(fnIn)
         if show:
             self.printSection("Reading %s"%fnIn)
