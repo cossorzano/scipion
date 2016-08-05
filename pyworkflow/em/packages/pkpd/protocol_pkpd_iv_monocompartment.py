@@ -84,8 +84,8 @@ are independent, which are not. Use Bootstrap estimates instead.\n
                 self.varNameX = None
                 self.varNameY = None
 
-    def configureSource(self):
-        self.drugSource.type = biopharmaceutics.DrugSource.IV
+    def configureSource(self, drugSource):
+        drugSource.type = biopharmaceutics.DrugSource.IV
 
     def createModel(self):
         return PK_Monocompartment()
