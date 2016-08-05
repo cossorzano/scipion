@@ -54,6 +54,7 @@ from protocol_pkpd_change_units import ProtPKPDChangeUnits
 from protocol_pkpd_ev_monocompartment import ProtPKPDEV1MonoCompartment
 from protocol_pkpd_ode_bootstrap import ProtPKPDODEBootstrap
 from protocol_pkpd_merge_populations import ProtPKPDMergePopulations
+from protocol_pkpd_filter_population import ProtPKPDFilterPopulation
 
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment

@@ -70,6 +70,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDMergePopulations",
 		"text": "merge populations"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDFilterPopulation",
+		"text": "filter population"
 	}]
     },
     {
