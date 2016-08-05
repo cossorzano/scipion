@@ -1210,8 +1210,8 @@ class PKPDSampleFitBootstrap:
         self.xB = None
         self.yB = None
 
-    def _printSample(self,fh,n):
-        outputStr = ""
+    def _printSample(self,fh,n, n0=0):
+        outputStr = "%d: "%(n+n0)
         for parameter in self.parameters[n,:]:
             outputStr += "%f "%parameter
         outputStr += " # %f %f %f %f %f"%(self.R2[n],self.R2adj[n],self.AIC[n],self.AICc[n],self.BIC[n])
@@ -1219,7 +1219,7 @@ class PKPDSampleFitBootstrap:
 
     def printForPopulation(self,fh,observations):
         for n in range(0,self.parameters.shape[0]):
-            self._printSample(fh,n)
+            self._printSample(fh,n,observations.shape[0])
         observations = np.vstack([observations, self.parameters])
         return observations
 
@@ -1236,7 +1236,11 @@ class PKPDSampleFitBootstrap:
                 outputStr += "%f "%y
             fh.write(outputStr+"\n")
 
-            self._printSample(fh,n)
+            outputStr = ""
+            for parameter in self.parameters[n,:]:
+                outputStr += "%f "%parameter
+            outputStr += " # %f %f %f %f %f"%(self.R2[n],self.R2adj[n],self.AIC[n],self.AICc[n],self.BIC[n])
+            fh.write(outputStr+"\n")
         fh.write("\n")
 
     def restartReadingState(self):
