@@ -49,7 +49,7 @@ class ProtPKPDMergeLabels(ProtPKPD):
     #--------------------------- INSERT steps functions --------------------------------------------
 
     def _insertAllSteps(self):
-        self._insertFunctionStep('runMerge',self.inputExperiment1.get().getObjId(), self.inputExperiment1.getObjId())
+        self._insertFunctionStep('runMerge',self.inputExperiment1.get().getObjId(), self.inputExperiment2.getObjId())
         self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
