@@ -64,6 +64,16 @@ Protocols = [{
     },
     {
 	"tag": "section",
+	"text": "Populations",
+	"icon": "bookmark.png",
+	"children": [{
+		"tag": "protocol",
+		"value": "ProtPKPDMergePopulations",
+		"text": "merge populations"
+	}]
+    },
+    {
+	"tag": "section",
 	"text": "Statistics",
 	"icon": "bookmark.png",
 	"children": [{
