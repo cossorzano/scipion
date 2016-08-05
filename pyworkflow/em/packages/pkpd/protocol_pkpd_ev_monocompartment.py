@@ -78,9 +78,9 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         else:
             ProtPKPDODEBase.setBounds(self,sample)
 
-    def configureSource(self):
-        self.drugSource.type = biopharmaceutics.DrugSource.EV
-        self.drugSource.evProfile = biopharmaceutics.BiopharmaceuticsModelOrder1()
+    def configureSource(self, drugSource):
+        drugSource.type = biopharmaceutics.DrugSource.EV
+        drugSource.evProfile = biopharmaceutics.BiopharmaceuticsModelOrder1()
 
     def createModel(self):
         return PK_Monocompartment()
