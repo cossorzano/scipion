@@ -931,6 +931,8 @@ class PKPDOptimizer:
         else:
             raise Exception("Unknown goal function")
 
+        self.verbose = 1
+
     def getResiduals(self,parameters):
         yPredicted = np.array(self.model.forwardModel(parameters),dtype=np.float32)
         if self.takeYLogs:
@@ -979,6 +981,10 @@ class PKPDOptimizer:
         print("BIC = %f"%self.BIC)
         print("------------------------")
 
+    def evaluateQuality(self):
+        yPredicted = np.array(self.model.forwardModel(self.model.parameters),dtype=np.float32)
+        self._evaluateQuality(self.model.x, self.model.y, yPredicted)
+
     def printFitting(self):
         yPredicted = np.array(self.model.forwardModel(self.model.parameters),dtype=np.float32)
         print("==========================================")
@@ -993,34 +999,40 @@ class PKPDOptimizer:
 class PKPDDEOptimizer(PKPDOptimizer):
     def optimize(self):
         from scipy.optimize import differential_evolution
-        print("Optimizing with Differential Evolution (DE), a global optimizer")
+        if self.verbose>0:
+            print("Optimizing with Differential Evolution (DE), a global optimizer")
         self.optimum = differential_evolution(self.goalFunction, self.model.getBounds())
-        print("Best DE function value: "+str(self.optimum.fun))
-        print("Best DE parameters: "+str(self.optimum.x))
+        if self.verbose>0:
+            print("Best DE function value: "+str(self.optimum.fun))
+            print("Best DE parameters: "+str(self.optimum.x))
         self.model.setParameters(self.optimum.x)
-        print(self.model.getEquation())
-        self.printFitting()
-        print(" ")
+        if self.verbose>0:
+            print(self.model.getEquation())
+            self.printFitting()
+            print(" ")
         return self.optimum
 
 class PKPDLSOptimizer(PKPDOptimizer):
     def optimize(self):
         from scipy.optimize import leastsq
-        print("Optimizing with Least Squares (LS), a local optimizer")
-        print("Initial parameters: "+str(self.model.parameters))
+        if self.verbose>0:
+            print("Optimizing with Least Squares (LS), a local optimizer")
+            print("Initial parameters: "+str(self.model.parameters))
         self.optimum, self.cov_x, self.info, _, _ = leastsq(self.getResiduals, self.model.parameters, full_output=True)
-        print("Best LS function value: "+str(self.goalFunction(self.optimum)))
-        print("Best LS parameters: "+str(self.optimum))
-        print("Covariance matrix:")
-        if self.cov_x!=None:
-            self.cov_x *= np.var(self.info["fvec"])
-            print(np.array_str(self.cov_x,max_line_width=120))
-        else:
-            print("Singular covariance matrix, at least one of the variables seems to be irrelevant")
+        if self.verbose>0:
+            print("Best LS function value: "+str(self.goalFunction(self.optimum)))
+            print("Best LS parameters: "+str(self.optimum))
+            print("Covariance matrix:")
+            if self.cov_x!=None:
+                self.cov_x *= np.var(self.info["fvec"])
+                print(np.array_str(self.cov_x,max_line_width=120))
+            else:
+                print("Singular covariance matrix, at least one of the variables seems to be irrelevant")
         self.model.setParameters(self.optimum)
-        print(self.model.getEquation())
-        self.printFitting()
-        print(" ")
+        if self.verbose>0:
+            print(self.model.getEquation())
+            self.printFitting()
+            print(" ")
         return self.optimum
 
     def setConfidenceInterval(self,confidenceInterval):
@@ -1073,6 +1085,15 @@ class PKPDSampleFit:
         self.lowerBound = None
         self.upperBound = None
         self.significance = None
+
+    def printForPopulation(self,fh,observations):
+        outputStr = ""
+        for parameter in self.parameters:
+            outputStr += "%f "%parameter
+        observations = np.vstack([observations, self.parameters])
+        outputStr += " # %f %f %f %f %f"%(self.R2,self.R2adj,self.AIC,self.AICc,self.BIC)
+        fh.write(outputStr+"\n")
+        return observations
 
     def _printToStream(self,fh):
         if self.significance == None:
@@ -1172,6 +1193,52 @@ class PKPDSampleFit:
         self.lowerBound = optimizer.lowerBound
         self.upperBound = optimizer.upperBound
 
+class PKPDSampleFitBootstrap:
+    READING_SAMPLEFITTINGS_NAME = 0
+
+    def __init__(self):
+        self.sampleName = ""
+        self.R2 = []
+        self.R2adj = []
+        self.AIC = []
+        self.AICc = []
+        self.BIC = []
+
+    def _printSample(self,fh,n):
+        outputStr = ""
+        for parameter in self.parameters[n,:]:
+            outputStr += "%f "%parameter
+        outputStr += " # %f %f %f %f %f"%(self.R2[n],self.R2adj[n],self.AIC[n],self.AICc[n],self.BIC[n])
+        fh.write(outputStr+"\n")
+
+    def printForPopulation(self,fh,observations):
+        for n in range(0,self.parameters.shape[0]):
+            self._printSample(fh,n)
+        observations = np.vstack([observations, self.parameters])
+        return observations
+
+    def _printToStream(self,fh):
+        fh.write("Sample name: %s\n"%self.sampleName)
+        for n in range(0,self.parameters.shape[0]):
+            self._printSample(fh,n)
+        fh.write("\n")
+
+    def restartReadingState(self):
+        self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_NAME
+
+    def readFromLine(self, line):
+        if self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_NAME:
+            tokens = line.split(':')
+            self.sampleName = tokens[1].strip()
+            # self.state = PKPDSampleFit.READING_SAMPLEFITTINGS_MODELEQ
+
+    def copyFromOptimizer(self,optimizer):
+        self.R2.append(optimizer.R2)
+        self.R2adj.append(optimizer.R2adj)
+        self.AIC.append(optimizer.AIC)
+        self.AICc.append(optimizer.AICc)
+        self.BIC.append(optimizer.BIC)
+
 class PKPDFitting(EMObject):
     READING_FITTING_EXPERIMENT = 1
     READING_FITTING_PREDICTOR = 2
@@ -1221,20 +1288,9 @@ class PKPDFitting(EMObject):
             auxUnit.unit = paramUnits
             fh.write("%s [%s] "%(paramName,auxUnit._toString()))
         fh.write(" # R2 R2adj AIC AICc BIC\n")
-        i=0
+        observations = np.empty((0,len(self.modelParameters)),np.double)
         for sampleFitting in self.sampleFits:
-            outputStr = ""
-            j=0
-            for parameter in sampleFitting.parameters:
-                outputStr += "%f "%parameter
-                if i==0 and j==0:
-                    observations = np.zeros([len(self.sampleFits),len(sampleFitting.parameters)])
-                observations[i,j]=parameter
-                j+=1
-            outputStr += " # %f %f %f %f %f"%(sampleFitting.R2,sampleFitting.R2adj,sampleFitting.AIC,\
-                                            sampleFitting.AICc, sampleFitting.BIC)
-            fh.write(outputStr+"\n")
-            i+=1
+            observations = sampleFitting.printForPopulation(fh,observations)
         fh.write("\n")
 
         mu=np.mean(observations,axis=0)
@@ -1313,7 +1369,7 @@ class PKPDFitting(EMObject):
 
             elif state==PKPDFitting.READING_POPULATION_HEADER:
                 lineParts = line.split('#')
-                tokens = lineParts[0].split(' ')
+                tokens = lineParts[0].strip().split(' ')
                 for i in range(0,len(tokens),2):
                     self.modelParameters.append(tokens[i])
                     self.modelParameterUnits.append(auxUnit._fromString(tokens[i+1][1:-1]))
