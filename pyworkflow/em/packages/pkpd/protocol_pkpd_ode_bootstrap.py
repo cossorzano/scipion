@@ -53,7 +53,7 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
     #--------------------------- INSERT steps functions --------------------------------------------
     def _insertAllSteps(self):
         self._insertFunctionStep('runFit',self.inputODE.get().getObjId(), self.Nbootstrap.get(), self.confidenceInterval.get())
-        # self._insertFunctionStep('createOutputStep')
+        self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
     def runFit(self, objId, Nbootstrap, confidenceInterval):
@@ -127,6 +127,8 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
             sampleFit = PKPDSampleFitBootstrap()
             sampleFit.sampleName = sample.varName
             sampleFit.parameters = np.zeros((self.Nbootstrap.get(),len(parameters0)),np.double)
+            sampleFit.xB = np.zeros((self.Nbootstrap.get(),len(x)),np.double)
+            sampleFit.yB = np.zeros((self.Nbootstrap.get(),len(x)),np.double)
 
             # Bootstrap samples
             idx = [k for k in range(0,len(x))]
@@ -148,25 +150,26 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
 
                 # Keep this result
                 sampleFit.parameters[n,:] = optimizer2.optimum
+                sampleFit.xB[n,:] = xB
+                sampleFit.yB[n,:] = yB
                 sampleFit.copyFromOptimizer(optimizer2)
 
             self.fitting.sampleFits.append(sampleFit)
 
         self.fitting.modelParameters = self.getParameterNames()
         self.fitting.modelDescription = self.getDescription()
-        self.fitting.write(self._getPath("fitting.pkpd"))
+        self.fitting.write(self._getPath("bootstrapPopulation.pkpd"))
 
     def createOutputStep(self):
-        self._defineOutputs(outputFitting=self.fitting)
-        self._defineSourceRelation(self.getInputExperiment(), self.fitting)
+        self._defineOutputs(outputPopulation=self.fitting)
+        self._defineSourceRelation(self.inputODE.get(), self.fitting)
 
     #--------------------------- INFO functions --------------------------------------------
-    # def _summary(self):
-    #     msg = []
-    #     self.getXYvars()
-    #     if self.varNameX!=None:
-    #         msg.append('Predicting %s from %s'%(self.varNameX,self.varNameY))
-    #     return msg
-    #
+    def _summary(self):
+        msg = []
+        msg.append("Number of bootstrap realizations: %d"%self.Nbootstrap.get())
+        msg.append("Confidence interval: %f"%self.confidenceInterval.get())
+        return msg
+
     def _validate(self):
         return []
