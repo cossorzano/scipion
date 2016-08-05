@@ -105,7 +105,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         else:
             self.varNameY=None
 
-    def configureSource(self):
+    def configureSource(self, drugSource):
         pass
 
     def createModel(self):
@@ -179,10 +179,10 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         if self.findtlag:
             self.drugSource.tlag = self.parameters[idx]
             idx+=1
-        self.drugSource.evProfile.setParameters(self.parameters[idx:len(self.boundsSource)])
+        self.drugSource.evProfile.setParameters(self.parameters[idx:idx+self.NparametersSource])
 
     def setParametersPK(self):
-        self.parametersPK = self.parameters[len(self.boundsSource):]
+        self.parametersPK = self.parameters[-self.NparametersModel:]
         self.model.setParameters(self.parametersPK)
 
     def setXYValues(self, x, y):
@@ -212,8 +212,12 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         retval = []
         if self.findtlag:
             retval.append('tlag')
-        retval += self.drugSource.getParameterNames()
-        retval += self.model.getParameterNames()
+        parametersSource = self.drugSource.getParameterNames()
+        self.NparametersSource = len(parametersSource)
+        retval += parametersSource
+        parametersModel = self.model.getParameterNames()
+        self.NparametersModel = len(parametersModel)
+        retval += parametersModel
         return retval
 
     def calculateParameterUnits(self,sample):
@@ -286,7 +290,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
             sample.interpretDose()
 
             self.drugSource.setDoses(sample.parsedDoseList, self.model.t0, self.model.tF)
-            self.configureSource()
+            self.configureSource(self.drugSource)
             self.model.drugSource = self.drugSource
 
             # Prepare the model
