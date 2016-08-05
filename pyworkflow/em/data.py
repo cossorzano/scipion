@@ -1195,6 +1195,9 @@ class PKPDSampleFit:
 
 class PKPDSampleFitBootstrap:
     READING_SAMPLEFITTINGS_NAME = 0
+    READING_SAMPLEFITTINGS_XB = 1
+    READING_SAMPLEFITTINGS_YB = 2
+    READING_SAMPLEFITTINGS_PARAMETERS = 3
 
     def __init__(self):
         self.sampleName = ""
@@ -1203,6 +1206,9 @@ class PKPDSampleFitBootstrap:
         self.AIC = []
         self.AICc = []
         self.BIC = []
+        self.parameters = None
+        self.xB = None
+        self.yB = None
 
     def _printSample(self,fh,n):
         outputStr = ""
@@ -1220,6 +1226,16 @@ class PKPDSampleFitBootstrap:
     def _printToStream(self,fh):
         fh.write("Sample name: %s\n"%self.sampleName)
         for n in range(0,self.parameters.shape[0]):
+            outputStr = "xB: "
+            for x in self.xB[n,:]:
+                outputStr += "%f "%x
+            fh.write(outputStr+"\n")
+
+            outputStr = "yB: "
+            for y in self.yB[n,:]:
+                outputStr += "%f "%y
+            fh.write(outputStr+"\n")
+
             self._printSample(fh,n)
         fh.write("\n")
 
@@ -1230,7 +1246,39 @@ class PKPDSampleFitBootstrap:
         if self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_NAME:
             tokens = line.split(':')
             self.sampleName = tokens[1].strip()
-            # self.state = PKPDSampleFit.READING_SAMPLEFITTINGS_MODELEQ
+            self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_XB
+
+        elif self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_XB:
+            tokens = line.split(':')
+            tokensXB = tokens[1].strip().split(' ')
+            if self.xB == None:
+                self.xB = np.empty((0,len(tokensXB)),np.double)
+            self.xB = np.vstack([self.xB, [float(x) for x in tokensXB]])
+            self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_YB
+
+        elif self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_YB:
+            tokens = line.split(':')
+            tokensYB = tokens[1].strip().split(' ')
+            if self.yB == None:
+                self.yB = np.empty((0,len(tokensYB)),np.double)
+            self.yB = np.vstack([self.yB, [float(y) for y in tokensYB]])
+            self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_PARAMETERS
+
+        elif self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_PARAMETERS:
+            tokens = line.split('#')
+            tokensParameters = tokens[0].strip().split(' ')
+            tokensQuality = tokens[1].strip().split(' ')
+            if self.parameters == None:
+                self.parameters = np.empty((0,len(tokensParameters)),np.double)
+            self.parameters = np.vstack([self.parameters, [float(prm) for prm in tokensParameters]])
+
+            self.R2.append(float(tokensQuality[0]))
+            self.R2adj.append(float(tokensQuality[1]))
+            self.AIC.append(float(tokensQuality[2]))
+            self.AICc.append(float(tokensQuality[3]))
+            self.BIC.append(float(tokensQuality[4]))
+
+            self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_XB
 
     def copyFromOptimizer(self,optimizer):
         self.R2.append(optimizer.R2)
