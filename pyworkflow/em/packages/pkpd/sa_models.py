@@ -260,7 +260,9 @@ class NCAEVModel(SAModel):
         elif self.areaCalc == "Mixed":
             for i in range(len(C)-1):
                 dt = (t[i+1]-t[i])
-                if C[i+1]>C[i]: # Trapezoidal in the raise
+                if dt==0:
+                    continue
+                if C[i+1]>=C[i]: # Trapezoidal in the raise
                     AUC0t  += 0.5*dt*(C[i]+C[i+1])
                     AUMC0t += 0.5*dt*(C[i]*t[i]+C[i+1]*t[i+1])
                 else: # Log-trapezoidal in the decay
