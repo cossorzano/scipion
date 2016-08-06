@@ -53,8 +53,8 @@ class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
         form.addParam("absorptionF", params.FloatParam, label="Absorption fraction", default=1,
                       help="Between 0 (=no absorption) and 1 (=full absorption)")
 
-        form.addParam('bounds', params.StringParam, label="Ka, Ke, F bounds", default="", expertLevel=LEVEL_ADVANCED,
-                      help='Bounds for Ka (absorption constant), Ke (elimination constant) and F (bioavailability).\nExample 1: (0,1e-3);(0,1e-2);(0.8,1) -> Ka in (0,1e-3), Ke in (0,1e-2), and F in (0.8,1)\n')
+        form.addParam('bounds', params.StringParam, label="Ka, V, [tlag] bounds", default="", expertLevel=LEVEL_ADVANCED,
+                      help='Bounds for Ka (absorption constant), V (distribution volume) and optionally tlag.\nExample 1: (0,1e-3);(30,50);(0.1,0.5) -> Ka in (0,1e-3), V in (30,50) and tlag in (0.1,0.5)\n')
         form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
         form.addParam('includeTlag', params.BooleanParam, label="Include tlag", default=True, expertLevel=LEVEL_ADVANCED,
