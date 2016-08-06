@@ -35,9 +35,14 @@ class ProtPKPDImportFromText(ProtPKPD):
 
     def _defineParams(self, form, type):
         form.addSection('Input')
+        inputFileHelp = "Specify a path to desired %s file.\n"%type
+        inputFileHelp += "You may specify missing values with NA. You may also use LLOQ and ULOQ (Lower and Upper limit of quantification)\n"
+        inputFileHelp += "to specify measurements that are below or above these limits"
+        if type=="CSV":
+            inputFileHelp += "The field separator must be a semicolon (;), decimal point must be a dot (.).\n"
+            inputFileHelp += "The first row must contain the variable names and one of them must be SampleName which will serve as identifier."
         form.addParam('inputFile', params.PathParam,
-                      label="File path", allowsNull=False,
-                      help='Specify a path to desired %s file.'%type)
+                      label="File path", allowsNull=False, help=inputFileHelp)
         form.addParam('title', params.StringParam, label="Title", default="My experiment")
         form.addParam('comment', params.StringParam, label="Comment", default="")
         form.addParam('variables', params.TextParam, label="Variables", default="",
