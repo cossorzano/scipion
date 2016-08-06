@@ -35,7 +35,7 @@ from pyworkflow.em.data import PKPDExperiment, PKPDFitting
 class ProtPKPD(EMProtocol):
     def printSection(self, msg):
         print("**********************************************************************************************")
-        print(msg)
+        print("Section: %s"%msg)
         print("**********************************************************************************************")
 
     def readExperiment(self,fnIn, show=True):
