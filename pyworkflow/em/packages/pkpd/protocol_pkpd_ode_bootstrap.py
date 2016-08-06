@@ -56,6 +56,35 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
         self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
+    def parseBounds(self, boundsString):
+        if boundsString!="" and boundsString!=None:
+            tokens=boundsString.split(';')
+            if len(tokens)!=self.getNumberOfParameters():
+                raise Exception("The number of bound intervals does not match the number of parameters")
+            self.boundsList=[]
+            for token in tokens:
+                values = token.strip().split(',')
+                self.boundsList.append((float(values[0][1:]),float(values[1][:-1])))
+
+    def setBounds(self,sample):
+        self.parseBounds(self.protODE.bounds.get())
+        self.setBoundsFromBoundsList()
+
+    def setBoundsFromBoundsList(self):
+        Nbounds = len(self.boundsList)
+        Nsource = self.drugSource.getNumberOfParameters()
+        Nmodel = self.model.getNumberOfParameters()
+        if self.findtlag:
+            Nsource+=1
+        if Nbounds!=Nsource+Nmodel:
+            raise "The number of parameters (%d) and bounds (%d) are different"%(Nsource+Nmodel,Nbounds)
+        self.boundsSource = self.boundsList[0:Nsource]
+        self.boundsPK = self.boundsList[Nsource:]
+        self.model.bounds = self.boundsPK
+
+    def getBounds(self):
+        return self.boundsList
+
     def runFit(self, objId, Nbootstrap, confidenceInterval):
         self.protODE = self.inputODE.get()
         self.findtlag = self.protODE.findtlag
@@ -122,6 +151,9 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
                 parameters0.append(float(sample.descriptors[parameterName]))
             print("Initial solution: %s"%str(parameters0))
             print(" ")
+
+            # Set bounds
+            self.setBounds(sample)
 
             # Output object
             sampleFit = PKPDSampleFitBootstrap()
