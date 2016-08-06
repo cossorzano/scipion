@@ -392,7 +392,7 @@ class PKPDSample:
         for n in range(0,len(tokens)):
             ok=True
             varName = self.measurementPattern[n]
-            if tokens[n]=="NA":
+            if tokens[n]=="NA" or tokens[n]=="ULOQ" or tokens[n]=="LLOQ":
                 ok = (self.variableDictPtr[varName].role != PKPDVariable.ROLE_TIME)
             if ok:
                 exec("self.measurement_%s.append('%s')"%(varName,tokens[n]))
@@ -438,7 +438,7 @@ class PKPDSample:
             return [None, None]
         else:
             aux = getattr(self,"measurement_%s"%varName)
-            aux = [x for x in aux if x != "NA"]
+            aux = [x for x in aux if x != "NA" and x!="LLOQ" and x!="ULOQ"]
             x = np.array(aux, dtype='|S4')
             y = x.astype(np.float)
             return [y.min(),y.max()]
@@ -458,7 +458,7 @@ class PKPDSample:
         xs = self.getValues(varNameX)
         ys = self.getValues(varNameY)
         for x, y in izip(xs, ys):
-            if x != "NA" and y != "NA":
+            if x != "NA" and x!="LLOQ" and y!="ULOQ" and y != "NA" and y!= "LLOQ" and y!="ULOQ":
                 xl.append(float(x))
                 yl.append(float(y))
         return xl, yl
@@ -471,7 +471,7 @@ class PKPDSample:
         for key, variable in self.variableDictPtr.iteritems():
             if key in self.descriptors:
                 value = self.descriptors[key]
-                if value=="NA":
+                if value=="NA" or value=="LLOQ" or value=="ULOQ":
                     expressionPython="None"
                     break
                 else:
@@ -770,6 +770,7 @@ class PKPDModelBase2(PKPDModelBase):
 
     def printSetup(self):
         print("Model: %s"%self.getModelEquation())
+        print("Variables: "+str(self.getParameterNames()))
         print("Bounds: "+str(self.getBounds()))
 
     def getEquation(self):
@@ -926,6 +927,8 @@ class PKPDOptimizer:
             self.takeYLogs = False
             self.takeRelative = True
 
+        self.bounds = model.getBounds()
+
         if goalFunction=="RMSE":
             self.goalFunction = self.goalRMSE
         else:
@@ -933,7 +936,15 @@ class PKPDOptimizer:
 
         self.verbose = 1
 
+    def inBounds(self,parameters):
+        for n in range(0,len(parameters)):
+            if parameters[n]<self.bounds[n][0] or parameters[n]>self.bounds[n][1]:
+                return False
+        return True
+
     def getResiduals(self,parameters):
+        if not self.inBounds(parameters):
+            return 1e38*np.ones(self.yTarget.shape)
         yPredicted = np.array(self.model.forwardModel(parameters),dtype=np.float32)
         if self.takeYLogs:
             idx = yPredicted>=1e-20
