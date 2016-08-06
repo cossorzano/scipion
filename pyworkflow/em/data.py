@@ -937,6 +937,8 @@ class PKPDOptimizer:
         self.verbose = 1
 
     def inBounds(self,parameters):
+        if self.bounds==None or len(self.bounds)!=len(parameters):
+            return True
         for n in range(0,len(parameters)):
             if parameters[n]<self.bounds[n][0] or parameters[n]>self.bounds[n][1]:
                 return False
