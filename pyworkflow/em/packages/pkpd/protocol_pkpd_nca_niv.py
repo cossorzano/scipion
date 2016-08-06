@@ -45,7 +45,7 @@ class ProtPKPDNCAEV(ProtPKPDSABase):
                       label="Method for AUC, AUMC calculation", default=1, expertLevel=LEVEL_ADVANCED,
                       help='The mixed integration uses the trapezoidal is used in the raising side and the log-trapezoidal in the decay side.\n'
                             'See explanation at http://learnpkpd.com/2011/04/02/calculating-auc-linear-and-log-linear\n')
-        form.addParam('protNCAIV', params.PointerParam, label="IV Input experiment", allowsNull=True,
+        form.addParam('protNCAIV', params.PointerParam, label="IV Input experiment (optional)", allowsNull=True,
                       pointerClass='ProtPKPDNCAIVExp,ProtPKPDNCAIVObs',
                       help='A companion experiment with intraveneous bolus is used to estimate the bioavailability and the Mean Absorption Time. '
                            'The sample names in both experiments must be exactly the same.')
