@@ -152,7 +152,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def setBounds(self,sample):
         self.parseBounds(self.bounds.get())
-        self.setBoundsFromBoundsList(self)
+        self.setBoundsFromBoundsList()
 
     def setBoundsFromBoundsList(self):
         Nbounds = len(self.boundsList)
