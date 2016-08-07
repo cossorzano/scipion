@@ -92,7 +92,7 @@ class BiopharmaceuticsModelOrder0(BiopharmaceuticsModel):
         return self.parameterUnits
 
     def getAg(self,t):
-        if t<=0:
+        if t<0:
             return 0.0
         K = self.parameters[0]
         return K*t
@@ -122,10 +122,10 @@ class BiopharmaceuticsModelOrder1(BiopharmaceuticsModel):
         return self.parameterUnits
 
     def getAg(self,t):
-        if t<=0:
+        if t<0:
             return 0.0
         Ka = self.parameters[0]
-        return self.Amax*(1-math.exp(-Ka*t))
+        return self.Amax*math.exp(-Ka*t)
 
     def getEquation(self):
         Ka = self.parameters[0]
@@ -149,6 +149,7 @@ class BiopharmaceuticsModelOrderFractional(BiopharmaceuticsModel):
         return self.paramterUnits
 
     def getAg(self,t):
+        # COSS Hay que pensar si esto es correcto
         if t<=0:
             return 0.0
         Amax = self.parameters[0]
@@ -213,13 +214,15 @@ class DrugSource:
         doseAmount = 0.0
         for dose in self.parsedDoseList:
             if self.type == DrugSource.IV:
-                doseAmount += dose.getDoseAt(t0-self.tlag,dt)
+                doseAmount += dose.getDoseAt(t0-dose.t0-self.tlag,dt)
             else:
                 if dose.doseType!=PKPDDose.TYPE_INFUSION:
                     self.evProfile.Amax = dose.doseAmount
-                    doseAmount += self.evProfile.getAg(t0-self.tlag+dt)-self.evProfile.getAg(t0-self.tlag)
+                    doseAmount += self.evProfile.getAg(t0-dose.t0-self.tlag)-self.evProfile.getAg(t0-dose.t0-self.tlag+dt)
                 else:
                     raise Exception("getAmountReleasedAt not implemented for infusion")
+        if doseAmount<0:
+            doseAmount=0
         return doseAmount
 
     def getAmountReleasedBetween(self,t0,tF):
