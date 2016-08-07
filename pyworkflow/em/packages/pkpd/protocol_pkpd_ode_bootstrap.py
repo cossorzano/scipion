@@ -46,6 +46,7 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
                       help='Number of bootstrap realizations for each sample')
         form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
+        form.addParam('deltaT', params.FloatParam, default=2, label='Step (min)', expertLevel=LEVEL_ADVANCED)
 
     #--------------------------- INSERT steps functions --------------------------------------------
     def _insertAllSteps(self):
@@ -93,6 +94,7 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
 
         # Setup model
         self.model = self.protODE.createModel()
+        self.model.deltaT = self.deltaT.get()
         self.model.setExperiment(self.experiment)
         self.varNameX = self.fitting.predictor.varName
         self.varNameY = self.fitting.predicted.varName
