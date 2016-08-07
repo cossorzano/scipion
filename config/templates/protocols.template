@@ -68,12 +68,20 @@ Protocols = [{
 	"icon": "bookmark.png",
 	"children": [{
 		"tag": "protocol",
+		"value": "ProtPKPDODEBootstrap",
+		"text": "ode bootstrap"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDMergePopulations",
 		"text": "merge populations"
 	},{
 		"tag": "protocol",
 		"value": "ProtPKPDFilterPopulation",
 		"text": "filter population"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDODEBootstrapSimulate",
+		"text": "simulate dose"
 	}]
     },
     {
@@ -136,10 +144,6 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDEV1MonoCompartment",
 		"text": "ev1 monocompartment"
-	},{
-		"tag": "protocol",
-		"value": "ProtPKPDODEBootstrap",
-		"text": "ode bootstrap"
 	}]
     },
     {
