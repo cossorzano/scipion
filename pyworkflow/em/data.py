@@ -844,6 +844,7 @@ class PKPDODEModel(PKPDModelBase2):
         self.tF = None # (min)
         self.deltaT = 0.25 # (min)
         self.drugSource = None
+        # self.show = False
 
     def F(self, t, y):
         return 0
@@ -866,7 +867,7 @@ class PKPDODEModel(PKPDModelBase2):
 
         # Simulate the system response
         t = self.t0
-        Nsamples = (math.ceil((self.tF-self.t0)/self.deltaT))+1
+        Nsamples = int(math.ceil((self.tF-self.t0)/self.deltaT))+1
         if self.getStateDimension()>1:
             yt = np.zeros(self.getStateDimension(),np.double)
             Yt = np.zeros(Nsamples,self.getStateDimension())
@@ -876,8 +877,10 @@ class PKPDODEModel(PKPDModelBase2):
         Xt = np.zeros(Yt.shape[0])
         delta_2 = 0.5*self.deltaT
         K = self.deltaT/3
-        i = 0
-        while t<=self.tF:
+        for i in range(0,Nsamples):
+            t = self.t0 + i*self.deltaT # More accurate than t+= self.deltaT
+            Xt[i]=t
+
             # Internal evolution
             # Runge Kutta's 4th order (http://lpsa.swarthmore.edu/NumInt/NumIntFourth.html)
             k1 = self.F(t,yt)
@@ -891,15 +894,14 @@ class PKPDODEModel(PKPDModelBase2):
 
             # Update state
             yt += (0.5*(k1+k4)+k2+k3)*K+dyD
+            # if self.show:
+            #     print("t=%f dD=%f dyD=%f dy=%f"%(t,dD,dyD,(0.5*(k1+k4)+k2+k3)*K))
 
             # Keep this result and go to next iteration
             if self.getStateDimension()>1:
                 Yt[i,:]=yt
             else:
                 Yt[i]=yt
-            Xt[i]=t
-            i += 1
-            t = self.t0 + i*self.deltaT # More accurate than t+= self.deltaT
 
         # Get the values at x
         if x==None:
