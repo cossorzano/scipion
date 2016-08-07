@@ -31,7 +31,7 @@ import math
 import numpy as np
 
 from pyworkflow.em.data import PKPDModel, PKPDODEModel
-from pyworkflow.em.pkpd_units import inverseUnits, createUnit, divideUnits
+from pyworkflow.em.pkpd_units import inverseUnits, divideUnits, unitFromString
 
 
 class PKModel(PKPDModel):
@@ -286,10 +286,11 @@ class PK_Monocompartment(PKPDODEModel):
         return ['Cl','V']
 
     def calculateParameterUnits(self,sample):
-        xunits = self.experiment.getVarUnits(self.xName)
+        xunits = unitFromString("min")
         yunits = self.experiment.getVarUnits(self.yName)
         Vunits = divideUnits(self.Dunits,yunits)
-        self.parameterUnits = [inverseUnits(xunits),Vunits]
+        Clunits = divideUnits(Vunits,xunits)
+        self.parameterUnits = [Clunits,Vunits]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
