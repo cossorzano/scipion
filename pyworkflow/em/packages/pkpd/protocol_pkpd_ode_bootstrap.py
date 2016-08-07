@@ -24,8 +24,6 @@
 # *
 # **************************************************************************
 
-import math
-from itertools import izip
 import numpy as np
 
 import pyworkflow.protocol.params as params
@@ -33,7 +31,6 @@ from pyworkflow.em.data import PKPDFitting, PKPDSampleFitBootstrap, PKPDLSOptimi
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from biopharmaceutics import DrugSource
 from protocol_pkpd_ode_base import ProtPKPDODEBase
-from pyworkflow.em.pkpd_units import PKPDUnit
 
 class ProtPKPDODEBootstrap(ProtPKPDODEBase):
     """ Bootstrap of an ODE protocol"""
