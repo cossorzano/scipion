@@ -325,6 +325,24 @@ def convertUnits(x, unitsIn, unitsOut):
         elif unitsOut == PKPDUnit.UNIT_CONC_g_mL:
             return 1e3*x
 
+    elif unitsIn == PKPDUnit.UNIT_TIME_H:
+        if unitsOut == PKPDUnit.UNIT_TIME_MIN:
+            return 60*x
+        elif unitsOut == PKPDUnit.UNIT_TIME_SEC:
+            return 3600*x
+
+    elif unitsIn == PKPDUnit.UNIT_TIME_MIN:
+        if unitsOut == PKPDUnit.UNIT_TIME_H:
+            return x/60
+        elif unitsOut == PKPDUnit.UNIT_TIME_SEC:
+            return 60*x
+
+    elif unitsIn == PKPDUnit.UNIT_TIME_SEC:
+        if unitsOut == PKPDUnit.UNIT_TIME_H:
+            return x/3600
+        elif unitsOut == PKPDUnit.UNIT_TIME_MIN:
+            return x/60
+
     return None
 
 def multiplyUnits(unitX,unitY):
@@ -537,6 +555,7 @@ def inverseUnits(unit):
 def createUnit(unitName):
     unit = PKPDUnit()
     unit.unit = unit._fromString(unitName)
+    return unit
 
 def strUnit(unitCode):
     unit = PKPDUnit()

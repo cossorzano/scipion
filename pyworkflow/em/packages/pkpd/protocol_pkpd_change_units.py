@@ -115,6 +115,11 @@ class ProtPKPDChangeUnits(ProtPKPD):
                         else:
                             newValues.append(str(K*float(x)))
                     sample.setValues(variable.varName,newValues)
+                elif variable.role == PKPDVariable.ROLE_TIME:
+                    newValues = []
+                    for x in sample.getValues(variable.varName):
+                        newValues.append(str(K*float(x)))
+                    sample.setValues(variable.varName,newValues)
         variable.units = PKPDUnit()
         variable.units.unit = newUnit
 
