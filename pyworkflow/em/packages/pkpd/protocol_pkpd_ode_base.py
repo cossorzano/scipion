@@ -137,7 +137,8 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         else:
             self.model.tF = float(self.tF.get())*60
 
-        self.model.deltaT = self.deltaT.get()
+        if hasattr(self,"deltaT"):
+            self.model.deltaT = self.deltaT.get()
 
     # As model --------------------------------------------
     def parseBounds(self, boundsString):
