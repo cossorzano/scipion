@@ -723,7 +723,8 @@ class PKPDModelBase:
 
     def setExperiment(self, experiment):
         self.experiment = experiment
-        self.fnExperiment = experiment.fnPKPD
+        if experiment!=None:
+            self.fnExperiment = experiment.fnPKPD
 
     def setXVar(self, x):
         if not x in self.experiment.variables:
