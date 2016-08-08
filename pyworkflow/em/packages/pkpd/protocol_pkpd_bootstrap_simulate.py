@@ -33,7 +33,8 @@ from pyworkflow.em.data import PKPDExperiment, PKPDDose, PKPDSample, PKPDVariabl
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from biopharmaceutics import DrugSource
 from protocol_pkpd_ode_base import ProtPKPDODEBase
-from pyworkflow.em.pkpd_units import createUnit, strUnit
+from pyworkflow.em.pkpd_units import createUnit, multiplyUnits, strUnit
+from utils import find_nearest
 
 class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
     """ Simulate a population of ODE parameters obtained by bootstrap"""
@@ -138,6 +139,9 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
         # Simulate the different responses
         simulationsX = self.model.x
         simulationsY = np.zeros((self.Nsimulations.get(),len(simulationsX)))
+        AUCarray = np.zeros(self.Nsimulations.get())
+        AUMCarray = np.zeros(self.Nsimulations.get())
+        MRTarray = np.zeros(self.Nsimulations.get())
         for i in range(0,self.Nsimulations.get()):
             # Create sample
             sampleName = "Simulation_%d"%i
@@ -171,16 +175,55 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
             newSample.addMeasurementColumn("t",simulationsX)
             newSample.addMeasurementColumn(self.varNameY,y)
 
+            # Evaluate AUC, AUMC and MRT in the last full period
+            tperiod0 = self.drugSource.parsedDoseList[-2].t0
+            tperiodF = self.drugSource.parsedDoseList[-1].t0-self.model.deltaT
+            idx0 = find_nearest(simulationsX,tperiod0)
+            idxF = find_nearest(simulationsX,tperiodF)
+            AUC0t = 0
+            AUMC0t = 0
+            t = simulationsX
+            C = y
+            for idx in range(idx0,idxF+1):
+                dt = (t[idx+1]-t[idx])
+                if C[idx+1]>=C[idx]: # Trapezoidal in the raise
+                    AUC0t  += 0.5*dt*(C[idx]+C[idx+1])
+                    AUMC0t += 0.5*dt*(C[idx]*t[idx]+C[idx+1]*t[idx+1])
+                else: # Log-trapezoidal in the decay
+                    decrement = C[idx]/C[idx+1]
+                    K = math.log(decrement)
+                    B = K/dt
+                    AUC0t  += dt*(C[idx]-C[idx+1])/K
+                    AUMC0t += (C[idx]*(t[idx]-tperiod0)-C[idx+1]*(t[idx+1]-tperiod0))/B-(C[idx+1]-C[idx])/(B*B)
+            MRT = AUMC0t/AUC0t
+            Cunits = self.experiment.variables[self.varNameY].units
+            AUCunits = multiplyUnits(tvar.units.unit,Cunits.unit)
+            AUMCunits = multiplyUnits(tvar.units.unit,AUCunits)
+            print("   AUC0t=%f [%s]"%(AUC0t,strUnit(AUCunits)))
+            print("   AUMC0t=%f [%s]"%(AUMC0t,strUnit(AUMCunits)))
+            print("   MRT=%f [min]"%MRT)
+
             # Keep result
             simulationsY[i,:] = y
+            AUCarray[i] = AUC0t
+            AUMCarray[i] = AUMC0t
+            MRTarray[i] = MRT
             if self.addIndividuals:
                 self.outputExperiment.samples[sampleName] = newSample
             else:
                 newSample = None # Free memory
 
+        # Report NCA statistics
+        alpha_2 = (100-self.confidenceLevel.get())/2
+        limits = np.percentile(AUCarray,[alpha_2,100-alpha_2])
+        print("AUC %f%% confidence interval=[%f,%f] [%s]"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(AUCunits)))
+        limits = np.percentile(AUMCarray,[alpha_2,100-alpha_2])
+        print("AUMC %f%% confidence interval=[%f,%f] [%s]"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(AUMCunits)))
+        limits = np.percentile(MRTarray,[alpha_2,100-alpha_2])
+        print("MRT %f%% confidence interval=[%f,%f] [min]"%(self.confidenceLevel.get(),limits[0],limits[1]))
+
         # Calculate statistics
         if self.addStats:
-            alpha_2 = (100-self.confidenceLevel.get())/2
             mu = np.mean(simulationsY,axis=0)
             limits = np.percentile(simulationsY,[alpha_2,100-alpha_2],axis=0)
 
