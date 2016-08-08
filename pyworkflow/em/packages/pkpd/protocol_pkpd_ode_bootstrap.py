@@ -176,8 +176,13 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
                 optimizer2 = PKPDLSOptimizer(self,fitType)
                 optimizer2.verbose = 0
                 optimizer2.optimize()
+
+                # Evaluate the quality on the whole data set
+                self.setXYValues(x, y)
                 optimizer2.evaluateQuality()
                 print(optimizer2.optimum)
+                print("   R2 = %f R2Adj=%f AIC=%f AICc=%f BIC=%f"%(optimizer2.R2,optimizer2.R2adj,optimizer2.AIC,\
+                                                                   optimizer2.AICc,optimizer2.BIC))
 
                 # Keep this result
                 sampleFit.parameters[n,:] = optimizer2.optimum
