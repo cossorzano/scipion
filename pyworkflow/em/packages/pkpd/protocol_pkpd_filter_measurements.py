@@ -41,11 +41,13 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
         form.addParam('inputExperiment', params.PointerParam, label="Input experiment", important=True,
                       pointerClass='PKPDExperiment',
                       help='Select an experiment with samples')
-        form.addParam('filterType', params.EnumParam, choices=["Exclude","Keep","Remove NA"], label="Filter mode", default=0,
+        form.addParam('filterType', params.EnumParam, choices=["Exclude","Keep","Remove NA","Remove ULOQ & LLOQ","Substitute LLOQ","Substitute ULOQ"],
+                      label="Filter mode", default=0,
                       help='Exclude or keep measurements meeting the following condition.\n"\
                            "NA values are excluded in keep filters, and kept in exclude filters')
-        form.addParam('condition', params.TextParam, label="Condition", condition="filterType!=2",
+        form.addParam('condition', params.TextParam, label="Condition", condition="filterType<=1",
                       help='Example: $(t)<200\n $(Cp)>=1000 and $(Cp)<=2000"')
+        form.addParam('substitute', params.FloatParam, label="Substitute by", condition="filterType==4 or filterType==5")
 
     #--------------------------- INSERT steps functions --------------------------------------------
 
@@ -64,8 +66,14 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
             filterType="exclude"
         elif self.filterType.get()==1:
             filterType="keep"
-        else:
+        elif self.filterType.get()==2:
             filterType="rmNA"
+        elif self.filterType.get()==3:
+            filterType="rmLL"
+        elif self.filterType.get()==4:
+            filterType="subsLL"
+        elif self.filterType.get()==5:
+            filterType="subsUL"
 
         filteredExperiment = PKPDExperiment()
         filteredExperiment.general = copy.copy(experiment.general)
@@ -108,7 +116,25 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
                             okToAddTimePoint = False
                         else:
                             toAdd.append(aux)
+                    elif filterType=="rmLL":
+                        if aux=="LLOQ" or aux=="ULOQ":
+                            okToAddTimePoint = False
+                        else:
+                            toAdd.append(aux)
+                    elif filterType=="subsLL":
+                        okToAddTimePoint = True
+                        if aux=="LLOQ":
+                            toAdd.append(str(self.substitute.get()))
+                        else:
+                            toAdd.append(aux)
+                    elif filterType=="subsUL":
+                        okToAddTimePoint = True
+                        if aux=="ULOQ":
+                            toAdd.append(str(self.substitute.get()))
+                        else:
+                            toAdd.append(aux)
                     else:
+                        # Keep or exclude
                         toAdd.append(aux)
                         varString = "$(%s)"%sample.measurementPattern[i]
                         if varString in conditionPython:
@@ -119,7 +145,7 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
                                     conditionPython = conditionPython.replace(varString,"%f"%float(aux))
                                 else:
                                     conditionPython = conditionPython.replace(varString,"'%s'"%aux)
-                if filterType!="rmNA" and okToAddTimePoint:
+                if (filterType=="exclude" or filterType=="keep") and okToAddTimePoint:
                     okToAddTimePoint = eval(conditionPython, {"__builtins__" : None }, {})
                     if filterType=="exclude":
                         okToAddTimePoint = not okToAddTimePoint
