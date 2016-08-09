@@ -343,6 +343,10 @@ def convertUnits(x, unitsIn, unitsOut):
         elif unitsOut == PKPDUnit.UNIT_TIME_MIN:
             return x/60
 
+    elif unitsIn == PKPDUnit.UNIT_TIMECONC_MIN_mg_L:
+        if unitsOut == PKPDUnit.UNIT_TIMECONC_H_mg_L:
+            return x/60
+
     return None
 
 def multiplyUnits(unitX,unitY):
