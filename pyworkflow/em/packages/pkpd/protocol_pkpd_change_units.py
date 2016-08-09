@@ -96,7 +96,7 @@ class ProtPKPDChangeUnits(ProtPKPD):
 
         currentUnit = self.experiment.getVarUnits(self.labelToChange.get())
         newUnit = unitFromString(self._getNewUnit())
-        K=convertUnits(1,currentUnit,newUnit)
+        K=convertUnits(1.0,currentUnit,newUnit)
 
         variable = self.experiment.variables[self.labelToChange.get()]
 
