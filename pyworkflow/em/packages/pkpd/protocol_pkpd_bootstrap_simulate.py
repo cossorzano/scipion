@@ -86,7 +86,34 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
         newSample.addMeasurementPattern([self.varNameY])
         newSample.addMeasurementColumn("t",simulationsX)
         newSample.addMeasurementColumn(self.varNameY,y)
+        newSample.descriptors["AUC0t"] = self.AUC0t
+        newSample.descriptors["AUMC0t"] = self.AUMC0t
+        newSample.descriptors["MRT"] = self.MRT
         self.outputExperiment.samples[sampleName] = newSample
+
+    def NCA(self,t,C):
+        tperiod0 = self.drugSource.parsedDoseList[-2].t0
+        tperiodF = self.drugSource.parsedDoseList[-1].t0-self.model.deltaT
+        idx0 = find_nearest(t,tperiod0)
+        idxF = find_nearest(t,tperiodF)
+
+        self.AUC0t = 0
+        self.AUMC0t = 0
+        for idx in range(idx0,idxF+1):
+            dt = (t[idx+1]-t[idx])
+            if C[idx+1]>=C[idx]: # Trapezoidal in the raise
+                self.AUC0t  += 0.5*dt*(C[idx]+C[idx+1])
+                self.AUMC0t += 0.5*dt*(C[idx]*t[idx]+C[idx+1]*t[idx+1])
+            else: # Log-trapezoidal in the decay
+                decrement = C[idx]/C[idx+1]
+                K = math.log(decrement)
+                B = K/dt
+                self.AUC0t  += dt*(C[idx]-C[idx+1])/K
+                self.AUMC0t += (C[idx]*(t[idx]-tperiod0)-C[idx+1]*(t[idx+1]-tperiod0))/B-(C[idx+1]-C[idx])/(B*B)
+        self.MRT = self.AUMC0t/self.AUC0t
+        print("   AUC0t=%f [%s]"%(self.AUC0t,strUnit(self.AUCunits)))
+        print("   AUMC0t=%f [%s]"%(self.AUMC0t,strUnit(self.AUMCunits)))
+        print("   MRT=%f [min]"%self.MRT)
 
     def runSimulate(self, objId, Nsimulations, confidenceInterval, doses):
         self.protODE = self.inputODE.get()
@@ -131,6 +158,12 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
             dosename = tokens[0].strip()
             self.outputExperiment.doses[dosename] = PKPDDose()
             self.outputExperiment.doses[dosename].parseTokens(tokens)
+        auxSample = PKPDSample()
+        auxSample.descriptors = {}
+        auxSample.doseDictPtr = self.outputExperiment.doses
+        auxSample.variableDictPtr = self.outputExperiment.variables
+        auxSample.doseList = [dosename]
+        auxSample.interpretDose()
 
         # Check units
         # Dunits = self.outputExperiment.doses[dosename].dunits
@@ -143,16 +176,7 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
         AUMCarray = np.zeros(self.Nsimulations.get())
         MRTarray = np.zeros(self.Nsimulations.get())
         for i in range(0,self.Nsimulations.get()):
-            # Create sample
-            sampleName = "Simulation_%d"%i
-            newSample = PKPDSample()
-            newSample.varName = sampleName
-            newSample.variableDictPtr = self.outputExperiment.variables
-            newSample.doseDictPtr = self.outputExperiment.doses
-            newSample.descriptors = {}
-            newSample.doseList = [dosename]
-            newSample.addMeasurementPattern([self.varNameY])
-            self.setTimeRange(newSample)
+            self.setTimeRange(None)
 
             # Take parameters randomly from the population
             nfit = int(random.uniform(0,len(self.fitting.sampleFits)))
@@ -162,63 +186,61 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
             print("Simulated sample %d: %s"%(i,str(parameters)))
 
             # Prepare source and this object
-            newSample.interpretDose()
-            self.drugSource.setDoses(newSample.parsedDoseList, self.model.t0, self.model.tF)
+            self.drugSource.setDoses(auxSample.parsedDoseList, self.model.t0, self.model.tF)
             self.protODE.configureSource(self.drugSource)
             self.model.drugSource = self.drugSource
             parameterNames = self.getParameterNames() # Necessary to count the number of source and PK parameters
 
             # Prepare the model
             self.setParameters(parameters)
-            self.model.setSample(newSample)
             y = self.forwardModel(parameters, simulationsX)
-            newSample.addMeasurementColumn("t",simulationsX)
-            newSample.addMeasurementColumn(self.varNameY,y)
+
+            # Create AUC, AUMC, MRT variables and units
+            if i == 0:
+                self.Cunits = self.experiment.variables[self.varNameY].units
+                self.AUCunits = multiplyUnits(tvar.units.unit,self.Cunits.unit)
+                self.AUMCunits = multiplyUnits(tvar.units.unit,self.AUCunits)
+
+                if self.addStats or self.addIndividuals:
+                    AUCvar = PKPDVariable()
+                    AUCvar.varName = "AUC0t"
+                    AUCvar.varType = PKPDVariable.TYPE_NUMERIC
+                    AUCvar.role = PKPDVariable.ROLE_LABEL
+                    AUCvar.units = createUnit(strUnit(self.AUCunits))
+
+                    AUMCvar = PKPDVariable()
+                    AUMCvar.varName = "AUMC0t"
+                    AUMCvar.varType = PKPDVariable.TYPE_NUMERIC
+                    AUMCvar.role = PKPDVariable.ROLE_LABEL
+                    AUMCvar.units = createUnit(strUnit(self.AUMCunits))
+
+                    MRTvar = PKPDVariable()
+                    MRTvar.varName = "MRT"
+                    MRTvar.varType = PKPDVariable.TYPE_NUMERIC
+                    MRTvar.role = PKPDVariable.ROLE_LABEL
+                    MRTvar.units = createUnit("min")
+
+                    self.outputExperiment.variables["AUC0t"] = AUCvar
+                    self.outputExperiment.variables["AUMC0t"] = AUMCvar
+                    self.outputExperiment.variables["MRT"] = MRTvar
 
             # Evaluate AUC, AUMC and MRT in the last full period
-            tperiod0 = self.drugSource.parsedDoseList[-2].t0
-            tperiodF = self.drugSource.parsedDoseList[-1].t0-self.model.deltaT
-            idx0 = find_nearest(simulationsX,tperiod0)
-            idxF = find_nearest(simulationsX,tperiodF)
-            AUC0t = 0
-            AUMC0t = 0
-            t = simulationsX
-            C = y
-            for idx in range(idx0,idxF+1):
-                dt = (t[idx+1]-t[idx])
-                if C[idx+1]>=C[idx]: # Trapezoidal in the raise
-                    AUC0t  += 0.5*dt*(C[idx]+C[idx+1])
-                    AUMC0t += 0.5*dt*(C[idx]*t[idx]+C[idx+1]*t[idx+1])
-                else: # Log-trapezoidal in the decay
-                    decrement = C[idx]/C[idx+1]
-                    K = math.log(decrement)
-                    B = K/dt
-                    AUC0t  += dt*(C[idx]-C[idx+1])/K
-                    AUMC0t += (C[idx]*(t[idx]-tperiod0)-C[idx+1]*(t[idx+1]-tperiod0))/B-(C[idx+1]-C[idx])/(B*B)
-            MRT = AUMC0t/AUC0t
-            Cunits = self.experiment.variables[self.varNameY].units
-            AUCunits = multiplyUnits(tvar.units.unit,Cunits.unit)
-            AUMCunits = multiplyUnits(tvar.units.unit,AUCunits)
-            print("   AUC0t=%f [%s]"%(AUC0t,strUnit(AUCunits)))
-            print("   AUMC0t=%f [%s]"%(AUMC0t,strUnit(AUMCunits)))
-            print("   MRT=%f [min]"%MRT)
+            self.NCA(simulationsX,y)
 
-            # Keep result
+            # Keep results
             simulationsY[i,:] = y
-            AUCarray[i] = AUC0t
-            AUMCarray[i] = AUMC0t
-            MRTarray[i] = MRT
+            AUCarray[i] = self.AUC0t
+            AUMCarray[i] = self.AUMC0t
+            MRTarray[i] = self.MRT
             if self.addIndividuals:
-                self.outputExperiment.samples[sampleName] = newSample
-            else:
-                newSample = None # Free memory
+                self.addSample("Simulation_%d"%i, dosename, simulationsX, y)
 
         # Report NCA statistics
         alpha_2 = (100-self.confidenceLevel.get())/2
         limits = np.percentile(AUCarray,[alpha_2,100-alpha_2])
-        print("AUC %f%% confidence interval=[%f,%f] [%s]"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(AUCunits)))
+        print("AUC %f%% confidence interval=[%f,%f] [%s]"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(self.AUCunits)))
         limits = np.percentile(AUMCarray,[alpha_2,100-alpha_2])
-        print("AUMC %f%% confidence interval=[%f,%f] [%s]"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(AUMCunits)))
+        print("AUMC %f%% confidence interval=[%f,%f] [%s]"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(self.AUMCunits)))
         limits = np.percentile(MRTarray,[alpha_2,100-alpha_2])
         print("MRT %f%% confidence interval=[%f,%f] [min]"%(self.confidenceLevel.get(),limits[0],limits[1]))
 
@@ -227,8 +249,16 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
             mu = np.mean(simulationsY,axis=0)
             limits = np.percentile(simulationsY,[alpha_2,100-alpha_2],axis=0)
 
-            self.addSample("Mean", dosename, simulationsX, mu)
+            print("Lower limit NCA")
+            self.NCA(simulationsX,limits[0])
             self.addSample("LowerLimit", dosename, simulationsX, limits[0])
+
+            print("Mean profile NCA")
+            self.NCA(simulationsX,mu)
+            self.addSample("Mean", dosename, simulationsX, mu)
+
+            print("Upper limit NCA")
+            self.NCA(simulationsX,limits[1])
             self.addSample("UpperLimit", dosename, simulationsX, limits[1])
 
         self.outputExperiment.write(self._getPath("experiment.pkpd"))
