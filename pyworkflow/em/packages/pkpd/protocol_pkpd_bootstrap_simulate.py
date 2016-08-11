@@ -92,25 +92,76 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
         self.outputExperiment.samples[sampleName] = newSample
 
     def NCA(self,t,C):
-        tperiod0 = self.drugSource.parsedDoseList[-2].t0
-        tperiodF = self.drugSource.parsedDoseList[-1].t0-self.model.deltaT
-        idx0 = find_nearest(t,tperiod0)
-        idxF = find_nearest(t,tperiodF)
+        AUClist = []
+        AUMClist = []
+        Cminlist = []
+        Cavglist = []
+        Cmaxlist = []
+        Tmaxlist = []
+        Tminlist = []
+        for ndose in range(0,len(self.drugSource.parsedDoseList)-2):
+            tperiod0 = self.drugSource.parsedDoseList[ndose].t0
+            tperiodF = self.drugSource.parsedDoseList[ndose+1].t0-self.model.deltaT
+            idx0 = find_nearest(t,tperiod0)
+            idxF = find_nearest(t,tperiodF)
 
-        self.AUC0t = 0
-        self.AUMC0t = 0
-        for idx in range(idx0,idxF+1):
-            dt = (t[idx+1]-t[idx])
-            if C[idx+1]>=C[idx]: # Trapezoidal in the raise
-                self.AUC0t  += 0.5*dt*(C[idx]+C[idx+1])
-                self.AUMC0t += 0.5*dt*(C[idx]*t[idx]+C[idx+1]*t[idx+1])
-            else: # Log-trapezoidal in the decay
-                decrement = C[idx]/C[idx+1]
-                K = math.log(decrement)
-                B = K/dt
-                self.AUC0t  += dt*(C[idx]-C[idx+1])/K
-                self.AUMC0t += (C[idx]*(t[idx]-tperiod0)-C[idx+1]*(t[idx+1]-tperiod0))/B-(C[idx+1]-C[idx])/(B*B)
+            AUC0t = 0
+            AUMC0t = 0
+            t0 = t[idx0+1]
+            for idx in range(idx0,idxF+1):
+                dt = (t[idx+1]-t[idx])
+                if C[idx+1]>=C[idx]: # Trapezoidal in the raise
+                    AUC0t  += 0.5*dt*(C[idx]+C[idx+1])
+                    AUMC0t += 0.5*dt*(C[idx]*t[idx]+C[idx+1]*t[idx+1])
+                else: # Log-trapezoidal in the decay
+                    decrement = C[idx]/C[idx+1]
+                    K = math.log(decrement)
+                    B = K/dt
+                    AUC0t  += dt*(C[idx]-C[idx+1])/K
+                    AUMC0t += (C[idx]*(t[idx]-tperiod0)-C[idx+1]*(t[idx+1]-tperiod0))/B-(C[idx+1]-C[idx])/(B*B)
+
+                if idx==idx0:
+                    Cmax=C[idx]
+                    Tmax=t[idx]-t0
+                    Cmin=C[idx]
+                    Tmin=t[idx]-t0
+                else:
+                    if C[idx]<Cmin:
+                        Cmin=C[idx]
+                        Tmin=t[idx]-t0
+                    elif C[idx]>Cmax:
+                        Cmax=C[idx]
+                        Tmax=t[idx]-t0
+                        if ndose==0:
+                            Cmin=C[idx]
+                            Tmin=t[idx]-t0
+            AUClist.append(AUC0t)
+            AUMClist.append(AUMC0t)
+            Cminlist.append(Cmin)
+            Cmaxlist.append(Cmax)
+            Tmaxlist.append(Tmax)
+            Tminlist.append(Tmin)
+            Cavglist.append(AUC0t/(t[idxF]-t[idx0]))
+
+        print("Fluctuation = Cmax/Cmin")
+        print("Accumulation(1) = Cavg(n)/Cavg(1) %")
+        print("Accumulation(n) = Cavg(n)/Cavg(n-1) %")
+        print("Steady state fraction(n) = Cavg(n)/Cavg(last) %")
+        for ndose in range(0,len(AUClist)):
+            fluctuation = Cmaxlist[ndose]/Cminlist[ndose]
+            if ndose>0:
+                accumn = Cavglist[ndose]/Cavglist[ndose-1]
+            else:
+                accumn = 0
+            print("Dose #%d: Cavg= %f [%s] Cmin= %f [%s] Tmin= %d [min] Cmax= %f [%s] Tmax= %d [min] Fluct= %f %% Accum(1)= %f %% Accum(n)= %f %% SSFrac(n)= %f %% AUC= %f [%s] AUMC= %f [%s]"%\
+                  (ndose,Cavglist[ndose], strUnit(self.Cunits.unit), Cminlist[ndose],strUnit(self.Cunits.unit), int(Tminlist[ndose]), Cmaxlist[ndose], strUnit(self.Cunits.unit),
+                   int(Tmaxlist[ndose]), fluctuation*100, Cavglist[ndose]/Cavglist[0]*100, accumn*100, Cavglist[ndose]/Cavglist[-1]*100, AUClist[ndose],strUnit(self.AUCunits),
+                   AUMClist[ndose],strUnit(self.AUMCunits)))
+
+        self.AUC0t = AUClist[-1]
+        self.AUMC0t = AUMClist[-1]
         self.MRT = self.AUMC0t/self.AUC0t
+
         print("   AUC0t=%f [%s]"%(self.AUC0t,strUnit(self.AUCunits)))
         print("   AUMC0t=%f [%s]"%(self.AUMC0t,strUnit(self.AUMCunits)))
         print("   MRT=%f [min]"%self.MRT)
