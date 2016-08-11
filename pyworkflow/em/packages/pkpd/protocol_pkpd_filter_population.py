@@ -117,8 +117,8 @@ class ProtPKPDFilterPopulation(ProtPKPD):
                 evaluatedCondition = eval(evaluatedCondition)
                 if (filterType==0 and not evaluatedCondition) or (filterType>=1 and evaluatedCondition):
                     newSampleFit.parameters = np.vstack([newSampleFit.parameters, sampleFit.parameters[n,:]])
-                    newSampleFit.xB = np.vstack([newSampleFit.xB, sampleFit.xB[n,:]])
-                    newSampleFit.yB = np.vstack([newSampleFit.yB, sampleFit.yB[n,:]])
+                    newSampleFit.xB = np.vstack([newSampleFit.xB, sampleFit.xB[n,0:newSampleFit.xB.shape[1]]])
+                    newSampleFit.yB = np.vstack([newSampleFit.yB, sampleFit.yB[n,0:newSampleFit.yB.shape[1]]])
                     newSampleFit.R2.append(sampleFit.R2[n])
                     newSampleFit.R2adj.append(sampleFit.R2adj[n])
                     newSampleFit.AIC.append(sampleFit.AIC[n])
