@@ -30,6 +30,7 @@ from pyworkflow.viewer import Viewer, DESKTOP_TKINTER
 from pyworkflow.em.data import PKPDExperiment
 from pyworkflow.em.packages.pkpd.protocol_batch_create_experiment import BatchProtCreateExperiment
 from pyworkflow.em.packages.pkpd.protocol_pkpd_export_to_csv import ProtPKPDExportToCSV
+from pyworkflow.em.packages.pkpd.protocol_pkpd_statistics_labels import ProtPKPDStatisticsLabel
 from pyworkflow.gui.text import openTextFile
 
 from tk_experiment import ExperimentWindow
@@ -96,3 +97,18 @@ class PKPDCSVViewer(Viewer):
         print(fnCSV)
         if exists(fnCSV):
             openTextFile(fnCSV)
+
+class PKPDStatisticsLabelViewer(Viewer):
+    """ Wrapper to visualize statistics
+    """
+    _label = 'viewer statistics'
+    _targets = [ProtPKPDStatisticsLabel]
+    _environments = [DESKTOP_TKINTER]
+
+    def __init__(self, **args):
+        Viewer.__init__(self, **args)
+
+    def visualize(self, obj, **args):
+        fnStatistics=self.protocol._getPath("statistics.txt")
+        if exists(fnStatistics):
+            openTextFile(fnStatistics)
