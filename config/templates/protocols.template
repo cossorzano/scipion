@@ -60,6 +60,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDChangeUnits",
 		"text": "change units"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDODESimulate",
+		"text": "simulate dose PK"
 	}]
     },
     {
@@ -78,10 +82,6 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDFilterPopulation",
 		"text": "filter population"
-	},{
-		"tag": "protocol",
-		"value": "ProtPKPDODEBootstrapSimulate",
-		"text": "simulate dose"
 	}]
     },
     {

@@ -36,18 +36,28 @@ from protocol_pkpd_ode_base import ProtPKPDODEBase
 from pyworkflow.em.pkpd_units import createUnit, multiplyUnits, strUnit
 from utils import find_nearest
 
-class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
-    """ Simulate a population of ODE parameters obtained by bootstrap"""
+class ProtPKPDODESimulate(ProtPKPDODEBase):
+    """ Simulate a population of ODE parameters. These parameters can be specifically given or from a bootstrap population"""
 
-    _label = 'ODE bootstrap simulate'
+    _label = 'PK simulate'
+
+    PRM_POPULATION = 0
+    PRM_USER_DEFINED = 1
 
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):
         form.addSection('Input')
-        form.addParam('inputPopulation', params.PointerParam, label="Input population",
-                      pointerClass='PKPDFitting', help='It must be a fitting coming from a bootstrap sample')
         form.addParam('inputODE', params.PointerParam, label="Input ODE model",
                       pointerClass='ProtPKPDIVMonoCompartment, ProtPKPDEV1MonoCompartment', help='Select a run of an ODE model')
+        form.addParam('paramsSource', params.EnumParam, label="Source of parameters", choices=['ODE Bootstrap','User defined'], default=0,
+                      help="Choose a population of parameters or your own")
+        form.addParam('inputPopulation', params.PointerParam, label="Input population", condition="paramsSource==0",
+                      pointerClass='PKPDFitting', help='It must be a fitting coming from a bootstrap sample')
+        form.addParam('prmUser', params.TextParam, label="Simulation parameters", default="", condition="paramsSource==1",
+                      help='Specify the parameters for the simulation. The parameters must be written in the same order as they are written by the protocol '
+                           'that generated the ODE model. Example: \n'
+                           'prm1, prm2, prm3, prm4\n'
+                           'prmA, prmB, prmC, prmD')
         form.addParam('doses', params.TextParam, label="Doses", default="RepeatedBolus ; repeated_bolus t=0:24:120 d=60; h; mg",
                       help="Structure: [Dose Name] ; [Description] ; [Units] \n"\
                            "The dose name should have no space or special character\n"\
@@ -60,13 +70,13 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
                            "RepeatedBolus ; repeated_bolus t=0:24:120 d=60; h; mg")
         form.addParam('t0', params.FloatParam, label="Initial time (h)", default=0)
         form.addParam('tF', params.FloatParam, label="Final time (h)", default=24*7)
-        form.addParam('Nsimulations', params.IntParam, label="Simulation samples", default=200, expertLevel=LEVEL_ADVANCED,
+        form.addParam('Nsimulations', params.IntParam, label="Simulation samples", default=200, condition="paramsSource==0", expertLevel=LEVEL_ADVANCED,
                       help='Number of simulations')
-        form.addParam('addStats', params.BooleanParam, label="Add simulation statistics", default=True, expertLevel=LEVEL_ADVANCED,
+        form.addParam('addStats', params.BooleanParam, label="Add simulation statistics", default=True, condition="paramsSource==0", expertLevel=LEVEL_ADVANCED,
                       help="Mean, lower and upper confidence levels are added to the output")
         form.addParam('confidenceLevel', params.FloatParam, label="Confidence interval", default=95, expertLevel=LEVEL_ADVANCED,
-                      help='Confidence interval for the fitted parameters', condition="addStats")
-        form.addParam('addIndividuals', params.BooleanParam, label="Add individual simulations", default=False, expertLevel=LEVEL_ADVANCED,
+                      help='Confidence interval for the fitted parameters', condition="addStats and paramsSource==0")
+        form.addParam('addIndividuals', params.BooleanParam, label="Add individual simulations", default=False, condition="paramsSource==0", expertLevel=LEVEL_ADVANCED,
                       help="Individual simulations are added to the output")
 
     #--------------------------- INSERT steps functions --------------------------------------------
@@ -99,7 +109,7 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
         Cmaxlist = []
         Tmaxlist = []
         Tminlist = []
-        for ndose in range(0,len(self.drugSource.parsedDoseList)-2):
+        for ndose in range(0,len(self.drugSource.parsedDoseList)-1):
             tperiod0 = self.drugSource.parsedDoseList[ndose].t0
             tperiodF = self.drugSource.parsedDoseList[ndose+1].t0-self.model.deltaT
             idx0 = find_nearest(t,tperiod0)
@@ -154,7 +164,7 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
             else:
                 accumn = 0
             print("Dose #%d: Cavg= %f [%s] Cmin= %f [%s] Tmin= %d [min] Cmax= %f [%s] Tmax= %d [min] Fluct= %f %% Accum(1)= %f %% Accum(n)= %f %% SSFrac(n)= %f %% AUC= %f [%s] AUMC= %f [%s]"%\
-                  (ndose,Cavglist[ndose], strUnit(self.Cunits.unit), Cminlist[ndose],strUnit(self.Cunits.unit), int(Tminlist[ndose]), Cmaxlist[ndose], strUnit(self.Cunits.unit),
+                  (ndose+1,Cavglist[ndose], strUnit(self.Cunits.unit), Cminlist[ndose],strUnit(self.Cunits.unit), int(Tminlist[ndose]), Cmaxlist[ndose], strUnit(self.Cunits.unit),
                    int(Tmaxlist[ndose]), fluctuation*100, Cavglist[ndose]/Cavglist[0]*100, accumn*100, Cavglist[ndose]/Cavglist[-1]*100, AUClist[ndose],strUnit(self.AUCunits),
                    AUMClist[ndose],strUnit(self.AUMCunits)))
 
@@ -220,20 +230,34 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
         # Dunits = self.outputExperiment.doses[dosename].dunits
         # Cunits = self.experiment.variables[self.varNameY].units
 
+        # Process user parameters
+        if self.paramsSource==ProtPKPDODESimulate.PRM_POPULATION:
+            Nsimulations = self.Nsimulations.get()
+        else:
+            lines = self.prmUser.get().strip().split(';;')
+            Nsimulations = len(lines)
+            prmUser = []
+            for line in lines:
+                tokens = line.strip().split(',')
+                prmUser.append([float(token) for token in tokens])
+
         # Simulate the different responses
         simulationsX = self.model.x
-        simulationsY = np.zeros((self.Nsimulations.get(),len(simulationsX)))
-        AUCarray = np.zeros(self.Nsimulations.get())
-        AUMCarray = np.zeros(self.Nsimulations.get())
-        MRTarray = np.zeros(self.Nsimulations.get())
-        for i in range(0,self.Nsimulations.get()):
+        simulationsY = np.zeros((Nsimulations,len(simulationsX)))
+        AUCarray = np.zeros(Nsimulations)
+        AUMCarray = np.zeros(Nsimulations)
+        MRTarray = np.zeros(Nsimulations)
+        for i in range(0,Nsimulations):
             self.setTimeRange(None)
 
-            # Take parameters randomly from the population
-            nfit = int(random.uniform(0,len(self.fitting.sampleFits)))
-            sampleFit = self.fitting.sampleFits[nfit]
-            nprm = int(random.uniform(0,sampleFit.parameters.shape[0]))
-            parameters = sampleFit.parameters[nprm,:]
+            if self.paramsSource==ProtPKPDODESimulate.PRM_POPULATION:
+                # Take parameters randomly from the population
+                nfit = int(random.uniform(0,len(self.fitting.sampleFits)))
+                sampleFit = self.fitting.sampleFits[nfit]
+                nprm = int(random.uniform(0,sampleFit.parameters.shape[0]))
+                parameters = sampleFit.parameters[nprm,:]
+            else:
+                parameters = np.asarray(prmUser[i],np.double)
             print("Simulated sample %d: %s"%(i,str(parameters)))
 
             # Prepare source and this object
@@ -283,7 +307,7 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
             AUCarray[i] = self.AUC0t
             AUMCarray[i] = self.AUMC0t
             MRTarray[i] = self.MRT
-            if self.addIndividuals:
+            if self.addIndividuals or self.paramsSource==ProtPKPDODESimulate.PRM_USER_DEFINED:
                 self.addSample("Simulation_%d"%i, dosename, simulationsX, y)
 
         # Report NCA statistics
@@ -322,13 +346,17 @@ class ProtPKPDODEBootstrapSimulate(ProtPKPDODEBase):
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
         msg = []
-        msg.append("Number of simulations: %d"%self.Nsimulations.get())
-        msg.append("Confidence interval: %f"%self.confidenceInterval.get())
         msg.append("Dose: %s"%self.doses.get())
+        if self.paramsSource ==  ProtPKPDODESimulate.PRM_POPULATION:
+            msg.append("Number of simulations: %d"%self.Nsimulations.get())
+            msg.append("Confidence interval: %f"%self.confidenceInterval.get())
+        else:
+            msg.append("Parameters:\n"+self.prmUSer.get())
         return msg
 
     def _validate(self):
         msg=[]
-        if not self.inputPopulation.get().fnFitting.get().endswith("bootstrapPopulation.pkpd"):
+        if self.paramsSource ==  ProtPKPDODESimulate.PRM_POPULATION and \
+            not self.inputPopulation.get().fnFitting.get().endswith("bootstrapPopulation.pkpd"):
             msg.append("Population must be a bootstrap sample")
         return msg
