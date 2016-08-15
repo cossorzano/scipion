@@ -57,6 +57,7 @@ from protocol_pkpd_merge_populations import ProtPKPDMergePopulations
 from protocol_pkpd_filter_population import ProtPKPDFilterPopulation
 from protocol_pkpd_bootstrap_simulate import ProtPKPDODESimulate
 from protocol_pkpd_statistics_labels import ProtPKPDStatisticsLabel
+from protocol_pkpd_scale_to_common_dose import ProtPKPDScaleToCommonDose
 
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment

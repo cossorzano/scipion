@@ -62,6 +62,10 @@ Protocols = [{
 		"text": "change units"
 	},{
 		"tag": "protocol",
+		"value": "ProtPKPDScaleToCommonDose",
+		"text": "scale dose"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDODESimulate",
 		"text": "simulate dose PK"
 	}]
