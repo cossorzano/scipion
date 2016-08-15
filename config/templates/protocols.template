@@ -152,6 +152,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDEV1MonoCompartment",
 		"text": "ev1 monocompartment"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDODERefine",
+		"text": "ode refinement"
 	}]
     },
     {
