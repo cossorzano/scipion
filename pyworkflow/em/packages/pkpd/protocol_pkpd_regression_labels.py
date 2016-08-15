@@ -182,7 +182,7 @@ class ProtPKPDRegressionLabel(ProtPKPD):
         self.addFileContentToMessage(msg,self._getPath("results.txt"))
         return msg
 
-    def _validation(self):
+    def _validate(self):
         msg = []
         experiment = self.readExperiment(self.inputExperiment.get().fnPKPD,False)
 
