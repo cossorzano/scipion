@@ -31,6 +31,7 @@ from pyworkflow.viewer import Viewer, DESKTOP_TKINTER
 from pyworkflow.em.data import PKPDExperiment
 from pyworkflow.gui.text import openTextFileEditor
 from pyworkflow.em.plotter import EmPlotter
+from pyworkflow.em.data import PKPDFitting
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
 from protocol_pkpd_export_to_csv import ProtPKPDExportToCSV
@@ -144,8 +145,12 @@ class PKPDPopulationViewer(Viewer):
     _environments = [DESKTOP_TKINTER]
 
     def visualize(self, obj, **kwargs):
-        self.populationWindow = self.tkWindow(PopulationWindow,
-                                           title='Population Viewer',
-                                           experiment=obj)
-        self.populationWindow.show()
+        population = PKPDFitting("PKPDSampleFitBootstrap")
+        population.load(obj.outputPopulation.fnFitting)
+        mu, sigma, R, percentiles = population.getStats()
+        print percentiles
+        # self.populationWindow = self.tkWindow(PopulationWindow,
+        #                                    title='Population Viewer',
+        #                                    population=population)
+        # self.populationWindow.show()
 
