@@ -175,9 +175,9 @@ class ProtPKPDRegressionLabel(ProtPKPD):
             variable = experiment.variables[label]
             if variable.role != PKPDVariable.ROLE_LABEL:
                 msg.append('%s is not a label'%label)
-            # else:
-            #     if variable.varType==PKPDVariable.TYPE_NUMERIC:
-            #         msg.append("%s is not numeric"%label)
+            else:
+                if variable.varType!=PKPDVariable.TYPE_NUMERIC:
+                    msg.append("%s is not numeric"%label)
 
         label = self.labelX.get()
         if not label in experiment.variables:
@@ -186,20 +186,20 @@ class ProtPKPDRegressionLabel(ProtPKPD):
             variable = experiment.variables[label]
             if variable.role != PKPDVariable.ROLE_LABEL:
                 msg.append('%s is not a label'%label)
-            # else:
-            #     if variable.varType==PKPDVariable.TYPE_NUMERIC:
-            #         msg.append("%s is not numeric"%label)
+            else:
+                if variable.varType!=PKPDVariable.TYPE_NUMERIC:
+                    msg.append("%s is not numeric"%label)
         return msg
 
     #--------------------------- UTILS functions --------------------------------------------
     def getXYValues(self, printExperiment=True):
-        experiment = self.readExperiment(self.inputExperiment.get().fnPKPD,
+        self.experiment = self.readExperiment(self.inputExperiment.get().fnPKPD,
                                          printExperiment)
         X = []
         Y = []
         labelX = self.labelX.get()
         labelY = self.labelY.get()
-        for sampleName, sample in experiment.samples.iteritems():
+        for sampleName, sample in self.experiment.samples.iteritems():
             X.append(float(sample.descriptors[labelX]))
             Y.append(float(sample.descriptors[labelY]))
         X = np.asarray(X, np.double)

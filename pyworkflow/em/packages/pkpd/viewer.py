@@ -32,6 +32,7 @@ from pyworkflow.em.data import PKPDExperiment
 from pyworkflow.gui.text import openTextFileEditor
 from pyworkflow.em.plotter import EmPlotter
 from pyworkflow.em.data import PKPDFitting
+from pyworkflow.em.pkpd_units import strUnit
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
 from protocol_pkpd_export_to_csv import ProtPKPDExportToCSV
@@ -126,7 +127,11 @@ class PKPDRegressionLabelsViewer(Viewer):
             yValues = self.protocol.evalFunction(xValues)
 
             plotter = EmPlotter()
-            ax = plotter.createSubPlot("Regression Plot", "X", "Y")
+            varNameX = self.protocol.labelX.get()
+            varNameY = self.protocol.labelY.get()
+            ax = plotter.createSubPlot("Regression Plot",
+                                       "%s [%s]"%(varNameX,strUnit(self.protocol.experiment.variables[varNameX].units.unit)),
+                                       "%s [%s]"%(varNameY,strUnit(self.protocol.experiment.variables[varNameY].units.unit)))
             ax.plot(xValues, yValues)
             ax.plot(X, Y, 'o')
 
