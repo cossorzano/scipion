@@ -69,3 +69,14 @@ class ProtPKPD(EMProtocol):
             for line in fh.readlines():
                 msg.append(line.strip())
             fh.close()
+
+    def loadInputExperiment(self):
+        """ If the protocol has an attribute 'inputExperiment',
+        load that experiment from file. If not, return None. """
+        experiment = self.getAttributeValue('inputExperiment', None)
+
+        if experiment:
+            experiment.load()
+            return experiment
+
+        return None
