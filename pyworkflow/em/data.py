@@ -169,6 +169,16 @@ class PKPDVariable:
     def getUnitsString(self):
         return self.units._toString()
 
+    def isNumeric(self):
+        return self.varType == self.TYPE_NUMERIC
+
+    def isLabel(self):
+        return self.role == self.ROLE_LABEL
+
+    def isMeasurement(self):
+        return self.role == self.ROLE_MEASUREMENT
+
+
 class PKPDDose:
     TYPE_BOLUS = 1
     TYPE_REPEATED_BOLUS = 2
