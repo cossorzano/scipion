@@ -166,7 +166,7 @@ class ProtPKPDRegressionLabel(ProtPKPD):
 
     def _validate(self):
         msg = []
-        experiment = self.readExperiment(self.inputExperiment.get().fnPKPD,False)
+        experiment = self.loadInputExperiment()
 
         label = self.labelY.get()
         if not label in experiment.variables:
@@ -244,3 +244,7 @@ class ProtPKPDRegressionLabel(ProtPKPD):
             yValues.append(eval(func, globals(), evalDict))
 
         return yValues
+
+    def filterVarForWizard(self, v):
+        """ Define the type of variables required (used in wizard). """
+        return v.isNumeric() and v.isLabel()

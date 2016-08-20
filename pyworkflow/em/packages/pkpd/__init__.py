@@ -64,4 +64,6 @@ from protocol_pkpd_ode_refine import ProtPKPDODERefine
 from protocol_batch_create_experiment import BatchProtCreateExperiment
 
 from viewer import *
+from wizard import *
+
 from bibtex import _bibtex
