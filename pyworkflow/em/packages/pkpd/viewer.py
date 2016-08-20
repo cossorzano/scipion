@@ -36,7 +36,12 @@ from protocol_batch_create_experiment import BatchProtCreateExperiment
 from protocol_pkpd_export_to_csv import ProtPKPDExportToCSV
 from protocol_pkpd_statistics_labels import ProtPKPDStatisticsLabel
 from protocol_pkpd_regression_labels import ProtPKPDRegressionLabel
+from protocol_pkpd_ode_bootstrap import ProtPKPDODEBootstrap
+from protocol_pkpd_filter_population import ProtPKPDFilterPopulation
+from protocol_pkpd_merge_populations import ProtPKPDMergePopulations
+
 from tk_experiment import ExperimentWindow
+from tk_populations import PopulationWindow
 
 
 
@@ -128,3 +133,19 @@ class PKPDRegressionLabelsViewer(Viewer):
         else:
             return [self.errorMessage("Result file '%s' not produced yet. "
                                       % fnResults)]
+
+
+class PKPDPopulationViewer(Viewer):
+    """ Visualization of a given Population
+    """
+    _targets = [ProtPKPDODEBootstrap,
+                ProtPKPDFilterPopulation,
+                ProtPKPDMergePopulations]
+    _environments = [DESKTOP_TKINTER]
+
+    def visualize(self, obj, **kwargs):
+        self.populationWindow = self.tkWindow(PopulationWindow,
+                                           title='Population Viewer',
+                                           experiment=obj)
+        self.populationWindow.show()
+
