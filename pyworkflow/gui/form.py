@@ -50,6 +50,7 @@ from widgets import Button, HotButton, IconButton
 from dialog import showInfo, EditObjectDialog, ListDialog, askYesNo, Dialog
 from canvas import Canvas
 from tree import TreeProvider, BoundTree
+from text import Text
 #from pyworkflow.em import findViewers
 
 THREADS = 'Threads'
@@ -817,6 +818,13 @@ class ParamWidget():
         elif t is params.LabelParam:
             var = None
             self._onlyLabel = True
+
+        # elif t is params.TextParam:
+        #     var = tk.StringVar()
+        #     text = Text(content, width=entryWidth, textvariable=var,
+        #                 font=self.window.font)
+        #     text.grid(row=0, column=0, sticky='w')
+
         else:
             #v = self.setVarValue(paramName)
             var = tk.StringVar()

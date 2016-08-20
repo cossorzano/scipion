@@ -63,5 +63,5 @@ from protocol_pkpd_ode_refine import ProtPKPDODERefine
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
 
-from viewer import PKPDExperimentViewer, PKPDCSVViewer, PKPDStatisticsLabelViewer
+from viewer import *
 from bibtex import _bibtex

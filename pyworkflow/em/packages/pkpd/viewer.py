@@ -23,17 +23,19 @@
 # *  e-mail address 'jmdelarosa@cnb.csic.es'
 # *
 # **************************************************************************
+
 from os.path import basename, join, exists
 import numpy as np
 
 from pyworkflow.viewer import Viewer, DESKTOP_TKINTER
 from pyworkflow.em.data import PKPDExperiment
+from pyworkflow.gui.text import openTextFileEditor
+from pyworkflow.em.plotter import EmPlotter
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
 from protocol_pkpd_export_to_csv import ProtPKPDExportToCSV
 from protocol_pkpd_statistics_labels import ProtPKPDStatisticsLabel
-from pyworkflow.gui.text import openTextFileEditor
-
+from protocol_pkpd_regression_labels import ProtPKPDRegressionLabel
 from tk_experiment import ExperimentWindow
 
 
@@ -96,3 +98,33 @@ class PKPDStatisticsLabelViewer(Viewer):
 
         if exists(fnStatistics):
             openTextFileEditor(fnStatistics)
+
+
+class PKPDRegressionLabelsViewer(Viewer):
+    """ Wrapper to visualize regression
+    """
+    _label = 'viewer regression'
+    _targets = [ProtPKPDRegressionLabel]
+    _environments = [DESKTOP_TKINTER]
+
+    def _visualize(self, obj, **kwargs):
+        fnResults = self.protocol._getPath("results.txt")
+
+        if exists(fnResults):
+            X, Y, _, _ = self.protocol.getXYValues(False)
+
+            minX = min(X)
+            maxX = max(X)
+            step = (maxX - minX) / 50
+            xValues = np.arange(minX, maxX+step, step)
+            yValues = self.protocol.evalFunction(xValues)
+
+            plotter = EmPlotter()
+            ax = plotter.createSubPlot("Regression Plot", "X", "Y")
+            ax.plot(xValues, yValues)
+            ax.plot(X, Y, 'o')
+
+            return [plotter]
+        else:
+            return [self.errorMessage("Result file '%s' not produced yet. "
+                                      % fnResults)]

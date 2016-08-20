@@ -24,11 +24,12 @@
 # *
 # **************************************************************************
 
+import numpy as np
+import math
+
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDVariable
-import numpy as np
-import math
 
 
 class ProtPKPDRegressionLabel(ProtPKPD):
@@ -57,30 +58,11 @@ class ProtPKPDRegressionLabel(ProtPKPD):
                                  self.regressionType.get(), self.degree.get())
 
     #--------------------------- STEPS functions --------------------------------------------
+
     def runRegression(self, objId, labelY, labelX, regressionType, degree):
-        experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
+        X, Y, XtoUse, YtoUse = self.getXYValues()
+
         self.printSection("Performing regressions")
-
-        X = []
-        Y = []
-        labelX = self.labelX.get()
-        labelY = self.labelY.get()
-        for sampleName, sample in experiment.samples.iteritems():
-            X.append(float(sample.descriptors[labelX]))
-            Y.append(float(sample.descriptors[labelY]))
-        X = np.asarray(X,np.double)
-        Y = np.asarray(Y,np.double)
-        logX = np.log(X)
-        logY = np.log(Y)
-        if self.regressionType.get()==0 or self.regressionType.get()==2:
-            XtoUse = X
-        else:
-            XtoUse = logX
-
-        if self.regressionType.get()==0 or self.regressionType.get()==1:
-            YtoUse = Y
-        else:
-            YtoUse = logY
 
         p,V = np.polyfit(XtoUse,YtoUse,self.degree.get(),cov=True)
         mu = p
@@ -193,9 +175,9 @@ class ProtPKPDRegressionLabel(ProtPKPD):
             variable = experiment.variables[label]
             if variable.role != PKPDVariable.ROLE_LABEL:
                 msg.append('%s is not a label'%label)
-            else:
-                if variable.varType==PKPDVariable.TYPE_NUMERIC:
-                    msg.append("%s is not numeric"%label)
+            # else:
+            #     if variable.varType==PKPDVariable.TYPE_NUMERIC:
+            #         msg.append("%s is not numeric"%label)
 
         label = self.labelX.get()
         if not label in experiment.variables:
@@ -204,7 +186,61 @@ class ProtPKPDRegressionLabel(ProtPKPD):
             variable = experiment.variables[label]
             if variable.role != PKPDVariable.ROLE_LABEL:
                 msg.append('%s is not a label'%label)
-            else:
-                if variable.varType==PKPDVariable.TYPE_NUMERIC:
-                    msg.append("%s is not numeric"%label)
+            # else:
+            #     if variable.varType==PKPDVariable.TYPE_NUMERIC:
+            #         msg.append("%s is not numeric"%label)
         return msg
+
+    #--------------------------- UTILS functions --------------------------------------------
+    def getXYValues(self, printExperiment=True):
+        experiment = self.readExperiment(self.inputExperiment.get().fnPKPD,
+                                         printExperiment)
+        X = []
+        Y = []
+        labelX = self.labelX.get()
+        labelY = self.labelY.get()
+        for sampleName, sample in experiment.samples.iteritems():
+            X.append(float(sample.descriptors[labelX]))
+            Y.append(float(sample.descriptors[labelY]))
+        X = np.asarray(X, np.double)
+        Y = np.asarray(Y, np.double)
+        logX = np.log(X)
+        logY = np.log(Y)
+
+        if self.regressionType.get() == 0 or self.regressionType.get() == 2:
+            XtoUse = X
+        else:
+            XtoUse = logX
+
+        if self.regressionType.get() == 0 or self.regressionType.get() == 1:
+            YtoUse = Y
+        else:
+            YtoUse = logY
+
+        return X, Y, XtoUse, YtoUse
+
+    def getFunction(self):
+        """ Parse the function string from the given result file.
+        Replace the '^' char by the Python '**' operator. """
+        result = None
+        f = open(self._getPath('results.txt'))
+        for line in f:
+            if line.strip().startswith('Model:'):
+                result = line.split('=')[1].replace('^', '**')
+                break
+        f.close()
+        return result
+
+    def evalFunction(self, xValues, func=None):
+        """ Evaluate the function with the given values
+        and return the list of resulting values. """
+        func = func or self.getFunction()
+        xLabel = self.labelX.get()
+        evalDict = {'log': np.log}
+
+        yValues = []
+        for x in xValues:
+            evalDict[xLabel] = x
+            yValues.append(eval(func, globals(), evalDict))
+
+        return yValues
