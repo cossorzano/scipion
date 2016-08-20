@@ -510,10 +510,18 @@ class PKPDExperiment(EMObject):
     def __init__(self, **args):
         EMObject.__init__(self, **args)
         self.fnPKPD = String()
+        self.infoStr = String()
         self.general = {}
         self.variables = {}
         self.samples = {}
         self.doses = {}
+
+    def __str__(self):
+        if not self.infoStr.hasValue():
+            self.load()
+            self.infoStr.set("variables: %d, samples: %d"
+                             % (len(self.variables), len(self.samples)))
+        return self.infoStr.get()
 
     def load(self, fnExperiment="", verifyIntegrity=True):
         if fnExperiment!="":
@@ -600,6 +608,8 @@ class PKPDExperiment(EMObject):
         fh.close()
         self.fnPKPD.set(fnExperiment)
         writeMD5(fnExperiment)
+        self.infoStr.set("variables: %d, samples: %d" % (len(self.variables),
+                                                         len(self.samples)))
 
     def _printToStream(self,fh):
         fh.write("[EXPERIMENT] ===========================\n")
