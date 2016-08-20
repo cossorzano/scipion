@@ -196,13 +196,34 @@ class PKPDUnit:
         return self.unit>=100 and self.unit<=109
 
     def _fromString(self, unitString):
-        return unitFromString(unitString)
+        return self.stringToCode(unitString)
 
     def _toString(self):
-        if self.unit:
-            return self.unitDictionary[self.unit]
-        else:
-            return ""
+        return self.codeToString(self.unit)
+
+    @classmethod
+    def codeToString(cls, unitCode):
+        """ Return the unit string from a given code.
+        If code is not recognized, return the empty string.
+        """
+        return cls.unitDictionary.get(unitCode, "")
+
+    @classmethod
+    def stringToCode(cls, unitString):
+        """ Return the numeric code from a given string.
+        If wrong string value, returns None. """
+        if unitString == "":
+            return None
+
+        for _unitKey, _unitString in cls.unitDictionary.items():
+            if _unitString == unitString:
+                return _unitKey
+        if unitString == "ug/mL":
+            return PKPDUnit.UNIT_CONC_mg_L
+        elif unitString == "mg/mL":
+            return PKPDUnit.UNIT_CONC_g_L
+        return None
+
 
 def convertUnits(x, unitsIn, unitsOut):
     if unitsIn == PKPDUnit.UNIT_WEIGHT_g:
@@ -561,19 +582,10 @@ def createUnit(unitName):
     unit.unit = unit._fromString(unitName)
     return unit
 
+# FIXME: Replace the use of this function by PKPDUnit.codeToString
 def strUnit(unitCode):
-    unit = PKPDUnit()
-    unit.unit = unitCode
-    return unit._toString()
+    return PKPDUnit.codeToString(unitCode)
 
+# FIXME: Replace the use of this function by PKPDUnit.stringToCode
 def unitFromString(unitString):
-    if unitString =="":
-        return None
-    for _unitKey, _unitString in PKPDUnit.unitDictionary.items():
-        if _unitString == unitString:
-            return _unitKey
-    if unitString == "ug/mL":
-        return PKPDUnit.UNIT_CONC_mg_L
-    elif unitString == "mg/mL":
-        return PKPDUnit.UNIT_CONC_g_L
-    return None
+    return PKPDUnit.stringToCode(unitString)
