@@ -150,6 +150,10 @@ Protocols = [{
 		"text": "iv monocompartment"
 	},{
 		"tag": "protocol",
+		"value": "ProtPKPDEV0MonoCompartment",
+		"text": "ev0 monocompartment"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDEV1MonoCompartment",
 		"text": "ev1 monocompartment"
 	},{

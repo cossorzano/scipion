@@ -30,7 +30,7 @@ from pk_models import PK_Monocompartment
 import biopharmaceutics
 
 
-class ProtPKPDEV1MonoCompartment(ProtPKPDODEBase):
+class ProtPKPDEV0MonoCompartment(ProtPKPDODEBase):
     """ Fit a monocompartmental model with first order absorption to a set of measurements obtained by oral doses (any arbitrary dosing regimen is allowed)\n
         The differential equation is D(t)=Amax*(1-exp(-Ka*t)) and dC/dt = -Cl * C + 1/V * dD/dt\n
         where C is the concentration, Cl the clearance, V the distribution volume, and D the input dosing regime. Ka is the absorbption rate and
@@ -38,7 +38,7 @@ class ProtPKPDEV1MonoCompartment(ProtPKPDODEBase):
 Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
 are independent, which are not. Use Bootstrap estimates instead.\n
         Protocol created by http://www.kinestatpharma.com\n"""
-    _label = 'ev1 monocompartment'
+    _label = 'ev0 monocompartment'
 
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):
