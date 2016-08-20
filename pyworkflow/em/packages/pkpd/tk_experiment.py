@@ -144,15 +144,18 @@ class ExperimentWindow(gui.Window):
         content.grid(row=0, column=0, sticky='news')
         content.columnconfigure(0, weight=1)
         content.rowconfigure(0, weight=1)
-        content.rowconfigure(1, weight=1)
         self.plotter = None
 
     def _createContent(self, content):
         # Create and fill the frame containing the Experiment
         # info, variables and doses
-        self._createTopFrame(content)
+        p = tk.PanedWindow(content, orient=tk.VERTICAL, bg='white')
+
+        p.grid(row=0, column=0, sticky='news', padx=5, pady=5)
+
+        self._createTopFrame(p)
         # Create the middle frame containing the Samples Box
-        self._createSamplesFrame(content)
+        self._createSamplesFrame(p)
         # Create the last frame with the buttons
         self._createButtonsFrame(content)
         #self._updateSelectionLabel()
@@ -192,7 +195,8 @@ class ExperimentWindow(gui.Window):
         lfDoses = addLabelFrame('Doses', 1, 1)
         self.dosesTree = self._addBoundTree(lfDoses, DosesTreeProvider, 5)
 
-        frame.grid(row=0, column=0, sticky='news', padx=5, pady=(10, 5))
+        #frame.grid(row=0, column=0, sticky='news', padx=5, pady=(10, 5))
+        content.add(frame, sticky='news', padx=5, pady=5)
 
     def _createSamplesFrame(self, content):
         frame = tk.Frame(content)
@@ -238,7 +242,8 @@ class ExperimentWindow(gui.Window):
 
         self.plotButton.grid(row=0, column=2, sticky='ne', padx=5)
 
-        frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
+        #frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
+        content.add(frame, sticky='news', padx=5, pady=5)
 
     def _createButtonsFrame(self, content):
         frame = tk.Frame(content)
@@ -256,7 +261,7 @@ class ExperimentWindow(gui.Window):
 
         self.newButton.grid(row=0, column=1, sticky='ne', padx=5)
 
-        frame.grid(row=2, column=0, sticky='news', padx=5, pady=5)
+        frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
 
     def _addLabel(self, parent, text, r, c):
         label = tk.Label(parent, text=text, font=self.fontBold)
