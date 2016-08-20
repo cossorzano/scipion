@@ -1360,6 +1360,21 @@ class PKPDFitting(EMObject):
         self.fnFitting.set(fnFitting)
         writeMD5(fnFitting)
 
+    def getAllParameters(self):
+        allParameters = np.empty((0,len(self.modelParameters)),np.double)
+        for sampleFitting in self.sampleFits:
+            allParameters = np.vstack([allParameters, sampleFitting.parameters])
+        return allParameters
+
+    def getStats(self):
+        observations = self.getAllParameters()
+        mu=np.mean(observations,axis=0)
+        C=np.cov(np.transpose(observations))
+        sigma = np.sqrt(np.diag(C))
+        R=np.corrcoef(np.transpose(observations))
+        percentiles = np.percentile(observations,[0, 2.5, 25, 50, 75, 97.5, 100],axis=0)
+        return mu, sigma, R, percentiles
+
     def _printToStream(self,fh):
         fh.write("[FITTING] ===========================\n")
         fh.write("Experiment: %s\n"%self.fnExperiment.get())
