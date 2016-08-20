@@ -41,20 +41,15 @@ from tk_experiment import ExperimentWindow
 class PKPDExperimentViewer(Viewer):
     """ Visualization of a given PKPDExperiment
     """
-    _targets = [PKPDExperiment, ProtPKPDExportToCSV]
+    _targets = [PKPDExperiment]
     _environments = [DESKTOP_TKINTER]
 
     def visualize(self, obj, **kwargs):
-        print(obj)
-        if isinstance(obj,ProtPKPDExportToCSV):
-            print("Que si")
-            return
         obj.load()
         self.experimentWindow = self.tkWindow(ExperimentWindow,
                                            title='Experiment Viewer',
                                            experiment=obj,
-                                           callback=self._createExperiment
-                                           )
+                                           callback=self._createExperiment)
         self.experimentWindow.show()
 
     def _createExperiment(self):
@@ -64,11 +59,6 @@ class PKPDExperimentViewer(Viewer):
         sampleKeys = self.experimentWindow.samplesTree.selection()
         samples = ';'.join([self.experimentWindow.experiment.samples[k].varName
                             for k in sampleKeys])
-
-        # print "Info to create a new Experiment: "
-        # print "samples: ", len(sampleKeys)
-        # print "title: ", self.experimentWindow._titleVar.get()
-        # print "comment: ", self.experimentWindow._commentText.getText()
 
         prot = self.protocol
         project = prot.getProject()
