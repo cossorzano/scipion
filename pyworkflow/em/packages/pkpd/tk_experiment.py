@@ -24,14 +24,16 @@
 # *
 # **************************************************************************
 
+import math
+from itertools import izip
 import Tkinter as tk
 import ttk
-import math
 
 import pyworkflow.gui as gui
 from pyworkflow.gui.widgets import Button, HotButton, ComboBox
 from pyworkflow.gui.tree import TreeProvider, BoundTree
 from pyworkflow.em.plotter import EmPlotter
+
 
 class VariablesTreeProvider(TreeProvider):
     def __init__(self, experiment):
@@ -237,10 +239,20 @@ class ExperimentWindow(gui.Window):
         self.plotButton = Button(plotFrame, '   Plot   ', font=self.fontBold,
                                  command=self._onPlotClick,
                                  tooltip='Select one or more samples to plot '
-                                         'theirs measures of the selected '
+                                         'their measures of the selected '
                                          'variables (optionally in log).')
 
         self.plotButton.grid(row=0, column=2, sticky='ne', padx=5)
+
+        self.plotSummaryButton = Button(plotFrame, ' Summary Plot ',
+                                        font=self.fontBold,
+                                        command=self._onPlotSummaryClick,
+                                        tooltip='Select several samples to plot'
+                                                ' their statistics'
+                                                ' (min, max, avg and std).')
+
+        self.plotSummaryButton.grid(row=1, column=2, sticky='ne',
+                                    padx=5, pady=5)
 
         #frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
         content.add(frame, sticky='news', padx=5, pady=5)
@@ -274,49 +286,82 @@ class ExperimentWindow(gui.Window):
         gui.configureWeigths(parent)
         return bt
 
+    def getUnits(self, varName):
+        return self.experiment.variables[varName].getUnitsString()
+
+    def getLabel(self, varName, useLog):
+        varLabel = '%s [%s]' % (varName, self.getUnits(varName))
+        if useLog:
+            varLabel = "log10(%s)" % varLabel
+        return varLabel
+
+    def getTimeVarName(self):
+        return self.timeWidget[0].getText()
+
+    def useTimeLog(self):
+        return self.timeWidget[2].get()
+
+    def getTimeLabel(self):
+        return self.getLabel(self.getTimeVarName(), self.useTimeLog())
+
+    def getMeasureVarName(self):
+        return self.measureWidget[0].getText()
+
+    def useMeasureLog(self):
+        return self.measureWidget[2].get()
+
+    def getMeasureLabel(self):
+        return self.getLabel(self.getMeasureVarName(), self.useMeasureLog())
+
+    def getPlotValues(self, sample):
+        xValues, yValues = sample.getXYValues(self.getTimeVarName(),
+                                  self.getMeasureVarName())
+
+        useMeasureLog = self.useMeasureLog()
+        useTimeLog = self.useTimeLog()
+
+        if not (useMeasureLog or useTimeLog):
+            return xValues, yValues
+
+        # If log will be used either for time or measure var
+        # we need to filter elements larger than 0
+        newXValues = []
+        newYValues = []
+
+        def _value(v, useLog):
+            if useLog:
+                return math.log10(v) if v > 0 else None
+            return v
+
+        for x, y in izip(xValues, yValues):
+            x = _value(x, useTimeLog)
+            y = _value(y, useMeasureLog)
+
+            if x is not None and y is not None:
+                newXValues.append(x)
+                newYValues.append(y)
+
+        return newXValues, newYValues
+
     def _onPlotClick(self, e=None):
         sampleKeys = self.samplesTree.selection()
-        if sampleKeys:
-            samples = [self.experiment.samples[k] for k in sampleKeys]
-            timeVarName = self.timeWidget[0].getText()
-            measureVarName = self.measureWidget[0].getText()
-            timeVarLabel = timeVarName+' ['+self.experiment.variables[timeVarName].getUnitsString()+']'
-            measureVarLabel = measureVarName+' ['+self.experiment.variables[measureVarName].getUnitsString()+']'
-            if self.timeWidget[2].get():
-                timeVarLabel = "log10("+timeVarLabel+")"
-            if self.measureWidget[2].get():
-                measureVarLabel = "log10("+measureVarLabel+")"
 
+        if sampleKeys:
             if self.plotter is None or self.plotter.isClosed():
                 self.plotter = EmPlotter()
                 doShow = True
-                ax = self.plotter.createSubPlot("Plot", timeVarLabel, measureVarLabel)
+                ax = self.plotter.createSubPlot("Plot", self.getTimeLabel(),
+                                                self.getMeasureLabel())
                 self.plotDict = {}
             else:
                 doShow = False
                 ax = self.plotter.getLastSubPlot()
 
-
+            samples = [self.experiment.samples[k] for k in sampleKeys]
             for s in samples:
                 if not s.varName in self.plotDict:
-                    x, y = s.getXYValues(timeVarName, measureVarName)
-                    idx = [True]*len(x)
-                    if self.timeWidget[2].get():
-                        for i in range(len(x)):
-                            if x[i]>0:
-                                x[i] = math.log10(x[i])
-                            else:
-                                idx[i] = False
-                    if self.measureWidget[2].get():
-                        for i in range(len(y)):
-                            if y[i]>0:
-                                y[i] = math.log10(y[i])
-                            else:
-                                idx[i] = False
-                    idx = [i for i, elem in enumerate(idx, 1) if elem]
-                    xidx = [x[i-1] for i in idx]
-                    yidx = [y[i-1] for i in idx]
-                    ax.plot(xidx, yidx, label=s.varName)
+                    x, y = self.getPlotValues(s)
+                    ax.plot(x, y, label=s.varName)
                     self.plotDict[s.varName] = True
             ax.legend()
 
@@ -326,6 +371,14 @@ class ExperimentWindow(gui.Window):
                 self.plotter.draw()
         else:
             self.showInfo("Please select some sample(s) to plot.")
+
+    def _onPlotSummaryClick(self, e=None):
+        sampleKeys = self.samplesTree.selection()
+
+        if len(sampleKeys) > 1:
+            self._onPlotClick()
+        else:
+            self.showInfo("Please select several samples to plot.")
 
     def _onCreateClick(self, e=None):
         sampleKeys = self.samplesTree.selection()
