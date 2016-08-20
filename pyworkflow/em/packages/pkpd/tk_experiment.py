@@ -25,6 +25,7 @@
 # **************************************************************************
 
 import math
+import numpy as np
 from itertools import izip
 import Tkinter as tk
 import ttk
@@ -374,11 +375,44 @@ class ExperimentWindow(gui.Window):
 
     def _onPlotSummaryClick(self, e=None):
         sampleKeys = self.samplesTree.selection()
+        n = len(sampleKeys)
 
-        if len(sampleKeys) > 1:
-            self._onPlotClick()
-        else:
+        if n == 1:
             self.showInfo("Please select several samples to plot.")
+        else:
+            if n > 1:
+                samples = [self.experiment.samples[k] for k in sampleKeys]
+            else:
+                samples = self.experiment.samples.values()
+
+            dataDict = {} # key will be time values
+            for s in samples:
+                xValues, yValues = self.getPlotValues(s)
+                for x, y in izip(xValues, yValues):
+                    if x in dataDict:
+                        dataDict[x].append(y)
+                    else:
+                        dataDict[x] = [y]
+
+            sortedTime = sorted(dataDict.keys())
+            # We will store five values (min, 25%, 50%, 75%, max)
+            # for each of the time entries computed
+            percentileList = [0, 25, 50, 75, 100]
+            Y = np.zeros((len(sortedTime), 5))
+            for i, t in enumerate(sortedTime):
+                Y[i,:] = np.percentile(dataDict[t], percentileList)
+
+            plotter = EmPlotter()
+            ax = plotter.createSubPlot("Summary Plot", self.getTimeLabel(),
+                                       self.getMeasureLabel())
+            ax.plot(sortedTime, Y[:, 0], 'r--', label="Minimum")
+            ax.plot(sortedTime, Y[:, 1], 'b--', label="25%")
+            ax.plot(sortedTime, Y[:, 2], 'g', label="50% (Median)")
+            ax.plot(sortedTime, Y[:, 3], 'b--', label="75%")
+            ax.plot(sortedTime, Y[:, 4], 'r--', label="Maximum")
+
+            ax.legend()
+            plotter.show()
 
     def _onCreateClick(self, e=None):
         sampleKeys = self.samplesTree.selection()
