@@ -143,6 +143,8 @@ class ExperimentWindow(gui.Window):
         self._createContent(content)
         content.grid(row=0, column=0, sticky='news')
         content.columnconfigure(0, weight=1)
+        content.rowconfigure(0, weight=1)
+        content.rowconfigure(1, weight=1)
         self.plotter = None
 
     def _createContent(self, content):
@@ -158,6 +160,8 @@ class ExperimentWindow(gui.Window):
     def _createTopFrame(self, content):
         frame = tk.Frame(content)
         frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(0, weight=1)
+
         tab = ttk.Notebook(frame)
         tab.grid(row=0, column=0, sticky='news', padx=5, pady=5)
         #frame = tk.LabelFrame(content, text='General')
@@ -188,7 +192,7 @@ class ExperimentWindow(gui.Window):
         lfDoses = addLabelFrame('Doses', 1, 1)
         self.dosesTree = self._addBoundTree(lfDoses, DosesTreeProvider, 5)
 
-        frame.grid(row=0, column=0, sticky='new', padx=5, pady=(10, 5))
+        frame.grid(row=0, column=0, sticky='news', padx=5, pady=(10, 5))
 
     def _createSamplesFrame(self, content):
         frame = tk.Frame(content)
