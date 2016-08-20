@@ -169,6 +169,16 @@ class PKPDVariable:
     def getUnitsString(self):
         return self.units._toString()
 
+    def isNumeric(self):
+        return self.varType == self.TYPE_NUMERIC
+
+    def isLabel(self):
+        return self.role == self.ROLE_LABEL
+
+    def isMeasurement(self):
+        return self.role == self.ROLE_MEASUREMENT
+
+
 class PKPDDose:
     TYPE_BOLUS = 1
     TYPE_REPEATED_BOLUS = 2
@@ -510,10 +520,18 @@ class PKPDExperiment(EMObject):
     def __init__(self, **args):
         EMObject.__init__(self, **args)
         self.fnPKPD = String()
+        self.infoStr = String()
         self.general = {}
         self.variables = {}
         self.samples = {}
         self.doses = {}
+
+    def __str__(self):
+        if not self.infoStr.hasValue():
+            self.load()
+            self.infoStr.set("variables: %d, samples: %d"
+                             % (len(self.variables), len(self.samples)))
+        return self.infoStr.get()
 
     def load(self, fnExperiment="", verifyIntegrity=True):
         if fnExperiment!="":
@@ -600,6 +618,8 @@ class PKPDExperiment(EMObject):
         fh.close()
         self.fnPKPD.set(fnExperiment)
         writeMD5(fnExperiment)
+        self.infoStr.set("variables: %d, samples: %d" % (len(self.variables),
+                                                         len(self.samples)))
 
     def _printToStream(self,fh):
         fh.write("[EXPERIMENT] ===========================\n")

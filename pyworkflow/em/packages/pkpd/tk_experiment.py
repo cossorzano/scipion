@@ -24,14 +24,17 @@
 # *
 # **************************************************************************
 
+import math
+import numpy as np
+from itertools import izip
 import Tkinter as tk
 import ttk
-import math
 
 import pyworkflow.gui as gui
 from pyworkflow.gui.widgets import Button, HotButton, ComboBox
 from pyworkflow.gui.tree import TreeProvider, BoundTree
 from pyworkflow.em.plotter import EmPlotter
+
 
 class VariablesTreeProvider(TreeProvider):
     def __init__(self, experiment):
@@ -143,14 +146,19 @@ class ExperimentWindow(gui.Window):
         self._createContent(content)
         content.grid(row=0, column=0, sticky='news')
         content.columnconfigure(0, weight=1)
+        content.rowconfigure(0, weight=1)
         self.plotter = None
 
     def _createContent(self, content):
         # Create and fill the frame containing the Experiment
         # info, variables and doses
-        self._createTopFrame(content)
+        p = tk.PanedWindow(content, orient=tk.VERTICAL, bg='white')
+
+        p.grid(row=0, column=0, sticky='news', padx=5, pady=5)
+
+        self._createTopFrame(p)
         # Create the middle frame containing the Samples Box
-        self._createSamplesFrame(content)
+        self._createSamplesFrame(p)
         # Create the last frame with the buttons
         self._createButtonsFrame(content)
         #self._updateSelectionLabel()
@@ -158,6 +166,8 @@ class ExperimentWindow(gui.Window):
     def _createTopFrame(self, content):
         frame = tk.Frame(content)
         frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(0, weight=1)
+
         tab = ttk.Notebook(frame)
         tab.grid(row=0, column=0, sticky='news', padx=5, pady=5)
         #frame = tk.LabelFrame(content, text='General')
@@ -188,7 +198,8 @@ class ExperimentWindow(gui.Window):
         lfDoses = addLabelFrame('Doses', 1, 1)
         self.dosesTree = self._addBoundTree(lfDoses, DosesTreeProvider, 5)
 
-        frame.grid(row=0, column=0, sticky='new', padx=5, pady=(10, 5))
+        #frame.grid(row=0, column=0, sticky='news', padx=5, pady=(10, 5))
+        content.add(frame, sticky='news', padx=5, pady=5)
 
     def _createSamplesFrame(self, content):
         frame = tk.Frame(content)
@@ -229,12 +240,23 @@ class ExperimentWindow(gui.Window):
         self.plotButton = Button(plotFrame, '   Plot   ', font=self.fontBold,
                                  command=self._onPlotClick,
                                  tooltip='Select one or more samples to plot '
-                                         'theirs measures of the selected '
+                                         'their measures of the selected '
                                          'variables (optionally in log).')
 
         self.plotButton.grid(row=0, column=2, sticky='ne', padx=5)
 
-        frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
+        self.plotSummaryButton = Button(plotFrame, ' Summary Plot ',
+                                        font=self.fontBold,
+                                        command=self._onPlotSummaryClick,
+                                        tooltip='Select several samples to plot'
+                                                ' their statistics'
+                                                ' (min, max, avg and std).')
+
+        self.plotSummaryButton.grid(row=1, column=2, sticky='ne',
+                                    padx=5, pady=5)
+
+        #frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
+        content.add(frame, sticky='news', padx=5, pady=5)
 
     def _createButtonsFrame(self, content):
         frame = tk.Frame(content)
@@ -252,7 +274,7 @@ class ExperimentWindow(gui.Window):
 
         self.newButton.grid(row=0, column=1, sticky='ne', padx=5)
 
-        frame.grid(row=2, column=0, sticky='news', padx=5, pady=5)
+        frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
 
     def _addLabel(self, parent, text, r, c):
         label = tk.Label(parent, text=text, font=self.fontBold)
@@ -265,49 +287,82 @@ class ExperimentWindow(gui.Window):
         gui.configureWeigths(parent)
         return bt
 
+    def getUnits(self, varName):
+        return self.experiment.variables[varName].getUnitsString()
+
+    def getLabel(self, varName, useLog):
+        varLabel = '%s [%s]' % (varName, self.getUnits(varName))
+        if useLog:
+            varLabel = "log10(%s)" % varLabel
+        return varLabel
+
+    def getTimeVarName(self):
+        return self.timeWidget[0].getText()
+
+    def useTimeLog(self):
+        return self.timeWidget[2].get()
+
+    def getTimeLabel(self):
+        return self.getLabel(self.getTimeVarName(), self.useTimeLog())
+
+    def getMeasureVarName(self):
+        return self.measureWidget[0].getText()
+
+    def useMeasureLog(self):
+        return self.measureWidget[2].get()
+
+    def getMeasureLabel(self):
+        return self.getLabel(self.getMeasureVarName(), self.useMeasureLog())
+
+    def getPlotValues(self, sample):
+        xValues, yValues = sample.getXYValues(self.getTimeVarName(),
+                                  self.getMeasureVarName())
+
+        useMeasureLog = self.useMeasureLog()
+        useTimeLog = self.useTimeLog()
+
+        if not (useMeasureLog or useTimeLog):
+            return xValues, yValues
+
+        # If log will be used either for time or measure var
+        # we need to filter elements larger than 0
+        newXValues = []
+        newYValues = []
+
+        def _value(v, useLog):
+            if useLog:
+                return math.log10(v) if v > 0 else None
+            return v
+
+        for x, y in izip(xValues, yValues):
+            x = _value(x, useTimeLog)
+            y = _value(y, useMeasureLog)
+
+            if x is not None and y is not None:
+                newXValues.append(x)
+                newYValues.append(y)
+
+        return newXValues, newYValues
+
     def _onPlotClick(self, e=None):
         sampleKeys = self.samplesTree.selection()
-        if sampleKeys:
-            samples = [self.experiment.samples[k] for k in sampleKeys]
-            timeVarName = self.timeWidget[0].getText()
-            measureVarName = self.measureWidget[0].getText()
-            timeVarLabel = timeVarName+' ['+self.experiment.variables[timeVarName].getUnitsString()+']'
-            measureVarLabel = measureVarName+' ['+self.experiment.variables[measureVarName].getUnitsString()+']'
-            if self.timeWidget[2].get():
-                timeVarLabel = "log10("+timeVarLabel+")"
-            if self.measureWidget[2].get():
-                measureVarLabel = "log10("+measureVarLabel+")"
 
+        if sampleKeys:
             if self.plotter is None or self.plotter.isClosed():
                 self.plotter = EmPlotter()
                 doShow = True
-                ax = self.plotter.createSubPlot("Plot", timeVarLabel, measureVarLabel)
+                ax = self.plotter.createSubPlot("Plot", self.getTimeLabel(),
+                                                self.getMeasureLabel())
                 self.plotDict = {}
             else:
                 doShow = False
                 ax = self.plotter.getLastSubPlot()
 
-
+            samples = [self.experiment.samples[k] for k in sampleKeys]
             for s in samples:
                 if not s.varName in self.plotDict:
-                    x, y = s.getXYValues(timeVarName, measureVarName)
-                    idx = [True]*len(x)
-                    if self.timeWidget[2].get():
-                        for i in range(len(x)):
-                            if x[i]>0:
-                                x[i] = math.log10(x[i])
-                            else:
-                                idx[i] = False
-                    if self.measureWidget[2].get():
-                        for i in range(len(y)):
-                            if y[i]>0:
-                                y[i] = math.log10(y[i])
-                            else:
-                                idx[i] = False
-                    idx = [i for i, elem in enumerate(idx, 1) if elem]
-                    xidx = [x[i-1] for i in idx]
-                    yidx = [y[i-1] for i in idx]
-                    ax.plot(xidx, yidx, label=s.varName)
+                    x, y = self.getPlotValues(s)
+                    ax.plot(x, y, label=s.varName)
                     self.plotDict[s.varName] = True
             ax.legend()
 
@@ -317,6 +372,47 @@ class ExperimentWindow(gui.Window):
                 self.plotter.draw()
         else:
             self.showInfo("Please select some sample(s) to plot.")
+
+    def _onPlotSummaryClick(self, e=None):
+        sampleKeys = self.samplesTree.selection()
+        n = len(sampleKeys)
+
+        if n == 1:
+            self.showInfo("Please select several samples to plot.")
+        else:
+            if n > 1:
+                samples = [self.experiment.samples[k] for k in sampleKeys]
+            else:
+                samples = self.experiment.samples.values()
+
+            dataDict = {} # key will be time values
+            for s in samples:
+                xValues, yValues = self.getPlotValues(s)
+                for x, y in izip(xValues, yValues):
+                    if x in dataDict:
+                        dataDict[x].append(y)
+                    else:
+                        dataDict[x] = [y]
+
+            sortedTime = sorted(dataDict.keys())
+            # We will store five values (min, 25%, 50%, 75%, max)
+            # for each of the time entries computed
+            percentileList = [0, 25, 50, 75, 100]
+            Y = np.zeros((len(sortedTime), 5))
+            for i, t in enumerate(sortedTime):
+                Y[i,:] = np.percentile(dataDict[t], percentileList)
+
+            plotter = EmPlotter()
+            ax = plotter.createSubPlot("Summary Plot", self.getTimeLabel(),
+                                       self.getMeasureLabel())
+            ax.plot(sortedTime, Y[:, 0], 'r--', label="Minimum")
+            ax.plot(sortedTime, Y[:, 1], 'b--', label="25%")
+            ax.plot(sortedTime, Y[:, 2], 'g', label="50% (Median)")
+            ax.plot(sortedTime, Y[:, 3], 'b--', label="75%")
+            ax.plot(sortedTime, Y[:, 4], 'r--', label="Maximum")
+
+            ax.legend()
+            plotter.show()
 
     def _onCreateClick(self, e=None):
         sampleKeys = self.samplesTree.selection()

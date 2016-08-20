@@ -23,16 +23,19 @@
 # *  e-mail address 'jmdelarosa@cnb.csic.es'
 # *
 # **************************************************************************
+
 from os.path import basename, join, exists
 import numpy as np
 
 from pyworkflow.viewer import Viewer, DESKTOP_TKINTER
 from pyworkflow.em.data import PKPDExperiment
-from pyworkflow.em.packages.pkpd.protocol_batch_create_experiment import BatchProtCreateExperiment
-from pyworkflow.em.packages.pkpd.protocol_pkpd_export_to_csv import ProtPKPDExportToCSV
-from pyworkflow.em.packages.pkpd.protocol_pkpd_statistics_labels import ProtPKPDStatisticsLabel
-from pyworkflow.gui.text import openTextFile
+from pyworkflow.gui.text import openTextFileEditor
+from pyworkflow.em.plotter import EmPlotter
 
+from protocol_batch_create_experiment import BatchProtCreateExperiment
+from protocol_pkpd_export_to_csv import ProtPKPDExportToCSV
+from protocol_pkpd_statistics_labels import ProtPKPDStatisticsLabel
+from protocol_pkpd_regression_labels import ProtPKPDRegressionLabel
 from tk_experiment import ExperimentWindow
 
 
@@ -40,23 +43,15 @@ from tk_experiment import ExperimentWindow
 class PKPDExperimentViewer(Viewer):
     """ Visualization of a given PKPDExperiment
     """
-    _targets = [PKPDExperiment, ProtPKPDExportToCSV]
+    _targets = [PKPDExperiment]
     _environments = [DESKTOP_TKINTER]
 
-    def __init__(self, **kwargs):
-        Viewer.__init__(self, **kwargs)
-
     def visualize(self, obj, **kwargs):
-        print(obj)
-        if isinstance(obj,ProtPKPDExportToCSV):
-            print("Que si")
-            return
         obj.load()
         self.experimentWindow = self.tkWindow(ExperimentWindow,
                                            title='Experiment Viewer',
                                            experiment=obj,
-                                           callback=self._createExperiment
-                                           )
+                                           callback=self._createExperiment)
         self.experimentWindow.show()
 
     def _createExperiment(self):
@@ -64,12 +59,8 @@ class PKPDExperimentViewer(Viewer):
         the currently displayed experiment and register the action.
         """
         sampleKeys = self.experimentWindow.samplesTree.selection()
-        samples = ';'.join([self.experimentWindow.experiment.samples[k].varName for k in sampleKeys])
-
-        # print "Info to create a new Experiment: "
-        # print "samples: ", len(sampleKeys)
-        # print "title: ", self.experimentWindow._titleVar.get()
-        # print "comment: ", self.experimentWindow._commentText.getText()
+        samples = ';'.join([self.experimentWindow.experiment.samples[k].varName
+                            for k in sampleKeys])
 
         prot = self.protocol
         project = prot.getProject()
@@ -88,15 +79,12 @@ class PKPDCSVViewer(Viewer):
     _targets = [ProtPKPDExportToCSV]
     _environments = [DESKTOP_TKINTER]
 
-    def __init__(self, **args):
-        print("Aqui")
-        Viewer.__init__(self, **args)
+    def visualize(self, obj, **kwargs):
+        fnCSV = self.protocol.getFilenameOut()
 
-    def visualize(self, obj, **args):
-        fnCSV=self.protocol.getFilenameOut()
-        print(fnCSV)
         if exists(fnCSV):
-            openTextFile(fnCSV)
+            openTextFileEditor(fnCSV)
+
 
 class PKPDStatisticsLabelViewer(Viewer):
     """ Wrapper to visualize statistics
@@ -105,10 +93,38 @@ class PKPDStatisticsLabelViewer(Viewer):
     _targets = [ProtPKPDStatisticsLabel]
     _environments = [DESKTOP_TKINTER]
 
-    def __init__(self, **args):
-        Viewer.__init__(self, **args)
+    def visualize(self, obj, **kwargs):
+        fnStatistics = self.protocol._getPath("statistics.txt")
 
-    def visualize(self, obj, **args):
-        fnStatistics=self.protocol._getPath("statistics.txt")
         if exists(fnStatistics):
-            openTextFile(fnStatistics)
+            openTextFileEditor(fnStatistics)
+
+
+class PKPDRegressionLabelsViewer(Viewer):
+    """ Wrapper to visualize regression
+    """
+    _label = 'viewer regression'
+    _targets = [ProtPKPDRegressionLabel]
+    _environments = [DESKTOP_TKINTER]
+
+    def _visualize(self, obj, **kwargs):
+        fnResults = self.protocol._getPath("results.txt")
+
+        if exists(fnResults):
+            X, Y, _, _ = self.protocol.getXYValues(False)
+
+            minX = min(X)
+            maxX = max(X)
+            step = (maxX - minX) / 50
+            xValues = np.arange(minX, maxX+step, step)
+            yValues = self.protocol.evalFunction(xValues)
+
+            plotter = EmPlotter()
+            ax = plotter.createSubPlot("Regression Plot", "X", "Y")
+            ax.plot(xValues, yValues)
+            ax.plot(X, Y, 'o')
+
+            return [plotter]
+        else:
+            return [self.errorMessage("Result file '%s' not produced yet. "
+                                      % fnResults)]
