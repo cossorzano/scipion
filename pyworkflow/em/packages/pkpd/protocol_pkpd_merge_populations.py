@@ -41,7 +41,7 @@ class ProtPKPDMergePopulations(ProtPKPD):
     def _defineParams(self, form):
         form.addSection('Input')
         form.addParam('inputPopulation1', params.PointerParam, label="Population 1", important=True,
-                      pointerClass='PKPDFitting', pointerCondition="isPopulation", 
+                      pointerClass='PKPDFitting', pointerCondition="isPopulation",
                       help='It must be a fitting coming from a bootstrap sample')
         form.addParam('inputPopulation2', params.PointerParam, label="Population 2", important=True,
                       pointerClass='PKPDFitting', pointerCondition="isPopulation",

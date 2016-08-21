@@ -173,3 +173,7 @@ class ProtPKPDSimulateGenericPD(ProtPKPD):
         if units._fromString(self.predictedUnit.get()) is None:
             msg.append("Predicted unit is not valid")
         return msg
+
+    def filterVarForWizard(self, v):
+        """ Define the type of variables required (used in wizard). """
+        return v.isMeasurement() and v.isNumeric()

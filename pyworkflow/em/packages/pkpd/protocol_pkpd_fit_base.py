@@ -193,3 +193,7 @@ class ProtPKPDFitBase(ProtPKPD):
 
     def _citations(self):
         return ['Spiess2010']
+
+    def filterVarForWizard(self, v):
+        """ Define the type of variables required (used in wizard). """
+        return v.isNumeric() and (v.isMeasurement() or v.isTime())

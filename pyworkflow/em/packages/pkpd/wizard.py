@@ -40,6 +40,10 @@ from protocol_pkpd_drop_measurements import ProtPKPDDropMeasurements
 from protocol_pkpd_change_units import ProtPKPDChangeUnits
 from protocol_pkpd_scale_to_common_dose import ProtPKPDScaleToCommonDose
 from protocol_pkpd_stats_oneExperiment_twoSubgroups_mean import ProtPKPDStatsExp1Subgroups2Mean
+from protocol_pkpd_exponential_fit import ProtPKPDExponentialFit
+from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
+from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
+from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
 
 class FilterVariablesTreeProvider(TreeProvider):
     """ Simplified view of VariablesTreeProvider with less columns.
@@ -74,7 +78,15 @@ class PKPDChooseVariableWizard(Wizard):
     _targets = [(ProtPKPDRegressionLabel, ['labelX']),
                 (ProtPKPDRegressionLabel, ['labelY']),
                 (ProtPKPDChangeUnits, ['labelToChange']),
-                (ProtPKPDStatsExp1Subgroups2Mean, ['labelToCompare'])]
+                (ProtPKPDStatsExp1Subgroups2Mean, ['labelToCompare']),
+                (ProtPKPDExponentialFit, ['predictor']),
+                (ProtPKPDExponentialFit, ['predicted']),
+                (ProtPKPDEliminationRate, ['predictor']),
+                (ProtPKPDEliminationRate, ['predicted']),
+                (ProtPKPDEV0MonoCompartment, ['predictor']),
+                (ProtPKPDEV0MonoCompartment, ['predicted']),
+                (ProtPKPDSimulateGenericPD, ['predictor'])
+                ]
 
     def show(self, form, *params):
         protocol = form.protocol
