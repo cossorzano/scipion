@@ -152,10 +152,9 @@ class PKPDPopulationViewer(Viewer):
     def visualize(self, obj, **kwargs):
         population = PKPDFitting("PKPDSampleFitBootstrap")
         population.load(obj.outputPopulation.fnFitting)
-        mu, sigma, R, percentiles = population.getStats()
-        print percentiles
-        # self.populationWindow = self.tkWindow(PopulationWindow,
-        #                                    title='Population Viewer',
-        #                                    population=population)
-        # self.populationWindow.show()
+
+        self.populationWindow = self.tkWindow(PopulationWindow,
+                                              title='Population Viewer',
+                                              population=population)
+        self.populationWindow.show()
 

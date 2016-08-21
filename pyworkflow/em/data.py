@@ -1369,8 +1369,9 @@ class PKPDFitting(EMObject):
             allParameters = np.vstack([allParameters, sampleFitting.parameters])
         return allParameters
 
-    def getStats(self):
-        observations = self.getAllParameters()
+    def getStats(self, observations=None):
+        if observations is None:
+            observations = self.getAllParameters()
         mu=np.mean(observations,axis=0)
         C=np.cov(np.transpose(observations))
         sigma = np.sqrt(np.diag(C))
