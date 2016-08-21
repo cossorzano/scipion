@@ -36,7 +36,10 @@ from pyworkflow.gui.widgets import LabelSlider
 from pyworkflow.gui.tree import BoundTree, TreeProvider
 
 from protocol_pkpd_regression_labels import ProtPKPDRegressionLabel
-
+from protocol_pkpd_drop_measurements import ProtPKPDDropMeasurements
+from protocol_pkpd_change_units import ProtPKPDChangeUnits
+from protocol_pkpd_scale_to_common_dose import ProtPKPDScaleToCommonDose
+from protocol_pkpd_stats_oneExperiment_twoSubgroups_mean import ProtPKPDStatsExp1Subgroups2Mean
 
 class FilterVariablesTreeProvider(TreeProvider):
     """ Simplified view of VariablesTreeProvider with less columns.
@@ -69,23 +72,49 @@ class FilterVariablesTreeProvider(TreeProvider):
 
 class PKPDChooseVariableWizard(Wizard):
     _targets = [(ProtPKPDRegressionLabel, ['labelX']),
-                (ProtPKPDRegressionLabel, ['labelY'])]
+                (ProtPKPDRegressionLabel, ['labelY']),
+                (ProtPKPDChangeUnits, ['labelToChange']),
+                (ProtPKPDStatsExp1Subgroups2Mean, ['labelToCompare'])]
 
     def show(self, form, *params):
         protocol = form.protocol
         label = params[0]
 
-        value = protocol.getAttributeValue(label)
+        # value = protocol.getAttributeValue(label)
         experiment = protocol.loadInputExperiment()
 
         if experiment is None:
-            dialog.showError("Select input experiment first.")
+            form.showError("Select input experiment first.")
         else:
             filterFunc = getattr(protocol, 'filterVarForWizard', None)
             tp = FilterVariablesTreeProvider(experiment, filter=filterFunc)
-            dlg = dialog.ListDialog(form.root, "Choose variable", tp,
-                             selectmode='browse')
+            dlg = dialog.ListDialog(form.root, self.getTitle(), tp,
+                             selectmode=self.getSelectMode())
             if dlg.resultYes():
-                form.setVar(label, dlg.values[0].varName)
+                self.setFormValues(form, label, dlg.values)
+
+    def getTitle(self):
+        return "Choose variable"
+
+    def setFormValues(self, form, label, values):
+        form.setVar(label, values[0].varName)
+
+    def getSelectMode(self):
+        return "browse"
+
+
+class PKPDChooseSeveralVariableWizard(PKPDChooseVariableWizard):
+    _targets = [(ProtPKPDDropMeasurements, ['varsToDrop']),
+                (ProtPKPDScaleToCommonDose,['measurementsToChange'])]
+
+    def getTitle(self):
+        return "Choose variable(s)"
+
+    def setFormValues(self, form, label, values):
+        form.setVar(label, ', '.join([var.varName for var in values]))
+
+    def getSelectMode(self):
+        return "extended"
+
 
 

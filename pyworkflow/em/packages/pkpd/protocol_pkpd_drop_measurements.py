@@ -94,3 +94,7 @@ class ProtPKPDDropMeasurements(ProtPKPD):
     def _summary(self):
         msg=["Variables %s dropped"%self.varsToDrop.get()]
         return msg
+
+    def filterVarForWizard(self, v):
+        """ Define the type of variables required (used in wizard). """
+        return v.isMeasurement()

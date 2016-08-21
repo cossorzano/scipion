@@ -178,3 +178,7 @@ class ProtPKPDChangeUnits(ProtPKPD):
                 except:
                     errors.append("Unknown conversion from %s to %s. If it makes sense and it is not implemented you may contact info@kinestat.com"%(currentUnit,newUnit))
         return errors
+
+    def filterVarForWizard(self, v):
+        """ Define the type of variables required (used in wizard). """
+        return v.isNumeric()

@@ -105,3 +105,7 @@ class ProtPKPDScaleToCommonDose(ProtPKPD):
                 if experiment.variables[token].role != PKPDVariable.ROLE_MEASUREMENT:
                     msg.append("%s is not a measurement variable"%token)
         return msg
+
+    def filterVarForWizard(self, v):
+        """ Define the type of variables required (used in wizard). """
+        return v.isMeasurement()
