@@ -1353,6 +1353,9 @@ class PKPDFitting(EMObject):
         else:
             self.sampleFittingClass = cls
 
+    def isPopulation(self):
+        return self.fnFitting.get().endswith("bootstrapPopulation.pkpd")
+
     def write(self, fnFitting):
         fh=open(fnFitting,'w')
         self._printToStream(fh)
