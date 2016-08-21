@@ -178,6 +178,8 @@ class PKPDVariable:
     def isMeasurement(self):
         return self.role == self.ROLE_MEASUREMENT
 
+    def isTime(self):
+        return self.role == self.ROLE_TIME
 
 class PKPDDose:
     TYPE_BOLUS = 1
