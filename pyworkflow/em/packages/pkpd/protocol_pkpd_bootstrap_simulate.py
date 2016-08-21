@@ -52,7 +52,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         form.addParam('paramsSource', params.EnumParam, label="Source of parameters", choices=['ODE Bootstrap','User defined'], default=0,
                       help="Choose a population of parameters or your own")
         form.addParam('inputPopulation', params.PointerParam, label="Input population", condition="paramsSource==0",
-                      pointerClass='PKPDFitting', help='It must be a fitting coming from a bootstrap sample')
+                      pointerClass='PKPDFitting', pointerCondition="isPopulation", help='It must be a fitting coming from a bootstrap sample')
         form.addParam('prmUser', params.TextParam, label="Simulation parameters", default="", condition="paramsSource==1",
                       help='Specify the parameters for the simulation. The parameters must be written in the same order as they are written by the protocol '
                            'that generated the ODE model. Example: \n'
