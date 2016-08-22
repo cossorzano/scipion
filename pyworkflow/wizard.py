@@ -65,4 +65,14 @@ class Wizard(object):
         in those wizards that have WEB_DJANGO environment defined. 
         """
         return None
-    
+
+    def _getAllParams(self, protocol):
+        """ Return the list of all target parameters associated with this
+        protocol. This function is useful when more than one parameter is
+        associated to the wizard in the same protocol. """
+
+        for k, v in self._targets:
+            if k.__name__ == protocol.getClassName():
+                return v
+
+        return []
