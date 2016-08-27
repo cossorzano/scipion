@@ -282,6 +282,12 @@ class PKPDODEWizard(Wizard):
                                 varNameY=protocol.predicted.get())
 
             if dlg.resultYes():
-                print "yes"
-            else:
-                print "no"
+                boundStr = ""
+                i = 1
+                for bound in dlg.getBoundsList():
+                    if i>1:
+                        boundStr+="; "
+                    boundStr += str(bound)
+                    i += 1
+                if boundStr!="":
+                    form.setVar(label, boundStr)
