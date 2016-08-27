@@ -220,7 +220,7 @@ class PKPDODEDialog(dialog.Dialog):
             self.computeFit()
             self.plotResults()
         else:
-            self.showInfo("Please select some sample(s) to plot.")
+            dialog.showInfo("Warning","Please select some sample(s) to plot.",self)
 
     def computeFit(self):
         currentParams = []
@@ -229,6 +229,12 @@ class PKPDODEDialog(dialog.Dialog):
 
         self.protODE.setParameters(currentParams)
         self.ypValues = self.protODE.forwardModel(currentParams, self.xValues)
+
+    def getBoundsList(self):
+        boundList = []
+        for paramName in self.protODE.getParameterNames():
+            boundList.append(self.sliders[paramName].getMinMax())
+        return boundList
 
     def computePlotValues(self, xValues, yValues):
         useMeasureLog = False
@@ -285,7 +291,7 @@ class PKPDODEDialog(dialog.Dialog):
             self.computeFit()
             self.plotResults()
         else:
-            self.showInfo("Please select some sample(s) to plot.")
+            dialog.showInfo("Warning","Please select some sample(s) to plot.",self)
 
     def plotResults(self):
         if self.plotter is None or self.plotter.isClosed():
