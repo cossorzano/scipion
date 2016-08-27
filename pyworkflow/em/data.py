@@ -181,6 +181,10 @@ class PKPDVariable:
     def isTime(self):
         return self.role == self.ROLE_TIME
 
+    def getLabel(self):
+        return "%s [%s]" % (self.varName, self.getUnitsString())
+
+
 class PKPDDose:
     TYPE_BOLUS = 1
     TYPE_REPEATED_BOLUS = 2
@@ -1108,11 +1112,14 @@ class PKPDSampleFit:
 
     def __init__(self):
         self.sampleName = ""
+
+        # Lists with the sample fits values
         self.x = None
         self.y = None
         self.yp = None
         self.yl = None
         self.yu = None
+
         self.modelEquation = ""
         self.R2 = 0
         self.R2adj = 0

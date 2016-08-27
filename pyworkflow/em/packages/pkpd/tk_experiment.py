@@ -31,6 +31,7 @@ from itertools import izip
 import Tkinter as tk
 import ttk
 
+import pyworkflow.object as pwobj
 import pyworkflow.gui as gui
 from pyworkflow.gui.widgets import Button, HotButton, ComboBox
 from pyworkflow.gui.text import TaggedText
@@ -88,6 +89,8 @@ class DosesTreeProvider(TreeProvider):
 
 
 class SamplesTreeProvider(TreeProvider):
+    FIT_COLUMNS = ['R2', 'R2adj', 'AIC', 'AICc', 'BIC']
+
     def __init__(self, experiment, fitting=None):
         self.experiment = experiment
         self.fitting = fitting
@@ -97,6 +100,8 @@ class SamplesTreeProvider(TreeProvider):
             sample = self.experiment.samples.values()[0]
             self.columns = [(key, 60)
                             for key in sorted(sample.descriptors.keys())]
+            if self.fitting:
+                self.columns.extend([(key, 60) for key in self.FIT_COLUMNS])
         else:
             self.columns = []
 
@@ -106,13 +111,20 @@ class SamplesTreeProvider(TreeProvider):
     def getObjects(self):
         sortedSamples = []
         for key in sorted(self.experiment.samples.keys()):
-            sortedSamples.append(self.experiment.samples[key])
+            sample = self.experiment.samples[key]
+            if self.fitting:
+                sample.fit = self.fitting.getSampleFit(key)
+            sortedSamples.append(sample)
         return sortedSamples
 
     def getObjectInfo(self, obj):
         key = obj.varName
         values = [','.join(obj.doseList)] + [obj.descriptors[k]
-                                             for k, _ in self.columns]
+                                             for k, _ in self.columns
+                                             if k in obj.descriptors]
+
+        if self.fitting:
+            values.extend([getattr(obj.fit, attr) for attr in self.FIT_COLUMNS])
 
         return {'key': key, 'text': key,
                 'values': tuple(values)
@@ -138,20 +150,31 @@ class MeasurementTreeProvider(TreeProvider):
 
 
 class FitValuesTreeProvider(TreeProvider):
-    def __init__(self, sampleFit):
-        self.sample = sampleFit
-        self.columns = [(key, 60) for key in self.sample.measurementPattern]
+    def __init__(self, fitting, sampleFit):
+        self.sampleFit = sampleFit
+        self.columns = [(fitting.predictor.getLabel(), 60),
+                        (fitting.predicted.getLabel(), 60),
+                        ("Fitted Value", 60)]
 
     def getColumns(self):
-        return [('Sample #',60)]+self.columns
+        return self.columns
 
     def getObjects(self):
-        return self.sample.getSampleMeasurements()
+        fit = self.sampleFit
+
+        def _object(x, y, yp):
+            obj = pwobj.Object()
+            obj.x = x
+            obj.y = y
+            obj.yp = yp
+            return obj
+
+        return [_object(x, y, yp) for x, y, yp in izip(fit.x, fit.y, fit.yp)]
 
     def getObjectInfo(self, obj):
-        key = obj.n
+        key = obj.x
         return {'key': key, 'text': key,
-                'values': tuple(obj.getValues())
+                'values': (obj.y, obj.yp)
                 }
 
 
@@ -168,7 +191,7 @@ class ExperimentWindow(gui.Window):
     def __init__(self, **kwargs):
         gui.Window.__init__(self,  minsize=(420, 200), **kwargs)
         self.experiment = kwargs.get('experiment')
-        self.fitting = kwargs.get('fitting')
+        self.fitting = kwargs.get('fitting', None)
         self.callback = kwargs.get('callback', None)
         content = tk.Frame(self.root)
         self._createContent(content)
@@ -230,8 +253,10 @@ class ExperimentWindow(gui.Window):
             t.grid(row=0, column=0, sticky='nw', padx=10, pady=10)
             t.setText('Select one of the samples to see more information.')
             t.setReadOnly(True)
-
             self.fittingText = t
+            # Buttons for fitting
+            buttonsFrame = self._createFittingButtonsFrame(tabFitting)
+            buttonsFrame.grid(row=0, column=1, sticky='news', padx=5, pady=5)
 
         #frame.grid(row=0, column=0, sticky='news', padx=5, pady=(10, 5))
         content.add(frame, sticky='news', padx=5, pady=5)
@@ -242,7 +267,8 @@ class ExperimentWindow(gui.Window):
         lfSamples = tk.LabelFrame(frame, text='Samples')
         gui.configureWeigths(frame)
         lfSamples.grid(row=0, column=0, sticky='news', padx=5, pady=5)
-        self.samplesTree = self._addBoundTree(lfSamples, SamplesTreeProvider, 10)
+        self.samplesTree = self._addBoundTree(lfSamples, SamplesTreeProvider,
+                                              10, fitting=self.fitting)
         self.samplesTree.itemDoubleClick = self._onSampleDoubleClick
         self.samplesTree.itemClick = self._onSampleClick
 
@@ -311,13 +337,29 @@ class ExperimentWindow(gui.Window):
 
         frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
 
+    def _createFittingButtonsFrame(self, content):
+        buttonsFrame = tk.Frame(content)
+        buttonsFrame.grid(row=0, column=0, sticky='ne')
+
+        plotValuesButton = Button(buttonsFrame, 'Plot Fit',
+                                  command=self._onPlotFitClick)
+        plotValuesButton.grid(row=0, column=0, sticky='sew', padx=5, pady=5)
+
+        openValuesButton = Button(buttonsFrame, 'Open Fit',
+                                  command=self._onOpenFitClick)
+        openValuesButton.grid(row=1, column=0, sticky='sew', padx=5, pady=5)
+
+        return buttonsFrame
+
+
     def _addLabel(self, parent, text, r, c):
         label = tk.Label(parent, text=text, font=self.fontBold)
         label.grid(row=r, column=c, padx=5, pady=5, sticky='ne')
         return label
 
-    def _addBoundTree(self, parent, ProviderClass, height):
-        bt = BoundTree(parent, ProviderClass(self.experiment), height=height)
+    def _addBoundTree(self, parent, ProviderClass, height, **kwargs):
+        bt = BoundTree(parent, ProviderClass(self.experiment, **kwargs),
+                       height=height)
         bt.grid(row=0, column=0, sticky='news', padx=5, pady=5)
         gui.configureWeigths(parent)
         return bt
@@ -479,7 +521,52 @@ class ExperimentWindow(gui.Window):
     def _onSampleDoubleClick(self, obj):
         sampleKeys = self.samplesTree.selection()
         if sampleKeys:
-            MeasureWindow(masterWindow=self, sample=self.experiment.samples[sampleKeys[0]]).show()
+            MeasureWindow(masterWindow=self,
+                          sample=self.experiment.samples[sampleKeys[0]]).show()
+
+    def _onPlotFitClick(self, e=None):
+        sampleKeys = self.samplesTree.selection()
+
+        if sampleKeys:
+            # Get first selected element
+            fit = self.fitting.getSampleFit(sampleKeys[0])
+            plotter = EmPlotter()
+            varLabelX = self.getLabel(self.fitting.predictor.varName,
+                                      self.useTimeLog())
+            varLabelY = self.getLabel(self.fitting.predicted.varName,
+                                      self.useMeasureLog())
+            ax = plotter.createSubPlot("Plot", varLabelX, varLabelY)
+
+            def _value(v, useLog):
+                if useLog:
+                    return math.log10(v) if v > 0 else None
+                return v
+
+            def _values(values, useLog=self.useMeasureLog()):
+                return [_value(float(x), useLog) for x in values]
+
+            xValues = _values(fit.x, useLog=self.useTimeLog())
+
+            ax.plot(xValues, _values(fit.y), 'x', label="Observations")
+            ax.plot(xValues, _values(fit.yp), 'g', label="Fit")
+            #ax.plot(xValues, _values(fit.yl), 'b--', label="Lower bound")
+            #ax.plot(xValues, _values(fit.yu), 'b--', label="Upper bound")
+            ax.legend()
+
+            plotter.show()
+        else:
+            self.showInfo("Please select some sample(s) to plot.")
+
+    def _onOpenFitClick(self, e=None):
+        sampleKeys = self.samplesTree.selection()
+
+        if sampleKeys:
+            # Get first selected element
+            fit = self.fitting.getSampleFit(sampleKeys[0])
+            FitWindow(masterWindow=self,
+                      fitting=self.fitting, sampleFit=fit).show()
+        else:
+            self.showInfo("Please select some sample(s) to plot.")
 
     def _onClosing(self):
         if self.plotter:
@@ -490,7 +577,11 @@ class ExperimentWindow(gui.Window):
 class MeasureWindow(gui.Window):
     def __init__(self, **kwargs):
         gui.Window.__init__(self,  minsize=(420, 200), **kwargs)
-        self.sample = kwargs.get('sample')
+        self.title = kwargs.get('title', 'Measurements')
+        self.sample = kwargs.get('sample', None)
+        self.provider = kwargs.get('provider', None)
+        if not self.provider:
+            self.provider = MeasurementTreeProvider(self.sample)
         content = tk.Frame(self.root)
         self._createContent(content)
         content.grid(row=0, column=0, sticky='news')
@@ -503,10 +594,11 @@ class MeasureWindow(gui.Window):
     def _createMeasurementFrame(self, content):
         frame = tk.Frame(content)
         #frame = tk.LabelFrame(content, text='General')
-        lfSamples = tk.LabelFrame(frame, text='Measurements')
+        lfSamples = tk.LabelFrame(frame, text=self.title)
         gui.configureWeigths(frame)
         lfSamples.grid(row=0, column=0, sticky='news', padx=5, pady=5)
-        self.measurementTree = self._addBoundTree(lfSamples, MeasurementTreeProvider, 10)
+        self.measurementTree = self._addBoundTree(lfSamples,
+                                                  self.provider, 10)
 
         frame.grid(row=0, column=0, sticky='news', padx=5, pady=5)
 
@@ -520,9 +612,19 @@ class MeasureWindow(gui.Window):
 
         frame.grid(row=2, column=0, sticky='news', padx=5, pady=5)
 
-    def _addBoundTree(self, parent, ProviderClass, height):
-        bt = BoundTree(parent, ProviderClass(self.sample), height=height)
+    def _addBoundTree(self, parent, provider, height):
+        bt = BoundTree(parent, provider, height=height)
         bt.grid(row=0, column=0, sticky='news', padx=5, pady=5)
         gui.configureWeigths(parent)
         return bt
 
+
+class FitWindow(MeasureWindow):
+    def __init__(self, **kwargs):
+        self.fitting = kwargs['fitting']
+        self.sampleFit = kwargs['sampleFit']
+
+        MeasureWindow.__init__(self, title="Fitted Values",
+                               provider=FitValuesTreeProvider(self.fitting,
+                                                              self.sampleFit),
+                               **kwargs)
