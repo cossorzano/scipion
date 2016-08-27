@@ -181,7 +181,6 @@ class PKPDVariableTemplateWizard(Wizard):
                 if strToAdd!="":
                     currentValue = protocol.getAttributeValue(label, "")
                     form.setVar(label, currentValue+strToAdd)
-                # self.setFormValues(form, label, dlg.values)
 
 
 class PKPDDoseTemplateWizard(Wizard):
@@ -215,16 +214,33 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
                 if len(tokens)==4:
                     doseNames.append(tokens[0].strip())
 
-            sampleNames = getSampleNamesFromCSVfile(fnCSV)
-
+            sampleNamesInCSV = getSampleNamesFromCSVfile(fnCSV)
             currentValue = protocol.getAttributeValue(label, "")
+            sampleNamesAssigned = []
+            for line in currentValue.replace('\n',';;').split(';;'):
+                tokens = line.split(';')
+                if len(tokens)==2:
+                    sampleNamesAssigned.append(tokens[0].strip())
 
             dlg = dialog.MultiListDialog(form.root, "Test",
-                                         [SimpleListTreeProvider(sampleNames,
+                                         [SimpleListTreeProvider(list(set(sampleNamesInCSV)-set(sampleNamesAssigned)),
                                                                  name="Samples"),
                                           SimpleListTreeProvider(doseNames,
                                                                  name="Doses")],
                              selectmode='extended')
             if dlg.resultYes():
-                print dlg.values
-            #form.setVar(label, currentValue+"\n[Sample Name] ; [DoseName1,DoseName2,...]\n")
+                sampleList = dlg.values[0]
+                doseList = dlg.values[1]
+                for sample in sampleList:
+                    if currentValue!="":
+                        currentValue+="\n"
+                    currentValue+="%s; "%sample.get().strip()
+                    doseNo = 1
+                    for dose in doseList:
+                        if doseNo!=1:
+                            currentValue+=", %s"%dose.get()
+                        else:
+                            currentValue+="%s"%dose.get()
+                        doseNo += 1
+                if currentValue!="":
+                    form.setVar(label, currentValue)
