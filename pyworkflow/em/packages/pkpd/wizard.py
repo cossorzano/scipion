@@ -44,6 +44,7 @@ from protocol_pkpd_exponential_fit import ProtPKPDExponentialFit
 from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
 from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
 from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
+from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsExp2Subgroups2Mean
 
 class FilterVariablesTreeProvider(TreeProvider):
     """ Simplified view of VariablesTreeProvider with less columns.
@@ -85,19 +86,26 @@ class PKPDChooseVariableWizard(Wizard):
                 (ProtPKPDEliminationRate, ['predicted']),
                 (ProtPKPDEV0MonoCompartment, ['predictor']),
                 (ProtPKPDEV0MonoCompartment, ['predicted']),
-                (ProtPKPDSimulateGenericPD, ['predictor'])
+                (ProtPKPDSimulateGenericPD, ['predictor']),
+                (ProtPKPDStatsExp2Subgroups2Mean, ['label1', 'inputExperiment1']),
+                (ProtPKPDStatsExp2Subgroups2Mean, ['label2', 'inputExperiment2'])
                 ]
 
     def show(self, form, *params):
         protocol = form.protocol
         label = params[0]
 
-        # value = protocol.getAttributeValue(label)
-        experiment = protocol.loadInputExperiment()
+        fullParams = self._getAllParams(protocol)
+        experiment = None
+        if len(fullParams)>1:
+            experiment = protocol.getAttributeValue(fullParams[1], None)
+        else:
+            experiment = protocol.getAttributeValue('inputExperiment', None)
 
         if experiment is None:
             form.showError("Select input experiment first.")
         else:
+            experiment.load()
             filterFunc = getattr(protocol, 'filterVarForWizard', None)
             tp = FilterVariablesTreeProvider(experiment, filter=filterFunc)
             dlg = dialog.ListDialog(form.root, self.getTitle(), tp,
