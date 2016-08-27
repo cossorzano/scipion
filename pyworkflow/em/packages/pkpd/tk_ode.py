@@ -122,6 +122,7 @@ class PKPDODEDialog(dialog.Dialog):
                 validateSelectionCallback: a callback function to validate selected items.
         """
         self.values = []
+        self.plotter = None
         self.protODE = kwargs['protODE']
         self.experiment = self.protODE.experiment
         self.varNameX = kwargs['varNameX']
@@ -228,16 +229,30 @@ class PKPDODEDialog(dialog.Dialog):
         sampleKeys = self.samplesTree.selection()
 
         if sampleKeys:
-            # Get first selected element
-            #fit = self.fitting.getSampleFit(sampleKeys[0])
-            plotter = EmPlotter()
-            ax = plotter.createSubPlot("Plot", self.varNameX, self.varNameY)
+            if self.plotter is None or self.plotter.isClosed():
+                self.plotter = EmPlotter()
+                doShow = True
+            else:
+                doShow = False
+                ax = self.plotter.getLastSubPlot()
+                self.plotter.clear()
 
             sample = self.experiment.samples[sampleKeys[0]]
             x, y = self.getPlotValues(sample)
+            ax = self.plotter.createSubPlot("Sample: %s" % sampleKeys[0],
+                                            self.varNameX, self.varNameY)
             ax.plot(x, y, 'x', label="Observations")
             ax.legend()
 
-            plotter.show()
+            if doShow:
+                self.plotter.show()
+            else:
+                self.plotter.draw()
         else:
             self.showInfo("Please select some sample(s) to plot.")
+
+    def destroy(self):
+        """Destroy the window"""
+        if not (self.plotter is None or self.plotter.isClosed()):
+            self.plotter.close()
+        dialog.Dialog.destroy(self)
