@@ -46,7 +46,7 @@ from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
 from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
 from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
 from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsExp2Subgroups2Mean
-from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile
+from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile, getVarNamesFromCSVfile
 from protocol_pkpd_bootstrap_simulate import ProtPKPDODESimulate
 
 class FilterVariablesTreeProvider(TreeProvider):
@@ -139,6 +139,24 @@ class PKPDChooseSeveralVariableWizard(PKPDChooseVariableWizard):
     def getSelectMode(self):
         return "extended"
 
+class SimpleListTreeProvider(TreeProvider):
+    """ A simple TreeProvider over the elements of a string list """
+
+    def __init__(self, strList, name='Name', width=100):
+        self.objects = [pwobj.String(value=s) for s in strList]
+        self.columns = [(name, width)]
+
+    def getColumns(self):
+        return self.columns
+
+    def getObjects(self):
+        return self.objects
+
+    def getObjectInfo(self, obj):
+        key = obj.get()
+        return {'key': key, 'text': key,
+                'values': ()}
+
 
 class PKPDVariableTemplateWizard(Wizard):
     _targets = [(ProtPKPDImportFromText, ['variables'])
@@ -147,8 +165,23 @@ class PKPDVariableTemplateWizard(Wizard):
     def show(self, form, *params):
         label = params[0]
         protocol = form.protocol
-        currentValue = protocol.getAttributeValue(label, "")
-        form.setVar(label, currentValue+"\n[Variable Name] ; [Units] ; [numeric/text] ; [time/label/measurement] ; [Comment]")
+        fnCSV = protocol.getAttributeValue('inputFile', "")
+        if not os.path.exists(fnCSV):
+            form.showError("Select a valid CSV input file first.")
+        else:
+            varNames = getVarNamesFromCSVfile(fnCSV)
+            tp = SimpleListTreeProvider(varNames, name="Variables")
+            dlg = dialog.ListDialog(form.root, "Choose variable(s)", tp,
+                             selectmode='extended')
+            if dlg.resultYes():
+                strToAdd = ""
+                for value in dlg.values:
+                    strToAdd +="\n%s ; [Units/none] ; [numeric/text] ; [time/label/measurement] ; [Comment]"%(value.get())
+                if strToAdd!="":
+                    currentValue = protocol.getAttributeValue(label, "")
+                    form.setVar(label, currentValue+strToAdd)
+                # self.setFormValues(form, label, dlg.values)
+
 
 class PKPDDoseTemplateWizard(Wizard):
     _targets = [(ProtPKPDImportFromText, ['doses']),
@@ -164,24 +197,6 @@ class PKPDDoseTemplateWizard(Wizard):
                    "Bolus0 ; bolus t=0 d=60*weight/1000; min; mg"
         form.setVar(label, currentValue+template)
 
-
-class SimpleListTreeProvider(TreeProvider):
-    """ A simple TreeProvider over the elements of a string list """
-
-    def __init__(self, strList, name='Name', width=100):
-        self.objects = [pwobj.Object(value=s) for s in strList]
-        self.columns = [(name, width)]
-
-    def getColumns(self):
-        return self.columns
-
-    def getObjects(self):
-        return self.objects
-
-    def getObjectInfo(self, obj):
-        key = obj.get()
-        return {'key': key, 'text': key,
-                'values': ()}
 
 
 class PKPDDosesToSamplesTemplateWizard(Wizard):
