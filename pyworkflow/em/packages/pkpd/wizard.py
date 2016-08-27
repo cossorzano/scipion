@@ -272,9 +272,15 @@ class PKPDODEWizard(Wizard):
             protocol.setInputExperiment() # this load the experiment
             protocol.configureSource(protocol.createDrugSource())
             protocol.setupModel()
+            protocol.model.drugSource = protocol.drugSource
 
+            i = 0
             for sampleName, sample in protocol.experiment.samples.iteritems():
                 sample.interpretDose()
+                if i==0:
+                    protocol.setSample(sample)
+                    protocol.calculateParameterUnits(sample)
+                i+=1
 
             dlg = PKPDODEDialog(form.root, "Select Parameter Bounds",
                                 protODE=protocol,
