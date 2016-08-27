@@ -187,7 +187,6 @@ class SimpleListTreeProvider(TreeProvider):
 class PKPDDosesToSamplesTemplateWizard(Wizard):
     _targets = [(ProtPKPDImportFromText, ['dosesToSamples'])
                 ]
-
     def show(self, form, *params):
         label = params[0]
         protocol = form.protocol
