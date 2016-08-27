@@ -29,17 +29,12 @@ import math
 import numpy as np
 from itertools import izip
 import Tkinter as tk
-import ttk
 
-import pyworkflow.object as pwobj
-import pyworkflow.utils as pwutils
 import pyworkflow.gui.dialog as dialog
 import pyworkflow.gui as gui
-from pyworkflow.gui.widgets import Button, HotButton, ComboBox
-from pyworkflow.gui.text import TaggedText
 from pyworkflow.gui.tree import TreeProvider, BoundTree
 from pyworkflow.em.plotter import EmPlotter
-
+from pyworkflow.em.pkpd_units import strUnit
 
 class SamplesTreeProvider(TreeProvider):
     def __init__(self, experiment, fitting=None):
@@ -175,18 +170,22 @@ class PKPDODEDialog(dialog.Dialog):
 
         i = 0
         self.sliders = {}
+        paramUnits = self.protODE.parameterUnits
+        try:
+            for paramName, bounds in self.protODE.getParameterBounds().iteritems():
+                bounds = bounds or (0, 1)
+                slider = MinMaxSlider(lfBounds, "%s [%s]"%(paramName,strUnit(paramUnits[i])),
+                                      bounds[0], bounds[1],
+                                      callback=self._onVarChanged)
+                slider.grid(row=i, column=0, padx=5, pady=5)
+                self.sliders[paramName] = slider
+                i += 1
 
-        for paramName, bounds in self.protODE.getParameterBounds().iteritems():
-            bounds = bounds or (0, 1)
-            slider = MinMaxSlider(lfBounds, paramName,
-                                  bounds[0], bounds[1],
-                                  callback=self._onVarChanged)
-            slider.grid(row=i, column=0, padx=5, pady=5)
-            self.sliders[paramName] = slider
-            i += 1
-
-        lfBounds.grid(row=0, column=0, sticky='news', padx=5, pady=5)
-        frame.grid(row=0, column=1, sticky='news', padx=5, pady=5)
+            lfBounds.grid(row=0, column=0, sticky='news', padx=5, pady=5)
+            frame.grid(row=0, column=1, sticky='news', padx=5, pady=5)
+        except:
+            self.sliders = {}
+            dialog.showInfo("Warning","Cannot parse correctly the parameter bounds",self)
 
     def _createLogsFrame(self, content):
         frame = tk.Frame(content)
