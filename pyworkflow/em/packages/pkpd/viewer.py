@@ -31,7 +31,7 @@ from pyworkflow.viewer import Viewer, DESKTOP_TKINTER
 from pyworkflow.em.data import PKPDExperiment
 from pyworkflow.gui.text import openTextFileEditor
 from pyworkflow.em.plotter import EmPlotter
-from pyworkflow.em.data import PKPDFitting
+from pyworkflow.em.data import PKPDFitting, PKPDSignalAnalysis
 from pyworkflow.em.pkpd_units import strUnit
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
@@ -91,6 +91,20 @@ class PKPDCSVViewer(Viewer):
 
         if exists(fnCSV):
             openTextFileEditor(fnCSV)
+
+
+class PKPDAnalysisViewer(Viewer):
+    """ Wrapper to visualize analysis results
+    """
+    _label = 'viewer analysis'
+    _targets = [PKPDSignalAnalysis]
+    _environments = [DESKTOP_TKINTER]
+
+    def visualize(self, obj, **kwargs):
+        fnAnalysis = obj.fnAnalysis.get()
+
+        if exists(fnAnalysis):
+            openTextFileEditor(fnAnalysis)
 
 
 class PKPDStatisticsLabelViewer(Viewer):
