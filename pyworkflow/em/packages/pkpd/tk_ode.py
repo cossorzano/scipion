@@ -70,8 +70,11 @@ class MinMaxSlider(tk.Frame):
         label, min entry, slider and max entry
     It also keeps a variable with the value
     """
-    def __init__(self, master, label, from_=0, to=100, value=50, callback=None,
-                 step=0.01):
+    def __init__(self, master, label, from_=0, to=100, callback=None,
+                 numberOfSteps=25):
+        step = (to - from_) / numberOfSteps
+        value = (from_ + to) * 0.5
+        self.numberOfSteps = numberOfSteps
         self.var = tk.DoubleVar()
         self.var.set(float(value))
         self.varMin = tk.DoubleVar()
@@ -109,7 +112,9 @@ class MinMaxSlider(tk.Frame):
     def _onBoundChanged(self, e=None):
         v = self.getValue()
         minV, maxV = self.getMinMax()
-        self.slider.config(from_=minV, to=maxV)
+        step = (maxV - minV) / self.numberOfSteps
+        self.slider.config(from_=minV, to=maxV,
+                           bigincrement=step, resolution=step)
         if v > maxV or v < minV:
             self.var.set(0.5 * (minV + maxV))
 
@@ -173,9 +178,8 @@ class PKPDODEDialog(dialog.Dialog):
 
         for paramName, bounds in self.protODE.getParameterBounds().iteritems():
             bounds = bounds or (0, 1)
-            value = 0.5 * (bounds[0] + bounds[1])
             slider = MinMaxSlider(lfBounds, paramName,
-                                  bounds[0], bounds[1], value,
+                                  bounds[0], bounds[1],
                                   callback=self._onVarChanged)
             slider.grid(row=i, column=0, padx=5, pady=5)
             self.sliders[paramName] = slider
