@@ -832,7 +832,8 @@ class ParamWidget():
                 classes = [protClassName]
             
             if len(classes) > 1:
-                self._addButton("Select", Icon.ACTION_SEARCH, self._browseProtocolClass)
+                self._addButton("Select", Icon.ACTION_SEARCH,
+                                self._browseProtocolClass)
             else:
                 var.set(classes[0])
             
@@ -847,7 +848,8 @@ class ParamWidget():
             self._onlyLabel = True
 
         elif t is params.TextParam:
-            text = Text(content, width=entryWidth, font=self.window.font,
+            w = max(entryWidth, param.width)
+            text = Text(content, font=self.window.font, width=w,
                         height=param.height)
             var = TextVar(text)
             text.grid(row=0, column=0, sticky='w')
