@@ -26,6 +26,7 @@
 
 import math
 from itertools import izip
+from collections import OrderedDict
 import numpy as np
 
 import pyworkflow.protocol.params as params
@@ -35,6 +36,7 @@ from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from utils import parseRange
 from biopharmaceutics import DrugSource
 from pyworkflow.em.pkpd_units import PKPDUnit
+
 
 class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
     """ Base ODE protocol"""
@@ -111,6 +113,15 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
     def createModel(self):
         pass
 
+    def setupModel(self):
+        # Setup model
+        self.model = self.createModel()
+        self.model.setExperiment(self.experiment)
+        self.setupFromFormParameters()
+        self.getXYvars()
+        self.model.setXVar(self.varNameX)
+        self.model.setYVar(self.varNameY)
+
     def setupFromFormParameters(self):
         pass
 
@@ -142,16 +153,18 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     # As model --------------------------------------------
     def parseBounds(self, boundsString):
+        self.boundsList = []
+
         if boundsString!="" and boundsString!=None:
-            tokens=boundsString.split(';')
+            tokens = boundsString.split(';')
             if len(tokens)!=self.getNumberOfParameters():
                 raise Exception("The number of bound intervals does not match the number of parameters")
-            self.boundsList=[]
+
             for token in tokens:
                 values = token.strip().split(',')
                 self.boundsList.append((float(values[0][1:]),float(values[1][:-1])))
 
-    def setBounds(self,sample):
+    def setBounds(self, sample):
         self.parseBounds(self.bounds.get())
         self.setBoundsFromBoundsList()
 
@@ -169,6 +182,23 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def getBounds(self):
         return self.boundsList
+
+    def getParameterBounds(self):
+        """ Return a dictionary where the parameter name is the key
+        and the bounds are its values. """
+        boundsDict = OrderedDict()
+        self.parseBounds(self.bounds.get()) # after this we have boundsList
+        parameterNames = self.getParameterNames()
+
+        for paramName, bound in izip(parameterNames, self.getBounds()):
+            boundsDict[paramName] = bound
+
+        # Set None as bound for parameters not matched
+        for paramName in parameterNames:
+            if paramName not in boundsDict:
+                boundsDict[paramName] = None
+
+        return boundsDict
 
     def setParameters(self, parameters):
         self.parameters = parameters
@@ -246,21 +276,21 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         return self.drugSource.areParametersValid(p[idx:len(self.boundsSource)]) and \
                self.model.areParametersValid(p[len(self.boundsSource):])
 
+    def createDrugSource(self):
+        self.drugSource = DrugSource()
+
+        return self.drugSource
+
     # Really fit ---------------------------------------------------------
     def runFit(self, objId, otherDependencies):
         reportX = parseRange(self.reportX.get())
-        self.setExperiment(self.readExperiment(self.getInputExperiment().fnPKPD))
+        self.setInputExperiment()
 
         # Create drug source
-        self.drugSource = DrugSource()
+        self.createDrugSource()
 
         # Setup model
-        self.model = self.createModel()
-        self.model.setExperiment(self.experiment)
-        self.setupFromFormParameters()
-        self.getXYvars()
-        self.model.setXVar(self.varNameX)
-        self.model.setYVar(self.varNameY)
+        self.setupModel()
 
         # Create output object
         self.fitting = PKPDFitting()
