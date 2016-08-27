@@ -37,7 +37,8 @@ from pyworkflow.em.pkpd_units import createUnit, multiplyUnits, strUnit
 from utils import find_nearest
 
 class ProtPKPDODESimulate(ProtPKPDODEBase):
-    """ Simulate a population of ODE parameters. These parameters can be specifically given or from a bootstrap population"""
+    """ Simulate a population of ODE parameters.
+    These parameters can be specifically given or from a bootstrap population"""
 
     _label = 'PK simulate'
 
@@ -58,7 +59,8 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
                            'that generated the ODE model. Example: \n'
                            'prm1, prm2, prm3, prm4\n'
                            'prmA, prmB, prmC, prmD')
-        form.addParam('doses', params.TextParam, label="Doses", default="RepeatedBolus ; repeated_bolus t=0:24:120 d=60; h; mg",
+        form.addParam('doses', params.TextParam, label="Doses", height=5,
+                      default="RepeatedBolus ; repeated_bolus t=0:24:120 d=60; h; mg",
                       help="Structure: [Dose Name] ; [Description] ; [Units] \n"\
                            "The dose name should have no space or special character\n"\
                            "Valid units are: h, mg, ug, ...\n"\
