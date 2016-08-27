@@ -219,7 +219,7 @@ def getSampleNamesFromCSVfile(fnCSV):
             if len(tokens)>iSampleName:
                 sampleName = tokens[iSampleName]
                 if not sampleName in sampleNames:
-                    sampleNames.append(sampleName)
+                    sampleNames.append(sampleName.strip())
         lineNo+=1
     fh.close()
     return sampleNames
