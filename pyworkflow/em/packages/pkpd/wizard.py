@@ -34,6 +34,7 @@ import pyworkflow.object as pwobj
 from pyworkflow.wizard import Wizard
 import pyworkflow.gui.dialog as dialog
 from pyworkflow.gui.widgets import LabelSlider
+from pyworkflow.gui import configureWeigths
 from pyworkflow.gui.tree import BoundTree, TreeProvider
 
 from protocol_pkpd_regression_labels import ProtPKPDRegressionLabel
@@ -198,7 +199,6 @@ class PKPDDoseTemplateWizard(Wizard):
         form.setVar(label, currentValue+template)
 
 
-
 class PKPDDosesToSamplesTemplateWizard(Wizard):
     _targets = [(ProtPKPDImportFromText, ['dosesToSamples'])
                 ]
@@ -214,15 +214,17 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
                 tokens = line.split(';')
                 if len(tokens)==4:
                     doseNames.append(tokens[0].strip())
-            print(doseNames)
 
             sampleNames = getSampleNamesFromCSVfile(fnCSV)
-            print(sampleNames)
 
             currentValue = protocol.getAttributeValue(label, "")
-            tp = SimpleListTreeProvider(doseNames, name="Doses")
-            dlg = dialog.ListDialog(form.root, "Test", tp,
+
+            dlg = dialog.MultiListDialog(form.root, "Test",
+                                         [SimpleListTreeProvider(sampleNames,
+                                                                 name="Samples"),
+                                          SimpleListTreeProvider(doseNames,
+                                                                 name="Doses")],
                              selectmode='extended')
             if dlg.resultYes():
-                self.setFormValues(form, label, dlg.values)
+                print dlg.values
             #form.setVar(label, currentValue+"\n[Sample Name] ; [DoseName1,DoseName2,...]\n")
