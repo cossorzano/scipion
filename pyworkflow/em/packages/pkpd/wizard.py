@@ -45,6 +45,8 @@ from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
 from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
 from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
 from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsExp2Subgroups2Mean
+from protocol_pkpd_import_from_csv import ProtPKPDImportFromText
+from protocol_pkpd_bootstrap_simulate import ProtPKPDODESimulate
 
 class FilterVariablesTreeProvider(TreeProvider):
     """ Simplified view of VariablesTreeProvider with less columns.
@@ -137,4 +139,74 @@ class PKPDChooseSeveralVariableWizard(PKPDChooseVariableWizard):
         return "extended"
 
 
+class PKPDVariableTemplateWizard(Wizard):
+    _targets = [(ProtPKPDImportFromText, ['variables'])
+                ]
 
+    def show(self, form, *params):
+        label = params[0]
+        protocol = form.protocol
+        currentValue = protocol.getAttributeValue(label, "")
+        form.setVar(label, currentValue+"\n[Variable Name] ; [Units] ; [numeric/text] ; [time/label/measurement] ; [Comment]")
+
+class PKPDDoseTemplateWizard(Wizard):
+    _targets = [(ProtPKPDImportFromText, ['doses']),
+                (ProtPKPDODESimulate, ['doses'])
+                ]
+
+    def show(self, form, *params):
+        label = params[0]
+        protocol = form.protocol
+        currentValue = protocol.getAttributeValue(label, "")
+        template = "\nInfusion0 ; infusion t=0.5...0.75 d=60*weight/1000; h; mg\n"\
+                   "Bolus1 ; bolus t=2 d=100; h; mg\n"\
+                   "Bolus0 ; bolus t=0 d=60*weight/1000; min; mg"
+        form.setVar(label, currentValue+template)
+
+class PKPDDosesToSamplesTemplateWizard(Wizard):
+    _targets = [(ProtPKPDImportFromText, ['dosesToSamples'])
+                ]
+
+    def show(self, form, *params):
+        label = params[0]
+        protocol = form.protocol
+        fnCSV = protocol.getAttributeValue('inputFile', "")
+        if not os.path.exists(fnCSV):
+            form.showError("Select a valid CSV input file first.")
+        else:
+            doseNames = []
+            for line in protocol.doses.get().replace('\n',';;').split(';;'):
+                tokens = line.split(';')
+                if len(tokens)==4:
+                    doseNames.append(tokens[0].strip())
+            print(doseNames)
+
+            sampleNames = []
+            fh=open(fnCSV)
+            lineNo = 1
+            for line in fh.readlines():
+                tokens = line.split(';')
+                if len(tokens)==0:
+                    continue
+                if lineNo==1:
+                    iSampleName=-1
+                    varNo = 0
+                    for token in tokens:
+                        varName=token.strip()
+                        if varName=="SampleName":
+                            iSampleName=varNo
+                        break
+                        varNo += 1
+                    if iSampleName==-1:
+                        return
+                else:
+                    if len(tokens)>iSampleName:
+                        sampleName = tokens[iSampleName]
+                        if not sampleName in sampleNames:
+                            sampleNames.append(sampleName)
+                lineNo+=1
+            fh.close()
+            print(sampleNames)
+
+            currentValue = protocol.getAttributeValue(label, "")
+            form.setVar(label, currentValue+"\n[Sample Name] ; [DoseName1,DoseName2,...]\n")

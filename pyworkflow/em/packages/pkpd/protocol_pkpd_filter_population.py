@@ -45,7 +45,7 @@ class ProtPKPDFilterPopulation(ProtPKPD):
                       help='It must be a fitting coming from a bootstrap sample')
         form.addParam('filterType', params.EnumParam, choices=["Exclude","Keep","Keep confidence interval"], label="Filter mode", default=0,
                       help='Exclude or keep samples meeting the following condition\n')
-        form.addParam('condition', params.TextParam, label="Condition", default="$(AICc)>-10",
+        form.addParam('condition', params.StringParam, label="Condition", default="$(AICc)>-10",
                       help='Example: $(Cl)>0.25 and $(tlag)>0\n'\
                            'Example for the confidence interval: $(Cl) 95 (keep the central 95% of clearance).\n'\
                            'The variables R2, R2adj, AIC, AICc, and BIC can be used, \n'\

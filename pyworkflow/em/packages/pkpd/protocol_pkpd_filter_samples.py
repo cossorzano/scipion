@@ -46,7 +46,7 @@ class ProtPKPDFilterSamples(ProtPKPD):
         form.addParam('filterType', params.EnumParam, choices=["Exclude","Keep","Remove NA"], label="Filter mode", default=0,
                       help='Exclude or keep samples meeting the following condition\n'\
                            "NA values are excluded in keep filters, and kept in exclude filters")
-        form.addParam('condition', params.TextParam, label="Condition", condition="filterType!=2",
+        form.addParam('condition', params.StringParam, label="Condition", condition="filterType!=2",
                       help='Example: $(weight)<200 and $(sex)=="female"')
 
     #--------------------------- INSERT steps functions --------------------------------------------

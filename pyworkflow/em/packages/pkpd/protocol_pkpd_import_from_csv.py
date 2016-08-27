@@ -45,11 +45,12 @@ class ProtPKPDImportFromText(ProtPKPD):
                       label="File path", allowsNull=False, help=inputFileHelp)
         form.addParam('title', params.StringParam, label="Title", default="My experiment")
         form.addParam('comment', params.StringParam, label="Comment", default="")
-        form.addParam('variables', params.TextParam, label="Variables", default="",
-                      help="Structure: [Variable Name] ; [Units] ; [Type] ; [Comment]\n"\
+        form.addParam('variables', params.TextParam, height=8, width=80, label="Variables", default="",
+                      help="Structure: [Variable Name] ; [Units] ; [Type] ; [Role] ; [Comment]\n"\
                            "The variable name should have no space or special character\n"\
                            "Valid units are: h, mg, ug, ug/mL, ...\n"\
                            "Type is either numeric or text\n"\
+                           "Role is either time, label or measurement\n"\
                            "The comment may be empty\n"\
                            "\nIt is important that there are three semicolons (none of them may be missing even if the comment is not present).\n"\
                            "Examples:\n"\
@@ -57,17 +58,16 @@ class ProtPKPDImportFromText(ProtPKPD):
                            "Cp ; ug/mL ; numeric ; measurement ; plasma concentration\n"\
                            "weight ; g ; numeric; label ; weight of the animal\n"\
                            "sex ; g ; text ; label ; sex of the animal\n")
-        form.addParam('doses', params.TextParam, label="Doses", default="",
+        form.addParam('doses', params.TextParam, height=5, width=70, label="Doses", default="",
                       help="Structure: [Dose Name] ; [Description] ; [Units] \n"\
                            "The dose name should have no space or special character\n"\
                            "Valid units are: h, mg, ug, ug/mL, ...\n"\
                            "The description is either a bolus or an infusion as shown in the examples\n"\
                            "\nIt is important that there are two semicolons.\n"\
                            "Examples:\n"\
-                           "Infusion0 ; infusion t=0.500000...0.750000 d=60*weight/1000; mg\n"\
-                           "Bolus1 ; bolus t=2.000000 d=100; h; mg\n"\
-                           "Bolus0 ; bolus t=0.000000 d=60*weight/1000; min; mg\n")
-        form.addParam('dosesToSamples', params.TextParam, label="Assign doses to samples", default="",
+                           "Infusion0 ; infusion t=0.500000...0.750000 d=60*weight/1000; h; mg\n"\
+                           "Bolus1 ; bolus t=2.000000 d=100; h; mg\n")
+        form.addParam('dosesToSamples', params.TextParam, height=5, width=70, label="Assign doses to samples", default="",
                       help="Structure: [Sample Name] ; [DoseName1,DoseName2,...] \n"\
                            "The sample name should have no space or special character\n"\
                            "\nIt is important that there is one semicolon.\n"\
@@ -91,7 +91,7 @@ class ProtPKPDImportFromText(ProtPKPD):
 
         # Read the variables
         self.listOfVariables = []
-        for line in self.variables.get().split(';;'):
+        for line in self.variables.get().replace('\n',';;').split(';;'):
             tokens = line.split(';')
             if len(tokens)!=5:
                 print("Skipping variable: ",line)
@@ -102,7 +102,7 @@ class ProtPKPDImportFromText(ProtPKPD):
             self.experiment.variables[varname].parseTokens(tokens)
 
         # Read the doses
-        for line in self.doses.get().split(';;'):
+        for line in self.doses.get().replace('\n',';;').split(';;'):
             tokens = line.split(';')
             if len(tokens)!=4:
                 print("Skipping dose: ",line)
@@ -112,7 +112,7 @@ class ProtPKPDImportFromText(ProtPKPD):
             self.experiment.doses[dosename].parseTokens(tokens)
 
         # Read the sample doses
-        for line in self.dosesToSamples.get().split(';;'):
+        for line in self.dosesToSamples.get().replace('\n',';;').split(';;'):
             tokens = line.split(';')
             if len(tokens)<2:
                 print("Skipping sample: ",line)
@@ -164,7 +164,6 @@ class ProtPKPDImportFromCSV(ProtPKPDImportFromText):
                     varNo+=1
                 if iSampleName==-1:
                     raise Exception("Cannot find the SampleName in: %s\n"%line)
-                print(listOfVariables)
             else:
                 if len(tokens)!=len(listOfSkips):
                     print("Skipping line: %s"%line)

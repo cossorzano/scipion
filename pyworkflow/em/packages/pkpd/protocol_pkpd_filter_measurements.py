@@ -45,7 +45,7 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
                       label="Filter mode", default=0,
                       help='Exclude or keep measurements meeting the following condition.\n"\
                            "NA values are excluded in keep filters, and kept in exclude filters')
-        form.addParam('condition', params.TextParam, label="Condition", condition="filterType<=1",
+        form.addParam('condition', params.StringParam, label="Condition", condition="filterType<=1",
                       help='Example: $(t)<200\n $(Cp)>=1000 and $(Cp)<=2000"')
         form.addParam('substitute', params.FloatParam, label="Substitute by", condition="filterType==4 or filterType==5")
 
