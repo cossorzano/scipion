@@ -192,11 +192,29 @@ class PKPDODEDialog(dialog.Dialog):
         self.values = []
 
     def _onVarChanged(self, *args):
-        for paramName, slider in self.sliders.iteritems():
-            print "paramName: ", paramName, "values: ", slider.getMinMax(), slider.getValue()
+        sampleKeys = self.samplesTree.selection()
+
+        if sampleKeys:
+            sample = self.experiment.samples[sampleKeys[0]]
+
+            currentParams = []
+            for paramName in self.protODE.getParameterNames():
+                currentParams.append(self.sliders[paramName].getValue())
+            self.protODE.model.t0 = 0
+            self.protODE.model.tF = self.maxX
+            self.protODE.drugSource.setDoses(sample.parsedDoseList, self.protODE.model.t0, self.protODE.model.tF)
+            self.protODE.configureSource(self.protODE.drugSource)
+            self.protODE.model.drugSource = self.protODE.drugSource
+            self.protODE.getParameterNames() # Necessary to count the number of source and PK parameters
+            self.protODE.setParameters(currentParams)
+            yp = self.protODE.forwardModel(currentParams, self.xValues)
+            print(currentParams)
+            print(yp)
 
     def getPlotValues(self, sample):
         xValues, yValues = sample.getXYValues(self.varNameX, self.varNameY)
+        self.xValues = xValues
+        self.maxX = np.max(xValues)
 
         useMeasureLog = False
         useTimeLog = False
