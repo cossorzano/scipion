@@ -204,8 +204,11 @@ class PKPDODEDialog(dialog.Dialog):
             return combo, radio, radioVar
 
         self.timeWidget = addVar('Time variable', 0, self.varNameX)
+        self.timeWidget[2].trace('w', self._onLogChanged)
         self.measureWidget = addVar('Measure variable', 1, self.varNameY)
-        self.measureWidget[2].set(True)
+        measureVar = self.measureWidget[2]
+        measureVar.set(True)
+        measureVar.trace('w', self._onLogChanged)
         frame.grid(row=1, column=0, columnspan=2, sticky='news', padx=5, pady=5)
 
     def _addBoundTree(self, parent, provider, height):
@@ -240,11 +243,32 @@ class PKPDODEDialog(dialog.Dialog):
             boundList.append(self.sliders[paramName].getMinMax())
         return boundList
 
-    def computePlotValues(self, xValues, yValues):
-        useMeasureLog = False
-        useTimeLog = False
+    def useTimeLog(self):
+        return self.timeWidget[2].get()
 
-        if useMeasureLog or useTimeLog:
+    def useMeasureLog(self):
+        return self.measureWidget[2].get()
+
+    def getUnits(self, varName):
+        return self.experiment.variables[varName].getUnitsString()
+
+    def getLabel(self, varName, useLog):
+        varLabel = '%s [%s]' % (varName, self.getUnits(varName))
+        if useLog:
+            varLabel = "log10(%s)" % varLabel
+        return varLabel
+
+    def getTimeLabel(self):
+        return self.getLabel(self.varNameX, self.useTimeLog())
+
+    def getMeasureLabel(self):
+        return self.getLabel(self.varNameY, self.useMeasureLog())
+
+    def computePlotValues(self, xValues, yValues):
+        useMeasureLog = self.useMeasureLog()
+        useTimeLog = self.useTimeLog()
+
+        if not (useMeasureLog or useTimeLog):
             newXValues = xValues
             newYValues = yValues
         else:
@@ -280,6 +304,10 @@ class PKPDODEDialog(dialog.Dialog):
         # Necessary to count the number of source and PK parameters
         self.protODE.getParameterNames()
 
+    def _onLogChanged(self, *args):
+        # We will treat a log change as a sample change to plot
+        self._onSampleChanged()
+
     def _onSampleChanged(self, e=None):
         sampleKeys = self.samplesTree.selection()
 
@@ -307,10 +335,11 @@ class PKPDODEDialog(dialog.Dialog):
             self.plotter.clear()
 
         ax = self.plotter.createSubPlot("Sample: %s" % self.sample.varName,
-                                        self.varNameX, self.varNameY)
-        ax.plot(self.newXValues, self.newYValues, 'x', label="Observations")
+                                        self.getTimeLabel(),
+                                        self.getMeasureLabel())
         self.newXPValues, self.newYPValues = self.computePlotValues(self.xValues,
                                                                     self.ypValues)
+        ax.plot(self.newXValues, self.newYValues, 'x', label="Observations")
         ax.plot(self.newXPValues, self.newYPValues, label="Fit")
         ax.legend()
 
