@@ -194,3 +194,31 @@ class ProtPKPDImportFromCSV(ProtPKPDImportFromText):
                                 raise Exception("Time measurements cannot be NA")
                     varNo+=1
             lineNo+=1
+
+def getSampleNamesFromCSVfile(fnCSV):
+    sampleNames = []
+    fh=open(fnCSV)
+    lineNo = 1
+    for line in fh.readlines():
+        tokens = line.split(';')
+        if len(tokens)==0:
+            continue
+        if lineNo==1:
+            iSampleName=-1
+            varNo = 0
+            for token in tokens:
+                varName=token.strip()
+                if varName=="SampleName":
+                    iSampleName=varNo
+                    break
+                varNo += 1
+            if iSampleName==-1:
+                return
+        else:
+            if len(tokens)>iSampleName:
+                sampleName = tokens[iSampleName]
+                if not sampleName in sampleNames:
+                    sampleNames.append(sampleName)
+        lineNo+=1
+    fh.close()
+    return sampleNames
