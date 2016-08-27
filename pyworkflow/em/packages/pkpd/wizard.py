@@ -30,6 +30,7 @@ from os.path import basename, exists
 import Tkinter as tk
 import ttk
 
+import pyworkflow.object as pwobj
 from pyworkflow.wizard import Wizard
 import pyworkflow.gui.dialog as dialog
 from pyworkflow.gui.widgets import LabelSlider
@@ -163,6 +164,26 @@ class PKPDDoseTemplateWizard(Wizard):
                    "Bolus0 ; bolus t=0 d=60*weight/1000; min; mg"
         form.setVar(label, currentValue+template)
 
+
+class SimpleListTreeProvider(TreeProvider):
+    """ A simple TreeProvider over the elements of a string list """
+
+    def __init__(self, strList, name='Name', width=100):
+        self.objects = [pwobj.Object(value=s) for s in strList]
+        self.columns = [(name, width)]
+
+    def getColumns(self):
+        return self.columns
+
+    def getObjects(self):
+        return self.objects
+
+    def getObjectInfo(self, obj):
+        key = obj.get()
+        return {'key': key, 'text': key,
+                'values': ()}
+
+
 class PKPDDosesToSamplesTemplateWizard(Wizard):
     _targets = [(ProtPKPDImportFromText, ['dosesToSamples'])
                 ]
@@ -181,32 +202,39 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
                     doseNames.append(tokens[0].strip())
             print(doseNames)
 
-            sampleNames = []
-            fh=open(fnCSV)
-            lineNo = 1
-            for line in fh.readlines():
-                tokens = line.split(';')
-                if len(tokens)==0:
-                    continue
-                if lineNo==1:
-                    iSampleName=-1
-                    varNo = 0
-                    for token in tokens:
-                        varName=token.strip()
-                        if varName=="SampleName":
-                            iSampleName=varNo
-                        break
-                        varNo += 1
-                    if iSampleName==-1:
-                        return
-                else:
-                    if len(tokens)>iSampleName:
-                        sampleName = tokens[iSampleName]
-                        if not sampleName in sampleNames:
-                            sampleNames.append(sampleName)
-                lineNo+=1
-            fh.close()
-            print(sampleNames)
+            # sampleNames = []
+            # fh=open(fnCSV)
+            # lineNo = 1
+            # for line in fh.readlines():
+            #     tokens = line.split(';')
+            #     if len(tokens)==0:
+            #         continue
+            #     if lineNo==1:
+            #         print line
+            #         iSampleName=-1
+            #         varNo = 0
+            #         for token in tokens:
+            #             varName=token.strip()
+            #             if varName=="SampleName":
+            #                 iSampleName=varNo
+            #             break
+            #             varNo += 1
+            #         if iSampleName==-1:
+            #             "sample == -1, returning"
+            #             return
+            #     else:
+            #         if len(tokens)>iSampleName:
+            #             sampleName = tokens[iSampleName]
+            #             if not sampleName in sampleNames:
+            #                 sampleNames.append(sampleName)
+            #     lineNo+=1
+            # fh.close()
+            # print(sampleNames)
 
             currentValue = protocol.getAttributeValue(label, "")
-            form.setVar(label, currentValue+"\n[Sample Name] ; [DoseName1,DoseName2,...]\n")
+            tp = SimpleListTreeProvider(doseNames, name="Doses")
+            dlg = dialog.ListDialog(form.root, "Test", tp,
+                             selectmode='extended')
+            if dlg.resultYes():
+                self.setFormValues(form, label, dlg.values)
+            #form.setVar(label, currentValue+"\n[Sample Name] ; [DoseName1,DoseName2,...]\n")
