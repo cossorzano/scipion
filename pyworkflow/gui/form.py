@@ -247,8 +247,35 @@ class ComboVar():
             if c == v:
                 self.value = i
             
-        return self.value         
-        
+        return self.value
+
+
+class TextVar():
+    """Wrapper around tk.StringVar to bind the value of a Text widget. """
+    def __init__(self, text, value=''):
+        """
+        Params:
+            text: Text widget associated with this variable.
+            value: initial value for the widget.
+            """
+        self.text = text
+        text.bind('<KeyRelease>', self._onTextChanged)
+        self.tkVar = tk.StringVar()
+        self.set(value)
+        self.trace = self.tkVar.trace
+
+    def set(self, value):
+        self.tkVar.set(value)
+        if value is None:
+            value = ''
+        self.text.setText(value)
+
+    def get(self):
+        return self.tkVar.get()
+
+    def _onTextChanged(self, e=None):
+        self.tkVar.set(self.text.getText().strip())
+
 
 #---------------- Some used providers for the TREES -------------------------------
 
@@ -819,11 +846,11 @@ class ParamWidget():
             var = None
             self._onlyLabel = True
 
-        # elif t is params.TextParam:
-        #     var = tk.StringVar()
-        #     text = Text(content, width=entryWidth, textvariable=var,
-        #                 font=self.window.font)
-        #     text.grid(row=0, column=0, sticky='w')
+        elif t is params.TextParam:
+            text = Text(content, width=entryWidth, font=self.window.font,
+                        height=param.height)
+            var = TextVar(text)
+            text.grid(row=0, column=0, sticky='w')
 
         else:
             #v = self.setVarValue(paramName)

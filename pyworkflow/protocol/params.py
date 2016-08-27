@@ -341,14 +341,15 @@ class Form(object):
 
 class StringParam(Param):
     """Param with underlying String value"""
-    def __init__(self, **args):
-        Param.__init__(self, paramClass=String, **args)
+    def __init__(self, **kwargs):
+        Param.__init__(self, paramClass=String, **kwargs)
 
 
 class TextParam(StringParam):
     """Long string params"""
-    def __init__(self, **args):
-        StringParam.__init__(self, **args)
+    def __init__(self, **kwargs):
+        StringParam.__init__(self, **kwargs)
+        self.height = kwargs.get('height', 5)
         
         
 class RegexParam(StringParam):
