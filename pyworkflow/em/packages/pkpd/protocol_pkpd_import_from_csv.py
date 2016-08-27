@@ -213,12 +213,26 @@ def getSampleNamesFromCSVfile(fnCSV):
                     break
                 varNo += 1
             if iSampleName==-1:
+                fh.close()
                 return
         else:
             if len(tokens)>iSampleName:
                 sampleName = tokens[iSampleName]
                 if not sampleName in sampleNames:
-                    sampleNames.append(sampleName)
+                    sampleNames.append(sampleName.strip())
         lineNo+=1
     fh.close()
     return sampleNames
+
+def getVarNamesFromCSVfile(fnCSV):
+    varNames = []
+    fh=open(fnCSV)
+    for line in fh.readlines():
+        tokens = line.split(';')
+        if len(tokens)==0:
+            continue
+        for token in tokens:
+            varNames.append(token.strip())
+        break
+    fh.close()
+    return varNames

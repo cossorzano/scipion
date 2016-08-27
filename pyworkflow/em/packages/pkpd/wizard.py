@@ -47,7 +47,7 @@ from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
 from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
 from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
 from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsExp2Subgroups2Mean
-from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile
+from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile, getVarNamesFromCSVfile
 from protocol_pkpd_bootstrap_simulate import ProtPKPDODESimulate
 
 class FilterVariablesTreeProvider(TreeProvider):
@@ -140,32 +140,6 @@ class PKPDChooseSeveralVariableWizard(PKPDChooseVariableWizard):
     def getSelectMode(self):
         return "extended"
 
-
-class PKPDVariableTemplateWizard(Wizard):
-    _targets = [(ProtPKPDImportFromText, ['variables'])
-                ]
-
-    def show(self, form, *params):
-        label = params[0]
-        protocol = form.protocol
-        currentValue = protocol.getAttributeValue(label, "")
-        form.setVar(label, currentValue+"\n[Variable Name] ; [Units] ; [numeric/text] ; [time/label/measurement] ; [Comment]")
-
-class PKPDDoseTemplateWizard(Wizard):
-    _targets = [(ProtPKPDImportFromText, ['doses']),
-                (ProtPKPDODESimulate, ['doses'])
-                ]
-
-    def show(self, form, *params):
-        label = params[0]
-        protocol = form.protocol
-        currentValue = protocol.getAttributeValue(label, "")
-        template = "\nInfusion0 ; infusion t=0.5...0.75 d=60*weight/1000; h; mg\n"\
-                   "Bolus1 ; bolus t=2 d=100; h; mg\n"\
-                   "Bolus0 ; bolus t=0 d=60*weight/1000; min; mg"
-        form.setVar(label, currentValue+template)
-
-
 class SimpleListTreeProvider(TreeProvider):
     """ A simple TreeProvider over the elements of a string list """
 
@@ -185,6 +159,45 @@ class SimpleListTreeProvider(TreeProvider):
                 'values': ()}
 
 
+class PKPDVariableTemplateWizard(Wizard):
+    _targets = [(ProtPKPDImportFromText, ['variables'])
+                ]
+
+    def show(self, form, *params):
+        label = params[0]
+        protocol = form.protocol
+        fnCSV = protocol.getAttributeValue('inputFile', "")
+        if not os.path.exists(fnCSV):
+            form.showError("Select a valid CSV input file first.")
+        else:
+            varNames = getVarNamesFromCSVfile(fnCSV)
+            tp = SimpleListTreeProvider(varNames, name="Variables")
+            dlg = dialog.ListDialog(form.root, "Choose variable(s)", tp,
+                             selectmode='extended')
+            if dlg.resultYes():
+                strToAdd = ""
+                for value in dlg.values:
+                    strToAdd +="\n%s ; [Units/none] ; [numeric/text] ; [time/label/measurement] ; [Comment]"%(value.get())
+                if strToAdd!="":
+                    currentValue = protocol.getAttributeValue(label, "")
+                    form.setVar(label, currentValue+strToAdd)
+
+
+class PKPDDoseTemplateWizard(Wizard):
+    _targets = [(ProtPKPDImportFromText, ['doses']),
+                (ProtPKPDODESimulate, ['doses'])
+                ]
+
+    def show(self, form, *params):
+        label = params[0]
+        protocol = form.protocol
+        currentValue = protocol.getAttributeValue(label, "")
+        template = "\nInfusion0 ; infusion t=0.5...0.75 d=60*weight/1000; h; mg\n"\
+                   "Bolus1 ; bolus t=2 d=100; h; mg\n"\
+                   "Bolus0 ; bolus t=0 d=60*weight/1000; min; mg"
+        form.setVar(label, currentValue+template)
+
+
 class PKPDDosesToSamplesTemplateWizard(Wizard):
     _targets = [(ProtPKPDImportFromText, ['dosesToSamples'])
                 ]
@@ -201,16 +214,33 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
                 if len(tokens)==4:
                     doseNames.append(tokens[0].strip())
 
-            sampleNames = getSampleNamesFromCSVfile(fnCSV)
-
+            sampleNamesInCSV = getSampleNamesFromCSVfile(fnCSV)
             currentValue = protocol.getAttributeValue(label, "")
+            sampleNamesAssigned = []
+            for line in currentValue.replace('\n',';;').split(';;'):
+                tokens = line.split(';')
+                if len(tokens)==2:
+                    sampleNamesAssigned.append(tokens[0].strip())
 
             dlg = dialog.MultiListDialog(form.root, "Test",
-                                         [SimpleListTreeProvider(sampleNames,
+                                         [SimpleListTreeProvider(list(set(sampleNamesInCSV)-set(sampleNamesAssigned)),
                                                                  name="Samples"),
                                           SimpleListTreeProvider(doseNames,
                                                                  name="Doses")],
                              selectmode='extended')
             if dlg.resultYes():
-                print dlg.values
-            #form.setVar(label, currentValue+"\n[Sample Name] ; [DoseName1,DoseName2,...]\n")
+                sampleList = dlg.values[0]
+                doseList = dlg.values[1]
+                for sample in sampleList:
+                    if currentValue!="":
+                        currentValue+="\n"
+                    currentValue+="%s; "%sample.get().strip()
+                    doseNo = 1
+                    for dose in doseList:
+                        if doseNo!=1:
+                            currentValue+=", %s"%dose.get()
+                        else:
+                            currentValue+="%s"%dose.get()
+                        doseNo += 1
+                if currentValue!="":
+                    form.setVar(label, currentValue)
