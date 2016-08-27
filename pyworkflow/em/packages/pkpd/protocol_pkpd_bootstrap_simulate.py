@@ -54,7 +54,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
                       help="Choose a population of parameters or your own")
         form.addParam('inputPopulation', params.PointerParam, label="Input population", condition="paramsSource==0",
                       pointerClass='PKPDFitting', pointerCondition="isPopulation", help='It must be a fitting coming from a bootstrap sample')
-        form.addParam('prmUser', params.TextParam, label="Simulation parameters", default="", condition="paramsSource==1",
+        form.addParam('prmUser', params.TextParam, label="Simulation parameters", height=8, default="", condition="paramsSource==1",
                       help='Specify the parameters for the simulation. The parameters must be written in the same order as they are written by the protocol '
                            'that generated the ODE model. Example: \n'
                            'prm1, prm2, prm3, prm4\n'
@@ -67,7 +67,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
                            "The description is either a bolus or an infusion as shown in the examples\n"\
                            "\nIt is important that there are two semicolons.\n"\
                            "Examples:\n"\
-                           "Infusion0 ; infusion t=0.500000...0.750000 d=60; mg\n"\
+                           "Infusion0 ; infusion t=0.500000...0.750000 d=60; h; mg\n"\
                            "Bolus0 ; bolus t=0.000000 d=60; min; mg\n"\
                            "RepeatedBolus ; repeated_bolus t=0:24:120 d=60; h; mg")
         form.addParam('t0', params.FloatParam, label="Initial time (h)", default=0)
@@ -213,7 +213,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         self.model.x = [self.t0.get()+i*self.model.deltaT for i in range(0,Nsamples)]
 
         # Read the doses
-        for line in self.doses.get().split(';;'):
+        for line in self.doses.get().replace('\n',';;').split(';;'):
             tokens = line.split(';')
             if len(tokens)!=4:
                 print("Skipping dose: ",line)
@@ -236,7 +236,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         if self.paramsSource==ProtPKPDODESimulate.PRM_POPULATION:
             Nsimulations = self.Nsimulations.get()
         else:
-            lines = self.prmUser.get().strip().split(';;')
+            lines = self.prmUser.get().strip().replace('\n',';;').split(';;')
             Nsimulations = len(lines)
             prmUser = []
             for line in lines:
