@@ -45,7 +45,7 @@ from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
 from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
 from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
 from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsExp2Subgroups2Mean
-from protocol_pkpd_import_from_csv import ProtPKPDImportFromText
+from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile
 from protocol_pkpd_bootstrap_simulate import ProtPKPDODESimulate
 
 class FilterVariablesTreeProvider(TreeProvider):
@@ -181,31 +181,7 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
                     doseNames.append(tokens[0].strip())
             print(doseNames)
 
-            sampleNames = []
-            fh=open(fnCSV)
-            lineNo = 1
-            for line in fh.readlines():
-                tokens = line.split(';')
-                if len(tokens)==0:
-                    continue
-                if lineNo==1:
-                    iSampleName=-1
-                    varNo = 0
-                    for token in tokens:
-                        varName=token.strip()
-                        if varName=="SampleName":
-                            iSampleName=varNo
-                        break
-                        varNo += 1
-                    if iSampleName==-1:
-                        return
-                else:
-                    if len(tokens)>iSampleName:
-                        sampleName = tokens[iSampleName]
-                        if not sampleName in sampleNames:
-                            sampleNames.append(sampleName)
-                lineNo+=1
-            fh.close()
+            sampleNames = getSampleNamesFromCSVfile(fnCSV)
             print(sampleNames)
 
             currentValue = protocol.getAttributeValue(label, "")
