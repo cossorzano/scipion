@@ -458,7 +458,8 @@ class ListDialog(Dialog):
             label = tk.Label(bodyFrame, text=self.message, bg='white',
                      image=self.getImage(Icon.LIGHTBULB), compound=tk.LEFT)
             label.grid(row=1, column=0, sticky='nw', padx=5, pady=5)
-        self.initial_focus = self.tree
+        if self.tree:
+            self.initial_focus = self.tree
         
     def _createTree(self, parent):
         self.tree = BoundTree(parent, self.provider, selectmode=self._selectmode)
@@ -481,8 +482,32 @@ class ListDialog(Dialog):
             return False
         
         return True
-        
-        
+
+
+class MultiListDialog(ListDialog):
+    """
+    Select elements among several lists.
+    """
+    def _createTree(self, parent):
+        treeFrame = tk.Frame(parent)
+        treeFrame.grid(row=0, column=0, sticky='news')
+        treeFrame.rowconfigure(0, weight=1)
+        self.trees = []
+        self.tree = None
+
+        for i, p in enumerate(self.provider):
+            t = BoundTree(treeFrame, p,
+                          selectmode=self._selectmode)
+            t.grid(row=0, column=i, padx=5, pady=5, sticky='news')
+            treeFrame.columnconfigure(i, weight=1)
+            self.trees.append(t)
+
+    def apply(self):
+        self.values = []
+        for t in self.trees:
+            self.values.append(t.getSelectedObjects())
+
+
 class FlashMessage():
     def __init__(self, master, msg, delay=5, relief='solid', func=None):
         self.root = tk.Toplevel(master=master)
