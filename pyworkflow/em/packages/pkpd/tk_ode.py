@@ -149,22 +149,23 @@ class PKPDODEDialog(dialog.Dialog):
         gui.configureWeigths(bodyFrame)
         self._createSamplesFrame(bodyFrame)
         self._createSlidersFrame(bodyFrame)
+        self._createLogsFrame(bodyFrame)
 
     def _createSamplesFrame(self, content):
         frame = tk.Frame(content, bg='white')
         #frame = tk.LabelFrame(content, text='General')
-        lfSamples = tk.LabelFrame(frame, text="Samples")
+        lfSamples = tk.LabelFrame(frame, text="Samples", bg='white')
         gui.configureWeigths(frame)
         lfSamples.grid(row=0, column=0, sticky='news', padx=5, pady=5)
         self.samplesTree = self._addBoundTree(lfSamples,
                                                   self.provider, 10)
-        self.samplesTree.itemClick = self._onPlotFitClick
+        self.samplesTree.itemClick = self._onSampleChanged
 
         frame.grid(row=0, column=0, sticky='news', padx=5, pady=5)
 
     def _createSlidersFrame(self, content):
         frame = tk.Frame(content, bg='white')
-        lfBounds = tk.LabelFrame(frame, text="Parameter Bounds")
+        lfBounds = tk.LabelFrame(frame, text="Parameter Bounds", bg='white')
         gui.configureWeigths(frame)
 
         i = 0
@@ -183,6 +184,26 @@ class PKPDODEDialog(dialog.Dialog):
         lfBounds.grid(row=0, column=0, sticky='news', padx=5, pady=5)
         frame.grid(row=0, column=1, sticky='news', padx=5, pady=5)
 
+    def _createLogsFrame(self, content):
+        frame = tk.Frame(content)
+
+        def addVar(text, col, varName):
+            varFrame = tk.Frame(frame)
+            varFrame.grid(row=0, column=col, sticky='new')
+            label = tk.Label(varFrame, text=text)#, font=self.fontBold)
+            label.grid(row=0, column=0, padx=5, pady=2, sticky='nw')
+            combo = tk.Label(varFrame, text=varName, width=10)
+            combo.grid(row=0, column=1, sticky='nw', padx=5, pady=5)
+            radioVar = tk.IntVar()
+            radio = tk.Checkbutton(varFrame, text='Log10', variable=radioVar)
+            radio.grid(row=0, column=2, sticky='nw', padx=5, pady=5)
+            return combo, radio, radioVar
+
+        self.timeWidget = addVar('Time variable', 0, self.varNameX)
+        self.measureWidget = addVar('Measure variable', 1, self.varNameY)
+        self.measureWidget[2].set(True)
+        frame.grid(row=1, column=0, columnspan=2, sticky='news', padx=5, pady=5)
+
     def _addBoundTree(self, parent, provider, height):
         bt = BoundTree(parent, provider, height=height)
         bt.grid(row=0, column=0, sticky='news', padx=5, pady=5)
@@ -196,78 +217,97 @@ class PKPDODEDialog(dialog.Dialog):
         sampleKeys = self.samplesTree.selection()
 
         if sampleKeys:
-            sample = self.experiment.samples[sampleKeys[0]]
+            self.computeFit()
+            self.plotResults()
+        else:
+            self.showInfo("Please select some sample(s) to plot.")
 
-            currentParams = []
-            for paramName in self.protODE.getParameterNames():
-                currentParams.append(self.sliders[paramName].getValue())
-            self.protODE.model.t0 = 0
-            self.protODE.model.tF = self.maxX
-            self.protODE.drugSource.setDoses(sample.parsedDoseList, self.protODE.model.t0, self.protODE.model.tF)
-            self.protODE.configureSource(self.protODE.drugSource)
-            self.protODE.model.drugSource = self.protODE.drugSource
-            self.protODE.getParameterNames() # Necessary to count the number of source and PK parameters
-            self.protODE.setParameters(currentParams)
-            yp = self.protODE.forwardModel(currentParams, self.xValues)
-            print(currentParams)
-            print(yp)
+    def computeFit(self):
+        currentParams = []
+        for paramName in self.protODE.getParameterNames():
+            currentParams.append(self.sliders[paramName].getValue())
 
-    def getPlotValues(self, sample):
-        xValues, yValues = sample.getXYValues(self.varNameX, self.varNameY)
-        self.xValues = xValues
-        self.maxX = np.max(xValues)
+        self.protODE.setParameters(currentParams)
+        self.ypValues = self.protODE.forwardModel(currentParams, self.xValues)
 
+    def computePlotValues(self, xValues, yValues):
         useMeasureLog = False
         useTimeLog = False
 
-        if not (useMeasureLog or useTimeLog):
-            return xValues, yValues
+        if useMeasureLog or useTimeLog:
+            newXValues = xValues
+            newYValues = yValues
+        else:
+            # If log will be used either for time or measure var
+            # we need to filter elements larger than 0
+            newXValues = []
+            newYValues = []
 
-        # If log will be used either for time or measure var
-        # we need to filter elements larger than 0
-        newXValues = []
-        newYValues = []
+            def _value(v, useLog):
+                if useLog:
+                    return math.log10(v) if v > 0 else None
+                return v
 
-        def _value(v, useLog):
-            if useLog:
-                return math.log10(v) if v > 0 else None
-            return v
+            for x, y in izip(xValues, yValues):
+                x = _value(x, useTimeLog)
+                y = _value(y, useMeasureLog)
 
-        for x, y in izip(xValues, yValues):
-            x = _value(x, useTimeLog)
-            y = _value(y, useMeasureLog)
-
-            if x is not None and y is not None:
-                newXValues.append(x)
-                newYValues.append(y)
+                if x is not None and y is not None:
+                    newXValues.append(x)
+                    newYValues.append(y)
 
         return newXValues, newYValues
 
-    def _onPlotFitClick(self, e=None):
+    def _updateModel(self):
+        """ This function should be called whenever the sample changes """
+        self.protODE.model.t0 = 0
+        self.protODE.model.tF = np.max(self.xValues)
+        self.protODE.drugSource.setDoses(self.sample.parsedDoseList,
+                                         self.protODE.model.t0,
+                                         self.protODE.model.tF)
+        self.protODE.configureSource(self.protODE.drugSource)
+        self.protODE.model.drugSource = self.protODE.drugSource
+        # Necessary to count the number of source and PK parameters
+        self.protODE.getParameterNames()
+
+    def _onSampleChanged(self, e=None):
         sampleKeys = self.samplesTree.selection()
 
         if sampleKeys:
-            if self.plotter is None or self.plotter.isClosed():
-                self.plotter = EmPlotter()
-                doShow = True
-            else:
-                doShow = False
-                ax = self.plotter.getLastSubPlot()
-                self.plotter.clear()
-
-            sample = self.experiment.samples[sampleKeys[0]]
-            x, y = self.getPlotValues(sample)
-            ax = self.plotter.createSubPlot("Sample: %s" % sampleKeys[0],
-                                            self.varNameX, self.varNameY)
-            ax.plot(x, y, 'x', label="Observations")
-            ax.legend()
-
-            if doShow:
-                self.plotter.show()
-            else:
-                self.plotter.draw()
+            # When the sample is changed we need to re-compute (with log or not)
+            # the x, y values
+            self.sample = self.experiment.samples[sampleKeys[0]]
+            self.xValues, self.yValues = self.sample.getXYValues(self.varNameX,
+                                                                 self.varNameY)
+            self.newXValues, self.newYValues = self.computePlotValues(self.xValues,
+                                                                      self.yValues)
+            self._updateModel()
+            self.computeFit()
+            self.plotResults()
         else:
             self.showInfo("Please select some sample(s) to plot.")
+
+    def plotResults(self):
+        if self.plotter is None or self.plotter.isClosed():
+            self.plotter = EmPlotter()
+            doShow = True
+        else:
+            doShow = False
+            ax = self.plotter.getLastSubPlot()
+            self.plotter.clear()
+
+        ax = self.plotter.createSubPlot("Sample: %s" % self.sample.varName,
+                                        self.varNameX, self.varNameY)
+        ax.plot(self.newXValues, self.newYValues, 'x', label="Observations")
+        self.newXPValues, self.newYPValues = self.computePlotValues(self.xValues,
+                                                                    self.ypValues)
+        ax.plot(self.newXPValues, self.newYPValues, label="Fit")
+        ax.legend()
+
+        if doShow:
+            self.plotter.show()
+        else:
+            self.plotter.draw()
 
     def destroy(self):
         """Destroy the window"""
