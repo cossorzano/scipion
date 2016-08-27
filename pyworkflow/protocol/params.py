@@ -350,7 +350,7 @@ class TextParam(StringParam):
     def __init__(self, **kwargs):
         StringParam.__init__(self, **kwargs)
         self.height = kwargs.get('height', 5)
-        
+        self.width = kwargs.get('width', 30)
         
 class RegexParam(StringParam):
     """Regex based string param"""

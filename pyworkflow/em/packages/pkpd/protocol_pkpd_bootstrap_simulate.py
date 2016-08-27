@@ -59,7 +59,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
                            'that generated the ODE model. Example: \n'
                            'prm1, prm2, prm3, prm4\n'
                            'prmA, prmB, prmC, prmD')
-        form.addParam('doses', params.TextParam, label="Doses", height=5,
+        form.addParam('doses', params.TextParam, label="Doses", height=5, width=50,
                       default="RepeatedBolus ; repeated_bolus t=0:24:120 d=60; h; mg",
                       help="Structure: [Dose Name] ; [Description] ; [Units] \n"\
                            "The dose name should have no space or special character\n"\
