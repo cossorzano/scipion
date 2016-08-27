@@ -95,7 +95,3 @@ are independent, which are not. Use Bootstrap estimates instead.\n
             if not self.varNameY in experiment.variables:
                 errors.append("Cannot find %s as variable"%self.varNameY)
         return errors
-
-    def filterVarForWizard(self, v):
-        """ Define the type of variables required (used in wizard). """
-        return v.isNumeric() and (v.isTime() or v.isMeasurement())

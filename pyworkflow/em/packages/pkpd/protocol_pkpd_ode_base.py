@@ -380,3 +380,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def _citations(self):
         return ['Spiess2010']
+
+    def filterVarForWizard(self, v):
+        """ Define the type of variables required (used in wizard). """
+        return v.isNumeric() and (v.isTime() or v.isMeasurement())
