@@ -80,3 +80,9 @@ class ProtPKPD(EMProtocol):
             return experiment
 
         return None
+
+    def setInputExperiment(self):
+        """ Set as self.experiment the experiment that is referenced
+        in the attribute self.inputExperiment.
+        """
+        self.setExperiment(self.loadInputExperiment())
