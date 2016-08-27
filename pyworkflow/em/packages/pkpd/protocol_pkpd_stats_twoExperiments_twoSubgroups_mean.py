@@ -154,3 +154,7 @@ class ProtPKPDStatsExp2Subgroups2Mean(ProtPKPD):
             if variable.varType != PKPDVariable.TYPE_NUMERIC:
                 msg.append("Variable %s is not a number in Experiment 2"%label2ToUse)
         return msg
+
+    def filterVarForWizard(self, v):
+        """ Define the type of variables required (used in wizard). """
+        return v.isNumeric() and v.isLabel()
