@@ -34,6 +34,7 @@ import pyworkflow.object as pwobj
 from pyworkflow.wizard import Wizard
 import pyworkflow.gui.dialog as dialog
 from pyworkflow.gui.widgets import LabelSlider
+from pyworkflow.gui import configureWeigths
 from pyworkflow.gui.tree import BoundTree, TreeProvider
 
 from protocol_pkpd_regression_labels import ProtPKPDRegressionLabel
@@ -169,7 +170,7 @@ class SimpleListTreeProvider(TreeProvider):
     """ A simple TreeProvider over the elements of a string list """
 
     def __init__(self, strList, name='Name', width=100):
-        self.objects = [pwobj.Object(value=s) for s in strList]
+        self.objects = [pwobj.String(value=s) for s in strList]
         self.columns = [(name, width)]
 
     def getColumns(self):
@@ -233,8 +234,8 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
 
             currentValue = protocol.getAttributeValue(label, "")
             tp = SimpleListTreeProvider(doseNames, name="Doses")
-            dlg = dialog.ListDialog(form.root, "Test", tp,
+            dlg = dialog.MultiListDialog(form.root, "Test", [tp, tp],
                              selectmode='extended')
             if dlg.resultYes():
-                self.setFormValues(form, label, dlg.values)
+                print dlg.values
             #form.setVar(label, currentValue+"\n[Sample Name] ; [DoseName1,DoseName2,...]\n")
