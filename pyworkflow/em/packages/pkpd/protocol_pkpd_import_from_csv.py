@@ -210,7 +210,7 @@ def getSampleNamesFromCSVfile(fnCSV):
                 varName=token.strip()
                 if varName=="SampleName":
                     iSampleName=varNo
-                break
+                    break
                 varNo += 1
             if iSampleName==-1:
                 return
@@ -221,3 +221,4 @@ def getSampleNamesFromCSVfile(fnCSV):
                     sampleNames.append(sampleName)
         lineNo+=1
     fh.close()
+    return sampleNames
