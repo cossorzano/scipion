@@ -52,6 +52,9 @@ from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsEx
 from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile, getVarNamesFromCSVfile
 from protocol_pkpd_bootstrap_simulate import ProtPKPDODESimulate
 
+from tk_ode import PKPDODEDialog
+
+
 class FilterVariablesTreeProvider(TreeProvider):
     """ Simplified view of VariablesTreeProvider with less columns.
     Additionally, we can filter by a given function. """
@@ -250,3 +253,35 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
                         doseNo += 1
                 if currentValue!="":
                     form.setVar(label, currentValue)
+
+
+class PKPDODEWizard(Wizard):
+    _targets = [(ProtPKPDEV0MonoCompartment, ['bounds']),
+                (ProtPKPDEV1MonoCompartment, ['bounds']),
+                (ProtPKPDIVMonoCompartment, ['bounds'])
+                ]
+
+    def show(self, form, *params):
+        label = params[0]
+        protocol = form.protocol
+        experiment = protocol.getAttributeValue('inputExperiment', None)
+
+        if experiment is None:
+            form.showError("Select the input experiment first.")
+        else:
+            protocol.setInputExperiment() # this load the experiment
+            protocol.configureSource(protocol.createDrugSource())
+            protocol.setupModel()
+
+            for sampleName, sample in protocol.experiment.samples.iteritems():
+                sample.interpretDose()
+
+            dlg = PKPDODEDialog(form.root, "Select Parameter Bounds",
+                                protODE=protocol,
+                                varNameX=protocol.predictor.get(),
+                                varNameY=protocol.predicted.get())
+
+            if dlg.resultYes():
+                print "yes"
+            else:
+                print "no"
