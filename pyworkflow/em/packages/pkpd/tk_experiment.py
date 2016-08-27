@@ -1,9 +1,9 @@
 # **************************************************************************
 # *
-# * Authors:     J.M. De la Rosa Trevin (jmdelarosa@cnb.csic.es)
+# * Authors:     J.M. De la Rosa Trevin (delarosatrevin@gmail.com)
 # *              Carlos Oscar Sorzano (info@kinestat.com)
 # *
-# * Unidad de Bioinformatica of Centro Nacional de Biotecnologia , CSIC
+# * Kinestat Pharma
 # *
 # * This program is free software; you can redistribute it and/or modify
 # * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ import ttk
 
 import pyworkflow.gui as gui
 from pyworkflow.gui.widgets import Button, HotButton, ComboBox
+from pyworkflow.gui.text import TaggedText
 from pyworkflow.gui.tree import TreeProvider, BoundTree
 from pyworkflow.em.plotter import EmPlotter
 
@@ -87,12 +88,15 @@ class DosesTreeProvider(TreeProvider):
 
 
 class SamplesTreeProvider(TreeProvider):
-    def __init__(self, experiment):
+    def __init__(self, experiment, fitting=None):
         self.experiment = experiment
+        self.fitting = fitting
+
         numberOfSamples = len(experiment.samples)
-        if numberOfSamples>0:
+        if numberOfSamples > 0:
             sample = self.experiment.samples.values()[0]
-            self.columns = [(key, 60) for key in sorted(sample.descriptors.keys())]
+            self.columns = [(key, 60)
+                            for key in sorted(sample.descriptors.keys())]
         else:
             self.columns = []
 
@@ -107,10 +111,13 @@ class SamplesTreeProvider(TreeProvider):
 
     def getObjectInfo(self, obj):
         key = obj.varName
-        values = [','.join(obj.doseList)] + [obj.descriptors[k] for k, _ in self.columns]
+        values = [','.join(obj.doseList)] + [obj.descriptors[k]
+                                             for k, _ in self.columns]
+
         return {'key': key, 'text': key,
                 'values': tuple(values)
                 }
+
 
 class MeasurementTreeProvider(TreeProvider):
     def __init__(self, sample):
@@ -129,6 +136,25 @@ class MeasurementTreeProvider(TreeProvider):
                 'values': tuple(obj.getValues())
                 }
 
+
+class FitValuesTreeProvider(TreeProvider):
+    def __init__(self, sampleFit):
+        self.sample = sampleFit
+        self.columns = [(key, 60) for key in self.sample.measurementPattern]
+
+    def getColumns(self):
+        return [('Sample #',60)]+self.columns
+
+    def getObjects(self):
+        return self.sample.getSampleMeasurements()
+
+    def getObjectInfo(self, obj):
+        key = obj.n
+        return {'key': key, 'text': key,
+                'values': tuple(obj.getValues())
+                }
+
+
 class ExperimentWindow(gui.Window):
     """ This class creates a Window that will display some Point's
     contained in a Data object.
@@ -142,6 +168,7 @@ class ExperimentWindow(gui.Window):
     def __init__(self, **kwargs):
         gui.Window.__init__(self,  minsize=(420, 200), **kwargs)
         self.experiment = kwargs.get('experiment')
+        self.fitting = kwargs.get('fitting')
         self.callback = kwargs.get('callback', None)
         content = tk.Frame(self.root)
         self._createContent(content)
@@ -171,17 +198,13 @@ class ExperimentWindow(gui.Window):
 
         tab = ttk.Notebook(frame)
         tab.grid(row=0, column=0, sticky='news', padx=5, pady=5)
-        #frame = tk.LabelFrame(content, text='General')
-        def addLabelFrame(label, row, col, rowspan=1):
+
+        def addTab(label):
             lf = tk.Frame(tab)
-            #frame.columnconfigure(col, minsize=250)
-            #frame.columnconfigure(col, weight=1)#, minsize=30)
             tab.add(lf, text=label)
-            #lf.grid(row=row, column=col, sticky='news', padx=5, pady=5,
-            #        rowspan=rowspan)
             return lf
 
-        lfGeneral = addLabelFrame('General', 0, 0, rowspan=2)
+        lfGeneral = addTab('General')
         self._addLabel(lfGeneral, 'Title', 0, 0)
         self._titleVar = tk.StringVar()
         self._titleVar.set(self.experiment.general['title'])
@@ -194,10 +217,21 @@ class ExperimentWindow(gui.Window):
         commentText.grid(row=1, column=1, sticky='nw', padx=5, pady=(5, 0))
         self._commentText = commentText
 
-        lfVars = addLabelFrame('Variables', 0, 1)
+        lfVars = addTab('Variables')
         self.varsTree = self._addBoundTree(lfVars, VariablesTreeProvider, 5)
-        lfDoses = addLabelFrame('Doses', 1, 1)
+
+        lfDoses = addTab('Doses')
         self.dosesTree = self._addBoundTree(lfDoses, DosesTreeProvider, 5)
+
+        # Fitting tab
+        if self.fitting:
+            tabFitting = addTab('Fitting')
+            t = TaggedText(tabFitting, width=80, height=10, bg='white')
+            t.grid(row=0, column=0, sticky='nw', padx=10, pady=10)
+            t.setText('Select one of the samples to see more information.')
+            t.setReadOnly(True)
+
+            self.fittingText = t
 
         #frame.grid(row=0, column=0, sticky='news', padx=5, pady=(10, 5))
         content.add(frame, sticky='news', padx=5, pady=5)
@@ -424,6 +458,21 @@ class ExperimentWindow(gui.Window):
                           "new experiment.")
 
     def _onSampleClick(self, obj):
+        # In fitting mode we need to display some information for
+        # the given sample fit
+        if self.fitting:
+            selection = self.samplesTree.selection()
+            if selection:
+                sampleKey = selection[0]
+                sampleFit = self.fitting.getSampleFit(sampleKey)
+                textMsg = sampleFit.getBasicInfo()
+            else:
+                textMsg = 'Select one of the samples to see more information.'
+
+            self.fittingText.setReadOnly(False)
+            self.fittingText.setText(textMsg)
+            self.fittingText.setReadOnly(True)
+
         if not (self.plotter is None or self.plotter.isClosed()):
             self._onPlotClick()
 

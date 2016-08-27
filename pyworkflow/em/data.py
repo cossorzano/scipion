@@ -1133,16 +1133,23 @@ class PKPDSampleFit:
         fh.write(outputStr+"\n")
         return observations
 
-    def _printToStream(self,fh):
+    def getBasicInfo(self):
+        """ Return a string with some basic information of the fitting. """
+        info = ""
+        info += "Sample name: %s\n" % self.sampleName
+        info += "Model: %s\n" % self.modelEquation
+        info += "R2: %f\n" % self.R2
+        info += "R2adj: %f\n" % self.R2adj
+        info += "AIC: %f\n" % self.AIC
+        info += "AICc(Recommended): %f\n" % self.AICc
+        info += "BIC: %f\n" % self.BIC
+
+        return info
+
+    def _printToStream(self, fh):
         if self.significance == None:
             self.significance = ["Undetermined"]*len(self.parameters)
-        fh.write("Sample name: %s\n"%self.sampleName)
-        fh.write("Model: %s\n"%self.modelEquation)
-        fh.write("R2: %f\n"%self.R2)
-        fh.write("R2adj: %f\n"%self.R2adj)
-        fh.write("AIC: %f\n"%self.AIC)
-        fh.write("AICc(Recommended): %f\n"%self.AICc)
-        fh.write("BIC: %f\n"%self.BIC)
+        fh.write(self.getBasicInfo())
         fh.write("Parameter lowerBound upperBound IsStatisticallySignificant -------\n")
         for parameter, lower, upper, significance in izip(self.parameters,self.lowerBound,self.upperBound,\
                                                           self.significance):
@@ -1230,6 +1237,7 @@ class PKPDSampleFit:
         self.significance = optimizer.significance
         self.lowerBound = optimizer.lowerBound
         self.upperBound = optimizer.upperBound
+
 
 class PKPDSampleFitBootstrap:
     READING_SAMPLEFITTINGS_NAME = 0
@@ -1329,6 +1337,7 @@ class PKPDSampleFitBootstrap:
         self.AICc.append(optimizer.AICc)
         self.BIC.append(optimizer.BIC)
 
+
 class PKPDFitting(EMObject):
     READING_FITTING_EXPERIMENT = 1
     READING_FITTING_PREDICTOR = 2
@@ -1420,14 +1429,13 @@ class PKPDFitting(EMObject):
         for sampleFitting in self.sampleFits:
             sampleFitting._printToStream(fh)
 
-    def load(self,fnFitting):
-        if isinstance(fnFitting,String):
-            fnFitting =  fnFitting.get()
-        fh=open(fnFitting)
+    def load(self, fnFitting=None):
+        fnFitting = str(fnFitting or self.fnFitting)
+        fh = open(fnFitting)
         if not fh:
-            raise Exception("Cannot open %s"%fnFitting)
+            raise Exception("Cannot open %s" % fnFitting)
         if not verifyMD5(fnFitting):
-            raise Exception("The file %s has been modified since its creation"%fnFitting)
+            raise Exception("The file %s has been modified since its creation" % fnFitting)
         self.fnFitting.set(fnFitting)
 
         auxUnit = PKPDUnit()
@@ -1500,11 +1508,16 @@ class PKPDFitting(EMObject):
 
         fh.close()
 
-    def getSampleFit(self,sampleName):
+    def getSampleFit(self, sampleName):
         for sampleFit in self.sampleFits:
             if sampleFit.sampleName == sampleName:
                 return sampleFit
         return None
+
+    def loadExperiment(self):
+        experiment = PKPDExperiment()
+        experiment.load(self.fnExperiment.get())
+        return experiment
 
 
 class PKPDSampleSignalAnalysis:

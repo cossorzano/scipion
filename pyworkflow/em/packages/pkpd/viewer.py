@@ -79,6 +79,24 @@ class PKPDExperimentViewer(Viewer):
         project.launchProtocol(newProt)
 
 
+class PKPDFittingViewer(Viewer):
+    """ Visualization of a given PKPDFitting
+    """
+    _targets = [PKPDFitting]
+    _environments = [DESKTOP_TKINTER]
+
+    def visualize(self, obj, **kwargs):
+        fitting = obj
+        fitting.load()
+        experiment = fitting.loadExperiment()
+
+        self.fittingWindow = self.tkWindow(ExperimentWindow,
+                                           title='Fitting Viewer',
+                                           experiment=experiment,
+                                           fitting=fitting)
+        self.fittingWindow.show()
+
+
 class PKPDCSVViewer(Viewer):
     """ Wrapper to visualize CSV files
     """
