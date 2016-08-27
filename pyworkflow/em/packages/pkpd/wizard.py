@@ -200,14 +200,16 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
                 tokens = line.split(';')
                 if len(tokens)==4:
                     doseNames.append(tokens[0].strip())
-            print(doseNames)
 
             sampleNames = getSampleNamesFromCSVfile(fnCSV)
-            print(sampleNames)
 
             currentValue = protocol.getAttributeValue(label, "")
-            tp = SimpleListTreeProvider(doseNames, name="Doses")
-            dlg = dialog.MultiListDialog(form.root, "Test", [tp, tp],
+
+            dlg = dialog.MultiListDialog(form.root, "Test",
+                                         [SimpleListTreeProvider(sampleNames,
+                                                                 name="Samples"),
+                                          SimpleListTreeProvider(doseNames,
+                                                                 name="Doses")],
                              selectmode='extended')
             if dlg.resultYes():
                 print dlg.values
