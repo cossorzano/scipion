@@ -63,7 +63,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                                 'If minimum and maximum are not given (set to -1), they are estimated from the sample')
         fromTo.addParam('t0', params.StringParam, default="", label='Min (h)')
         fromTo.addParam('tF', params.StringParam, default="", label='Max (h)')
-        fromTo.addParam('deltaT', params.FloatParam, default=1, label='Step (min)')
+        fromTo.addParam('deltaT', params.FloatParam, default=0.5, label='Step (min)')
 
         form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic","Relative"], label="Fit mode", default=1,
                       expertLevel=LEVEL_ADVANCED,
