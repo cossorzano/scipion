@@ -45,6 +45,7 @@ from protocol_pkpd_stats_oneExperiment_twoSubgroups_mean import ProtPKPDStatsExp
 from protocol_pkpd_exponential_fit import ProtPKPDExponentialFit
 from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
 from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
+from protocol_pkpd_ev01_monocompartment import ProtPKPDEV01MonoCompartment
 from protocol_pkpd_ev_monocompartment import ProtPKPDEV1MonoCompartment
 from protocol_pkpd_iv_monocompartment import ProtPKPDIVMonoCompartment
 from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
@@ -257,6 +258,7 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
 
 class PKPDODEWizard(Wizard):
     _targets = [(ProtPKPDEV0MonoCompartment, ['bounds']),
+                (ProtPKPDEV01MonoCompartment, ['bounds']),
                 (ProtPKPDEV1MonoCompartment, ['bounds']),
                 (ProtPKPDIVMonoCompartment, ['bounds'])
                 ]
