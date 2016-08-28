@@ -52,7 +52,7 @@ class BiopharmaceuticsModel:
         self.parameters = parameters
 
     def getAg(self,t):
-        # Total amount of drug absorbed from time 0 to time t
+        # Total amount of drug that is available at time t
         return 0.0
 
     def getEquation(self):
@@ -85,7 +85,7 @@ class BiopharmaceuticsModelOrder0(BiopharmaceuticsModel):
         return ['Constant absorption rate']
 
     def getParameterNames(self):
-        return ['K']
+        return ['Rin']
 
     def calculateParameterUnits(self,sample):
         self.parameterUnits = [PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN]
@@ -94,21 +94,18 @@ class BiopharmaceuticsModelOrder0(BiopharmaceuticsModel):
     def getAg(self,t):
         if t<0:
             return 0.0
-        K = self.parameters[0]
-        return K*t
+        Rin = self.parameters[0]
+        return max(self.Amax-Rin*t,0.0)
 
     def getEquation(self):
-        K = self.parameters[0]
-        return "D(t)=(%f)*t"%K
+        Rin = self.parameters[0]
+        return "D(t)=(%f)-(%f)*t"%(self.Amax,Rin)
 
     def getModelEquation(self):
-        return "D(t)=K*t"
+        return "D(t)=Amax-Rin*t"
 
     def getDescription(self):
         return "Zero order absorption (%s)"%self.__class__.__name__
-
-    def areParametersSignificant(self, lowerBound, upperBound):
-        return True
 
 class BiopharmaceuticsModelOrder1(BiopharmaceuticsModel):
     def getDescription(self):
