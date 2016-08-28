@@ -204,7 +204,7 @@ class PKPDDoseTemplateWizard(Wizard):
         currentValue = protocol.getAttributeValue(label, "")
         template = "\nInfusion0 ; infusion t=0.5...0.75 d=60*weight/1000; h; mg\n"\
                    "Bolus1 ; bolus t=2 d=100; h; mg\n"\
-                   "Bolus0 ; bolus t=0 d=60*weight/1000; min; mg"
+                   "Treatment ; repeated_bolus t=0:8:48 d=100; h; mg"
         form.setVar(label, currentValue+template)
 
 
