@@ -99,13 +99,48 @@ class BiopharmaceuticsModelOrder0(BiopharmaceuticsModel):
 
     def getEquation(self):
         Rin = self.parameters[0]
-        return "D(t)=(%f)-(%f)*t"%(self.Amax,Rin)
+        return "D(t)=(%f)*t"%(Rin)
 
     def getModelEquation(self):
-        return "D(t)=Amax-Rin*t"
+        return "D(t)=Rin*t"
 
     def getDescription(self):
         return "Zero order absorption (%s)"%self.__class__.__name__
+
+class BiopharmaceuticsModelOrder01(BiopharmaceuticsModel):
+    def getDescription(self):
+        return ['Constant absorption rate','Constant absorption time','Absorption rate']
+
+    def getParameterNames(self):
+        return ['Rin','t0','Ka']
+
+    def calculateParameterUnits(self,sample):
+        self.parameterUnits = [PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN, PKPDUnit.UNIT_TIME_MIN, PKPDUnit.UNIT_INVTIME_MIN]
+        return self.parameterUnits
+
+    def getAg(self,t):
+        if t<0:
+            return 0.0
+        Rin = self.parameters[0]
+        t0 = self.parameters[1]
+        Ka = self.parameters[2]
+        if t<t0:
+            return max(self.Amax-Rin*t,0.0)
+        else:
+            A0=max(self.Amax-Rin*t0,0.0)
+            return A0*math.exp(-Ka*(t-t0))
+
+    def getEquation(self):
+        Rin = self.parameters[0]
+        t0 = self.parameters[1]
+        Ka = self.parameters[2]
+        return "D(t)=(%f)*t if t<%f and (%f)*t+((%f)-(%f)*(%f))*(1-exp(-(%f)*t) if t>%f"%(Rin, t0, Rin, self.Amax, Rin, t0, Ka, t0)
+
+    def getModelEquation(self):
+        return "D(t)=Rin*t if t<t0 and Rin*t0+(Amax-Rin*t0)*(1-exp(-Ka*(t-t0)) if t>t0"
+
+    def getDescription(self):
+        return "Zero-First Mixed order absorption (%s)"%self.__class__.__name__
 
 class BiopharmaceuticsModelOrder1(BiopharmaceuticsModel):
     def getDescription(self):
