@@ -1223,8 +1223,8 @@ class PKPDSampleFit:
                 self.parameters.append(float(tokens[0]))
                 self.significance.append(tokens[2])
                 tokens=(tokens[1])[1:-1].split(',')
-                self.lowerBound.append(float(tokens[0]))
-                self.upperBound.append(float(tokens[1]))
+                self.lowerBound.append(tokens[0])
+                self.upperBound.append(tokens[1])
 
         elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_SAMPLE_VALUES:
             tokens=line.split()
