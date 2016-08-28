@@ -24,10 +24,13 @@
 # *
 # **************************************************************************
 
+import os
+import sys
+
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDExperiment, PKPDVariable, PKPDDose, PKPDSample
-import sys
+from pyworkflow.utils import copyFile
 
 
 class ProtPKPDImportFromText(ProtPKPD):
@@ -85,6 +88,9 @@ class ProtPKPDImportFromText(ProtPKPD):
         pass
 
     def createOutputStep(self, objId):
+        fnFile = os.path.basename(self.inputFile.get())
+        copyFile(self.inputFile.get(),self._getPath(fnFile))
+
         self.experiment = PKPDExperiment()
         self.experiment.general["title"]=self.title.get()
         self.experiment.general["comment"]=self.comment.get()
