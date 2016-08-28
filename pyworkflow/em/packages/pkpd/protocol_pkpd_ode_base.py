@@ -44,6 +44,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
     def __init__(self,**kwargs):
         ProtPKPD.__init__(self,**kwargs)
         self.boundsList = None
+        self.compulsoryBounds = False
 
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams1(self, form, addXY=False, defaultPredictor="", defaultPredicted=""):
@@ -406,6 +407,8 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                 errors.append("Cannot find %s as variable"%self.varNameY)
         if self.findtlag and self.bounds.get()=="":
             errors.append("Empty bound for tlag")
+        if self.compulsoryBounds and self.bounds.get()=="":
+            errors.append("Bounds are required")
         return errors
 
     def _citations(self):
