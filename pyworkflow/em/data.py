@@ -455,9 +455,8 @@ class PKPDSample:
         else:
             aux = getattr(self,"measurement_%s"%varName)
             aux = [x for x in aux if x != "NA" and x!="LLOQ" and x!="ULOQ"]
-            x = np.array(aux, dtype='|S4')
-            y = x.astype(np.float)
-            return [y.min(),y.max()]
+            x = np.asarray(aux, dtype=np.double)
+            return [x.min(),x.max()]
 
     def getValues(self, varName):
         if varName not in self.measurementPattern:
