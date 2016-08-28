@@ -32,7 +32,8 @@ import biopharmaceutics
 
 class ProtPKPDEV0MonoCompartment(ProtPKPDODEBase):
     """ Fit a monocompartmental model with zero order absorption to a set of measurements obtained by oral doses (any arbitrary dosing regimen is allowed)\n
-        The differential equation is D(t)=Rin*t and dC/dt = -Cl * C + 1/V * dD/dt\n
+        Zeroth order absorption occurs when the transport through a membrane is saturated.
+        The differential equation is D(t)=Amax-Rin*t and dC/dt = -Cl * C + 1/V * dD/dt\n
         where C is the concentration, Cl the clearance, V the distribution volume, and D the input dosing regime. Rin is the absorbption rate and
         Amax the dose (maximum amount).
 Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
