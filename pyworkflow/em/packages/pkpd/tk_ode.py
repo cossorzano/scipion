@@ -138,8 +138,8 @@ class PKPDODEDialog(dialog.Dialog):
     def loadModel(self):
         model = self.protODE.createModel()
         model.setExperiment(self.experiment)
-        if hasattr(self.protODE, "deltaT"):
-            model.deltaT = self.protODE.deltaT.get()
+        # if hasattr(self.protODE, "deltaT"):
+        #     model.deltaT = self.protODE.deltaT.get()
         model.setXVar(self.varNameX)
         model.setYVar(self.varNameY)
         return model
@@ -234,7 +234,8 @@ class PKPDODEDialog(dialog.Dialog):
             currentParams.append(self.sliders[paramName].getValue())
 
         self.protODE.setParameters(currentParams)
-        self.ypValues = self.protODE.forwardModel(currentParams, self.xValues)
+        # self.protODE.model.deltaT = 0.25
+        self.ypValues = self.protODE.forwardModel(currentParams, self.xpValues)
 
     def getBoundsList(self):
         boundList = []
@@ -318,6 +319,7 @@ class PKPDODEDialog(dialog.Dialog):
                                                                  self.varNameY)
             self.newXValues, self.newYValues = self.computePlotValues(self.xValues,
                                                                       self.yValues)
+            self.xpValues = [x for x in np.arange(0,np.max(self.xValues),4)]
             self._updateModel()
             self.computeFit()
             self.plotResults()
@@ -336,7 +338,7 @@ class PKPDODEDialog(dialog.Dialog):
         ax = self.plotter.createSubPlot("Sample: %s" % self.sample.varName,
                                         self.getTimeLabel(),
                                         self.getMeasureLabel())
-        self.newXPValues, self.newYPValues = self.computePlotValues(self.xValues,
+        self.newXPValues, self.newYPValues = self.computePlotValues(self.xpValues,
                                                                     self.ypValues)
         ax.plot(self.newXValues, self.newYValues, 'x', label="Observations")
         ax.plot(self.newXPValues, self.newYPValues, label="Fit")
