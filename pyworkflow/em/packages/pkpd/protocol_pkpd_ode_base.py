@@ -214,7 +214,8 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         if self.findtlag:
             self.drugSource.tlag = self.parameters[idx]
             idx+=1
-        self.drugSource.evProfile.setParameters(self.parameters[idx:idx+self.NparametersSource])
+        if self.drugSource.evProfile:
+            self.drugSource.evProfile.setParameters(self.parameters[idx:idx+self.NparametersSource])
 
     def setParametersPK(self):
         self.parametersPK = self.parameters[-self.NparametersModel:]
@@ -269,8 +270,9 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         if self.findtlag:
             idx=1
             retval=['True']
-        retval+=self.drugSource.areParametersSignificant(lowerBound[idx:len(self.boundsSource)],
-                                                         upperBound[idx:len(self.boundsSource)])
+        if len(self.boundsSource)>0:
+            retval+=self.drugSource.areParametersSignificant(lowerBound[idx:len(self.boundsSource)],
+                                                             upperBound[idx:len(self.boundsSource)])
         retval+=self.model.areParametersSignificant(lowerBound[len(self.boundsSource):],
                                                     upperBound[len(self.boundsSource):])
         return retval
