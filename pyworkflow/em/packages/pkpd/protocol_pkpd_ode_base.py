@@ -75,6 +75,9 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                       help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: 0:0.55:10, from 0 to 10 in steps of 0.5')
         form.addParam('findtlag', params.BooleanParam, label="Find delay (tlag)", default=False,
                       help='Confidence interval for the fitted parameters')
+        form.addParam('globalSearch', params.BooleanParam, label="Global search", default=True, expertLevel=LEVEL_ADVANCED,
+                      help='Global search looks for the best parameters within bounds. If it is not performed, the '
+                           'middle of the bounding box is used as initial parameter for a local optimization')
 
     #--------------------------- INSERT steps functions --------------------------------------------
     def getListOfFormDependencies(self):
@@ -337,8 +340,13 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
             print(" ")
 
-            optimizer1 = PKPDDEOptimizer(self,fitType)
-            optimizer1.optimize()
+            if self.globalSearch:
+                optimizer1 = PKPDDEOptimizer(self,fitType)
+                optimizer1.optimize()
+            else:
+                self.parameters = []
+                for bound in self.boundsList:
+                    self.parameters.append(0.5*(bound[0]+bound[1]))
             optimizer2 = PKPDLSOptimizer(self,fitType)
             optimizer2.optimize()
             optimizer2.setConfidenceInterval(self.confidenceInterval.get())
