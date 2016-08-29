@@ -32,7 +32,7 @@ import biopharmaceutics
 
 class ProtPKPDEV1MonoCompartment(ProtPKPDODEBase):
     """ Fit a monocompartmental model with first order absorption to a set of measurements obtained by oral doses (any arbitrary dosing regimen is allowed)\n
-        The differential equation is D(t)=Amax*(1-exp(-Ka*t)) and dC/dt = -Cl * C + 1/V * dD/dt\n
+        The differential equation is D(t)=Amax*(1-exp(-Ka*t)) and dC/dt = -Cl * C/V + 1/V * dD/dt\n
         where C is the concentration, Cl the clearance, V the distribution volume, and D the input dosing regime. Ka is the absorbption rate and
         Amax the dose (maximum amount).
 Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters

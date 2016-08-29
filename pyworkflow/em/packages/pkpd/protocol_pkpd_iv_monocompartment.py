@@ -32,7 +32,7 @@ import biopharmaceutics
 
 class ProtPKPDIVMonoCompartment(ProtPKPDODEBase):
     """ Fit a monocompartmental model to a set of measurements obtained by intravenous doses (any arbitrary dosing regimen is allowed)\n
-        The differential equation is dC/dt = -Cl * C + 1/V * dD/dt\n
+        The differential equation is dC/dt = -Cl * C/V + 1/V * dD/dt\n
         where C is the concentration, Cl the clearance, V the distribution volume, and D the input dosing regime.
 Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
 are independent, which are not. Use Bootstrap estimates instead.\n
@@ -107,5 +107,5 @@ are independent, which are not. Use Bootstrap estimates instead.\n
             self.parseBounds(boundsString)
         else:
             self.parseBounds(self.bounds.get())
-        ProtPKPDODEBase.setBounds(self)
+        ProtPKPDODEBase.setBounds(self,sample)
         self.model.bounds = self.boundsPK
