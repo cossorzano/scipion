@@ -271,31 +271,34 @@ class PKPDODEWizard(Wizard):
         if experiment is None:
             form.showError("Select the input experiment first.")
         else:
-            protocol.setInputExperiment() # this load the experiment
-            protocol.configureSource(protocol.createDrugSource())
-            protocol.setupModel()
-            protocol.model.drugSource = protocol.drugSource
+            try:
+                protocol.setInputExperiment() # this load the experiment
+                protocol.configureSource(protocol.createDrugSource())
+                protocol.setupModel()
+                protocol.model.drugSource = protocol.drugSource
 
-            i = 0
-            for sampleName, sample in protocol.experiment.samples.iteritems():
-                sample.interpretDose()
-                if i==0:
-                    protocol.setSample(sample)
-                    protocol.calculateParameterUnits(sample)
-                i+=1
+                i = 0
+                for sampleName, sample in protocol.experiment.samples.iteritems():
+                    sample.interpretDose()
+                    if i==0:
+                        protocol.setSample(sample)
+                        protocol.calculateParameterUnits(sample)
+                    i+=1
 
-            dlg = PKPDODEDialog(form.root, "Select Parameter Bounds",
-                                protODE=protocol,
-                                varNameX=protocol.predictor.get(),
-                                varNameY=protocol.predicted.get())
+                dlg = PKPDODEDialog(form.root, "Select Parameter Bounds",
+                                    protODE=protocol,
+                                    varNameX=protocol.predictor.get(),
+                                    varNameY=protocol.predicted.get())
 
-            if dlg.resultYes():
-                boundStr = ""
-                i = 1
-                for bound in dlg.getBoundsList():
-                    if i>1:
-                        boundStr+="; "
-                    boundStr += str(bound)
-                    i += 1
-                if boundStr!="":
-                    form.setVar(label, boundStr)
+                if dlg.resultYes():
+                    boundStr = ""
+                    i = 1
+                    for bound in dlg.getBoundsList():
+                        if i>1:
+                            boundStr+="; "
+                        boundStr += str(bound)
+                        i += 1
+                    if boundStr!="":
+                        form.setVar(label, boundStr)
+            except Exception as e:
+                form.showError("Error: %s" % str(e))
