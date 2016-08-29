@@ -298,7 +298,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
         # Create output object
         self.fitting = PKPDFitting()
-        self.fitting.fnExperiment.set(self.getInputExperiment().fnPKPD.get())
+        self.fitting.fnExperiment.set(self._getPath("experiment.pkpd"))
         self.fitting.predictor=self.experiment.variables[self.varNameX]
         self.fitting.predicted=self.experiment.variables[self.varNameY]
         self.fitting.modelParameterUnits = None
