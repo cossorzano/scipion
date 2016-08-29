@@ -171,21 +171,17 @@ class PKPDODEDialog(dialog.Dialog):
         i = 0
         self.sliders = {}
         paramUnits = self.protODE.parameterUnits
-        try:
-            for paramName, bounds in self.protODE.getParameterBounds().iteritems():
-                bounds = bounds or (0, 1)
-                slider = MinMaxSlider(lfBounds, "%s [%s]"%(paramName,strUnit(paramUnits[i])),
-                                      bounds[0], bounds[1],
-                                      callback=self._onVarChanged)
-                slider.grid(row=i, column=0, padx=5, pady=5)
-                self.sliders[paramName] = slider
-                i += 1
+        for paramName, bounds in self.protODE.getParameterBounds().iteritems():
+            bounds = bounds or (0, 1)
+            slider = MinMaxSlider(lfBounds, "%s [%s]"%(paramName,strUnit(paramUnits[i])),
+                                  bounds[0], bounds[1],
+                                  callback=self._onVarChanged)
+            slider.grid(row=i, column=0, padx=5, pady=5)
+            self.sliders[paramName] = slider
+            i += 1
 
-            lfBounds.grid(row=0, column=0, sticky='news', padx=5, pady=5)
-            frame.grid(row=0, column=1, sticky='news', padx=5, pady=5)
-        except:
-            self.sliders = {}
-            dialog.showInfo("Warning","Cannot parse correctly the parameter bounds",self)
+        lfBounds.grid(row=0, column=0, sticky='news', padx=5, pady=5)
+        frame.grid(row=0, column=1, sticky='news', padx=5, pady=5)
 
     def _createLogsFrame(self, content):
         frame = tk.Frame(content)
