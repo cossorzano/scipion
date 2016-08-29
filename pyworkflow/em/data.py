@@ -455,9 +455,8 @@ class PKPDSample:
         else:
             aux = getattr(self,"measurement_%s"%varName)
             aux = [x for x in aux if x != "NA" and x!="LLOQ" and x!="ULOQ"]
-            x = np.array(aux, dtype='|S4')
-            y = x.astype(np.float)
-            return [y.min(),y.max()]
+            x = np.asarray(aux, dtype=np.double)
+            return [x.min(),x.max()]
 
     def getValues(self, varName):
         if varName not in self.measurementPattern:
@@ -1223,8 +1222,8 @@ class PKPDSampleFit:
                 self.parameters.append(float(tokens[0]))
                 self.significance.append(tokens[2])
                 tokens=(tokens[1])[1:-1].split(',')
-                self.lowerBound.append(float(tokens[0]))
-                self.upperBound.append(float(tokens[1]))
+                self.lowerBound.append(tokens[0])
+                self.upperBound.append(tokens[1])
 
         elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_SAMPLE_VALUES:
             tokens=line.split()

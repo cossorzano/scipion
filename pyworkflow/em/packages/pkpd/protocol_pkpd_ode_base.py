@@ -44,6 +44,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
     def __init__(self,**kwargs):
         ProtPKPD.__init__(self,**kwargs)
         self.boundsList = None
+        self.compulsoryBounds = False
 
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams1(self, form, addXY=False, defaultPredictor="", defaultPredicted=""):
@@ -62,7 +63,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                                 'If minimum and maximum are not given (set to -1), they are estimated from the sample')
         fromTo.addParam('t0', params.StringParam, default="", label='Min (h)')
         fromTo.addParam('tF', params.StringParam, default="", label='Max (h)')
-        fromTo.addParam('deltaT', params.FloatParam, default=1, label='Step (min)')
+        fromTo.addParam('deltaT', params.FloatParam, default=0.5, label='Step (min)')
 
         form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic","Relative"], label="Fit mode", default=1,
                       expertLevel=LEVEL_ADVANCED,
@@ -74,6 +75,9 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                       help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: 0:0.55:10, from 0 to 10 in steps of 0.5')
         form.addParam('findtlag', params.BooleanParam, label="Find delay (tlag)", default=False,
                       help='Confidence interval for the fitted parameters')
+        form.addParam('globalSearch', params.BooleanParam, label="Global search", default=True, expertLevel=LEVEL_ADVANCED,
+                      help='Global search looks for the best parameters within bounds. If it is not performed, the '
+                           'middle of the bounding box is used as initial parameter for a local optimization')
 
     #--------------------------- INSERT steps functions --------------------------------------------
     def getListOfFormDependencies(self):
@@ -294,7 +298,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
         # Create output object
         self.fitting = PKPDFitting()
-        self.fitting.fnExperiment.set(self.getInputExperiment().fnPKPD.get())
+        self.fitting.fnExperiment.set(self._getPath("experiment.pkpd"))
         self.fitting.predictor=self.experiment.variables[self.varNameX]
         self.fitting.predicted=self.experiment.variables[self.varNameY]
         self.fitting.modelParameterUnits = None
@@ -336,8 +340,13 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
             print(" ")
 
-            optimizer1 = PKPDDEOptimizer(self,fitType)
-            optimizer1.optimize()
+            if self.globalSearch:
+                optimizer1 = PKPDDEOptimizer(self,fitType)
+                optimizer1.optimize()
+            else:
+                self.parameters = []
+                for bound in self.boundsList:
+                    self.parameters.append(0.5*(bound[0]+bound[1]))
             optimizer2 = PKPDLSOptimizer(self,fitType)
             optimizer2.optimize()
             optimizer2.setConfidenceInterval(self.confidenceInterval.get())
@@ -406,6 +415,8 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                 errors.append("Cannot find %s as variable"%self.varNameY)
         if self.findtlag and self.bounds.get()=="":
             errors.append("Empty bound for tlag")
+        if self.compulsoryBounds and self.bounds.get()=="":
+            errors.append("Bounds are required")
         return errors
 
     def _citations(self):

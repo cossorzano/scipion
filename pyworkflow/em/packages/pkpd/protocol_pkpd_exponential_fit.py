@@ -79,13 +79,16 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         self.model.Nexp=self.Nexp.get()
 
     #--------------------------- INFO functions --------------------------------------------
+    def _warnings(self):
+        warnings = []
+        experiment = self.readExperiment(self.getInputExperiment().fnPKPD,show=False)
+        incorrectList = experiment.getNonBolusDoses()
+        if len(incorrectList)>0:
+            warnings.append("This protocol is meant only for intravenous bolus regimens. Check the doses for %s"%(','.join(incorrectList)))
+        return warnings
+
     def _validate(self):
         errors=ProtPKPDFitBase._validate(self)
         if self.Nexp.get()<1:
             errors.append("The number of exponentials has to be larger than 0")
-
-        experiment = self.readExperiment(self.getInputExperiment().fnPKPD,show=False)
-        incorrectList = experiment.getNonBolusDoses()
-        if len(incorrectList)>0:
-            errors.append("This protocol is meant only for intravenous bolus regimens. Check the doses for %s"%(','.join(incorrectList)))
         return errors

@@ -60,7 +60,7 @@ from protocol_pkpd_statistics_labels import ProtPKPDStatisticsLabel
 from protocol_pkpd_scale_to_common_dose import ProtPKPDScaleToCommonDose
 from protocol_pkpd_ode_refine import ProtPKPDODERefine
 from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
-
+from protocol_pkpd_ev01_monocompartment import ProtPKPDEV01MonoCompartment
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
 

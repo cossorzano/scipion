@@ -30,16 +30,16 @@ from pk_models import PK_Monocompartment
 import biopharmaceutics
 
 
-class ProtPKPDEV0MonoCompartment(ProtPKPDODEBase):
-    """ Fit a monocompartmental model with zero order absorption to a set of measurements obtained by oral doses (any arbitrary dosing regimen is allowed)\n
-        Zeroth order absorption occurs when the transport through a membrane is saturated.
-        The differential equation is D(t)=Amax-Rin*t and dC/dt = -Cl * C + 1/V * dD/dt\n
+class ProtPKPDEV01MonoCompartment(ProtPKPDODEBase):
+    """ Fit a monocompartmental model with mixed zero and first order absorption to a set of measurements obtained by oral doses (any arbitrary dosing regimen is allowed)\n
+        Zeroth order absorption occurs when the transport through a membrane is saturated. At some moment the membrane is capable of transporting at 1st order rate.
+        The differential equation is D(t)=Rin*t if t<t0; Rin*t0+(Amax-Rin*t0)*(1-exp(-Ka*(t-t0)) if t>t0 and dC/dt = -Cl * C + 1/V * dD/dt\n
         where C is the concentration, Cl the clearance, V the distribution volume, and D the input dosing regime. Rin is the absorbption rate and
         Amax the dose (maximum amount).
 Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
 are independent, which are not. Use Bootstrap estimates instead.\n
         Protocol created by http://www.kinestatpharma.com\n"""
-    _label = 'ev0 monocompartment'
+    _label = 'ev01 monocompartment'
 
     def __init__(self,**kwargs):
         ProtPKPDODEBase.__init__(self,**kwargs)
@@ -48,14 +48,14 @@ are independent, which are not. Use Bootstrap estimates instead.\n
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):
         self._defineParams1(form, True, "t", "Cp")
-        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Rin, Cl, V)", default="",
-                      help="Bounds for the tlag (if it must be estimated), absorption, clearance and volume. Example: (0.01,0.04);(0.2,0.4);(10,20). "\
+        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Rin, t0, Ka, Cl, V)", default="",
+                      help="Bounds for the tlag (if it must be estimated), 0th absorption, 0th absorption time, 1st absorption, clearance and volume. "\
                       'Make sure that the bounds are expressed in the expected units (estimated from the sample itself).'\
                       'Be careful that Cl bounds must be given here. If you have an estimate of the elimination rate, this is Ke=Cl/V. Consequently, Cl=Ke*V ')
 
     def configureSource(self, drugSource):
         drugSource.type = biopharmaceutics.DrugSource.EV
-        drugSource.evProfile = biopharmaceutics.BiopharmaceuticsModelOrder0()
+        drugSource.evProfile = biopharmaceutics.BiopharmaceuticsModelOrder01()
 
     def createModel(self):
         return PK_Monocompartment()

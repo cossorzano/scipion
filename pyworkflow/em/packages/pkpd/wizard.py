@@ -45,6 +45,7 @@ from protocol_pkpd_stats_oneExperiment_twoSubgroups_mean import ProtPKPDStatsExp
 from protocol_pkpd_exponential_fit import ProtPKPDExponentialFit
 from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
 from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
+from protocol_pkpd_ev01_monocompartment import ProtPKPDEV01MonoCompartment
 from protocol_pkpd_ev_monocompartment import ProtPKPDEV1MonoCompartment
 from protocol_pkpd_iv_monocompartment import ProtPKPDIVMonoCompartment
 from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
@@ -203,7 +204,7 @@ class PKPDDoseTemplateWizard(Wizard):
         currentValue = protocol.getAttributeValue(label, "")
         template = "\nInfusion0 ; infusion t=0.5...0.75 d=60*weight/1000; h; mg\n"\
                    "Bolus1 ; bolus t=2 d=100; h; mg\n"\
-                   "Bolus0 ; bolus t=0 d=60*weight/1000; min; mg"
+                   "Treatment ; repeated_bolus t=0:8:48 d=100; h; mg"
         form.setVar(label, currentValue+template)
 
 
@@ -257,6 +258,7 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
 
 class PKPDODEWizard(Wizard):
     _targets = [(ProtPKPDEV0MonoCompartment, ['bounds']),
+                (ProtPKPDEV01MonoCompartment, ['bounds']),
                 (ProtPKPDEV1MonoCompartment, ['bounds']),
                 (ProtPKPDIVMonoCompartment, ['bounds'])
                 ]
@@ -269,25 +271,34 @@ class PKPDODEWizard(Wizard):
         if experiment is None:
             form.showError("Select the input experiment first.")
         else:
-            protocol.setInputExperiment() # this load the experiment
-            protocol.configureSource(protocol.createDrugSource())
-            protocol.setupModel()
+            try:
+                protocol.setInputExperiment() # this load the experiment
+                protocol.configureSource(protocol.createDrugSource())
+                protocol.setupModel()
+                protocol.model.drugSource = protocol.drugSource
 
-            for sampleName, sample in protocol.experiment.samples.iteritems():
-                sample.interpretDose()
+                i = 0
+                for sampleName, sample in protocol.experiment.samples.iteritems():
+                    sample.interpretDose()
+                    if i==0:
+                        protocol.setSample(sample)
+                        protocol.calculateParameterUnits(sample)
+                    i+=1
 
-            dlg = PKPDODEDialog(form.root, "Select Parameter Bounds",
-                                protODE=protocol,
-                                varNameX=protocol.predictor.get(),
-                                varNameY=protocol.predicted.get())
+                dlg = PKPDODEDialog(form.root, "Select Parameter Bounds",
+                                    protODE=protocol,
+                                    varNameX=protocol.predictor.get(),
+                                    varNameY=protocol.predicted.get())
 
-            if dlg.resultYes():
-                boundStr = ""
-                i = 1
-                for bound in dlg.getBoundsList():
-                    if i>1:
-                        boundStr+="; "
-                    boundStr += str(bound)
-                    i += 1
-                if boundStr!="":
-                    form.setVar(label, boundStr)
+                if dlg.resultYes():
+                    boundStr = ""
+                    i = 1
+                    for bound in dlg.getBoundsList():
+                        if i>1:
+                            boundStr+="; "
+                        boundStr += str(bound)
+                        i += 1
+                    if boundStr!="":
+                        form.setVar(label, boundStr)
+            except Exception as e:
+                form.showError("Error: %s" % str(e))

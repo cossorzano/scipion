@@ -30,17 +30,12 @@ import numpy as np
 from itertools import izip
 from datetime import datetime
 import Tkinter as tk
-import ttk
 
-import pyworkflow.object as pwobj
-import pyworkflow.utils as pwutils
 import pyworkflow.gui.dialog as dialog
 import pyworkflow.gui as gui
-from pyworkflow.gui.widgets import Button, HotButton, ComboBox
-from pyworkflow.gui.text import TaggedText
 from pyworkflow.gui.tree import TreeProvider, BoundTree
 from pyworkflow.em.plotter import EmPlotter
-
+from pyworkflow.em.pkpd_units import strUnit
 
 
 class SamplesTreeProvider(TreeProvider):
@@ -149,8 +144,8 @@ class PKPDODEDialog(dialog.Dialog):
     def loadModel(self):
         model = self.protODE.createModel()
         model.setExperiment(self.experiment)
-        if hasattr(self.protODE, "deltaT"):
-            model.deltaT = self.protODE.deltaT.get()
+        # if hasattr(self.protODE, "deltaT"):
+        #     model.deltaT = self.protODE.deltaT.get()
         model.setXVar(self.varNameX)
         model.setYVar(self.varNameY)
         return model
@@ -181,10 +176,10 @@ class PKPDODEDialog(dialog.Dialog):
 
         i = 0
         self.sliders = {}
-
+        paramUnits = self.protODE.parameterUnits
         for paramName, bounds in self.protODE.getParameterBounds().iteritems():
             bounds = bounds or (0, 1)
-            slider = MinMaxSlider(lfBounds, paramName,
+            slider = MinMaxSlider(lfBounds, "%s [%s]"%(paramName,strUnit(paramUnits[i])),
                                   bounds[0], bounds[1],
                                   callback=self._onVarChanged)
             slider.grid(row=i, column=0, padx=5, pady=5)
@@ -241,7 +236,8 @@ class PKPDODEDialog(dialog.Dialog):
             currentParams.append(self.sliders[paramName].getValue())
 
         self.protODE.setParameters(currentParams)
-        self.ypValues = self.protODE.forwardModel(currentParams, self.xValues)
+        # self.protODE.model.deltaT = 0.25
+        self.ypValues = self.protODE.forwardModel(currentParams, self.xpValues)
 
     def getBoundsList(self):
         boundList = []
@@ -325,6 +321,7 @@ class PKPDODEDialog(dialog.Dialog):
                                                                  self.varNameY)
             self.newXValues, self.newYValues = self.computePlotValues(self.xValues,
                                                                       self.yValues)
+            self.xpValues = [x for x in np.arange(0,np.max(self.xValues),4)]
             self._updateModel()
             self.computeFit()
             self.plotResults()
@@ -343,7 +340,7 @@ class PKPDODEDialog(dialog.Dialog):
         ax = self.plotter.createSubPlot("Sample: %s" % self.sample.varName,
                                         self.getTimeLabel(),
                                         self.getMeasureLabel())
-        self.newXPValues, self.newYPValues = self.computePlotValues(self.xValues,
+        self.newXPValues, self.newYPValues = self.computePlotValues(self.xpValues,
                                                                     self.ypValues)
         ax.plot(self.newXValues, self.newYValues, 'x', label="Observations")
         ax.plot(self.newXPValues, self.newYPValues, label="Fit")

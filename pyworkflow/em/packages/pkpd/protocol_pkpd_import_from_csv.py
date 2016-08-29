@@ -24,10 +24,13 @@
 # *
 # **************************************************************************
 
+import os
+import sys
+
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDExperiment, PKPDVariable, PKPDDose, PKPDSample
-import sys
+from pyworkflow.utils import copyFile
 
 
 class ProtPKPDImportFromText(ProtPKPD):
@@ -66,7 +69,8 @@ class ProtPKPDImportFromText(ProtPKPD):
                            "\nIt is important that there are two semicolons.\n"\
                            "Examples:\n"\
                            "Infusion0 ; infusion t=0.500000...0.750000 d=60*weight/1000; h; mg\n"\
-                           "Bolus1 ; bolus t=2.000000 d=100; h; mg\n")
+                           "Bolus1 ; bolus t=2.000000 d=100; h; mg\n"\
+                           "Treatment ; repeated_bolus t=0:8:48 d=100; h; mg")
         form.addParam('dosesToSamples', params.TextParam, height=5, width=70, label="Assign doses to samples", default="",
                       help="Structure: [Sample Name] ; [DoseName1,DoseName2,...] \n"\
                            "The sample name should have no space or special character\n"\
@@ -85,6 +89,9 @@ class ProtPKPDImportFromText(ProtPKPD):
         pass
 
     def createOutputStep(self, objId):
+        fnFile = os.path.basename(self.inputFile.get())
+        copyFile(self.inputFile.get(),self._getPath(fnFile))
+
         self.experiment = PKPDExperiment()
         self.experiment.general["title"]=self.title.get()
         self.experiment.general["comment"]=self.comment.get()
