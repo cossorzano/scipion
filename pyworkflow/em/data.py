@@ -459,10 +459,19 @@ class PKPDSample:
             return [x.min(),x.max()]
 
     def getValues(self, varName):
-        if varName not in self.measurementPattern:
-            return None
+        if type(varName)==list:
+            retval=[]
+            for vName in varName:
+                if vName not in self.measurementPattern:
+                    retval.append(None)
+                else:
+                    retval.append(getattr(self,"measurement_%s"%vName))
+            return retval
         else:
-            return getattr(self,"measurement_%s"%varName)
+            if varName not in self.measurementPattern:
+                return None
+            else:
+                return getattr(self,"measurement_%s"%varName)
 
     def setValues(self, varName, varValues):
         setattr(self,"measurement_%s"%varName,varValues)
@@ -471,11 +480,29 @@ class PKPDSample:
         xl = []
         yl = []
         xs = self.getValues(varNameX)
-        ys = self.getValues(varNameY)
-        for x, y in izip(xs, ys):
-            if x != "NA" and x!="LLOQ" and y!="ULOQ" and y != "NA" and y!= "LLOQ" and y!="ULOQ":
-                xl.append(float(x))
-                yl.append(float(y))
+        if type(varNameY)==list:
+            ys = self.getValues(varNameY)
+            for i in range(0,len(xs)):
+                validSample = xs[i] != "NA" and xs[i]!="LLOQ"
+                if validSample:
+                    yToAdd = []
+                    for y in ys:
+                        if y==None:
+                            validSample = False
+                        else:
+                            if y[i]!= "NA" and y[i]!= "LLOQ" and y[i]!="ULOQ":
+                                yToAdd.append(float(y[i]))
+                            else:
+                                validSample = False
+                if validSample:
+                    xl.append(float(xs[i]))
+                    yl.append(yToAdd)
+        else:
+            ys = self.getValues(varNameY)
+            for x, y in izip(xs, ys):
+                if x != "NA" and x!="LLOQ" and y!="ULOQ" and y != "NA" and y!= "LLOQ" and y!="ULOQ":
+                    xl.append(float(x))
+                    yl.append(float(y))
         return xl, yl
 
     def getSampleMeasurements(self):
@@ -758,10 +785,19 @@ class PKPDModelBase:
         self.xRange = self.experiment.getRange(x)
 
     def setYVar(self, y):
-        if not y in self.experiment.variables:
-            raise Exception("Cannot find %s as a variable in the experiment"%y)
-        self.yName = y
-        self.yRange = self.experiment.getRange(y)
+        if type(y)==list:
+            self.yName = []
+            self.yRange = []
+            for yi in y:
+                if not yi in self.experiment.variables:
+                    raise Exception("Cannot find %s as a variable in the experiment"%yi)
+                self.yName.append(yi)
+                self.yRange.append(self.experiment.getRange(yi))
+        else:
+            if not y in self.experiment.variables:
+                raise Exception("Cannot find %s as a variable in the experiment"%y)
+            self.yName = y
+            self.yRange = self.experiment.getRange(y)
 
     def setXYValues(self, x, y):
         self.x = np.array(x)
@@ -844,14 +880,25 @@ class PKPDModelBase2(PKPDModelBase):
             if not self.areParametersValid(p):
                 continue
             y = self.forwardModel(p)
-            for n in range(len(y)):
-                if y[n]<self.yPredictedLower[n]:
-                    if y[n]<0:
-                        self.yPredictedLower[n]=0
-                    else:
-                        self.yPredictedLower[n]=y[n]
-                if y[n]>self.yPredictedUpper[n]:
-                    self.yPredictedUpper[n]=y[n]
+            if len(y.shape)==1:
+                for n in range(len(y)):
+                    if y[n]<self.yPredictedLower[n]:
+                        if y[n]<0:
+                            self.yPredictedLower[n]=0
+                        else:
+                            self.yPredictedLower[n]=y[n]
+                    if y[n]>self.yPredictedUpper[n]:
+                        self.yPredictedUpper[n]=y[n]
+            else:
+                for i in range(y.shape[0]):
+                    for j in range(y.shape[1]):
+                        if y[i,j]<self.yPredictedLower[i,j]:
+                            if y[i,j]<0:
+                                self.yPredictedLower[i,j]=0
+                            else:
+                                self.yPredictedLower[i,j]=y[i,j]
+                        if y[i,j]>self.yPredictedUpper[i,j]:
+                            self.yPredictedUpper[i,j]=y[i,j]
         self.yPredicted = yPredictedBackup.copy()
 
     def setConfidenceIntervalNA(self):
@@ -895,7 +942,7 @@ class PKPDODEModel(PKPDModelBase2):
         Nsamples = int(math.ceil((self.tF-self.t0)/self.deltaT))+1
         if self.getStateDimension()>1:
             yt = np.zeros(self.getStateDimension(),np.double)
-            Yt = np.zeros(Nsamples,self.getStateDimension())
+            Yt = np.zeros((Nsamples,self.getStateDimension()),np.double)
         else:
             yt = 0.0
             Yt = np.zeros(Nsamples)
@@ -920,7 +967,7 @@ class PKPDODEModel(PKPDModelBase2):
             # Update state
             yt += (0.5*(k1+k4)+k2+k3)*K+dyD
             # if self.show:
-            #     print("t=%f dD=%f dyD=%f dy=%f"%(t,dD,dyD,(0.5*(k1+k4)+k2+k3)*K))
+            #     print("t=%f dD=%s dyD=%s dy=%s"%(t,str(dD),str(dyD),str((0.5*(k1+k4)+k2+k3)*K)))
 
             # Keep this result and go to next iteration
             if self.getStateDimension()>1:
@@ -935,7 +982,9 @@ class PKPDODEModel(PKPDModelBase2):
         if self.getResponseDimension()==1:
             self.yPredicted = np.interp(x,Xt,Yt)
         else:
-            raise "Not yet implemented"
+            self.yPredicted = np.zeros((len(x),self.getResponseDimension()),np.double)
+            for j in range(0,self.getResponseDimension()):
+                self.yPredicted[:,j] = np.interp(x,Xt,Yt[:,j])
         return self.yPredicted
 
 class PKPDOptimizer:
@@ -984,7 +1033,10 @@ class PKPDOptimizer:
         diff = self.yTarget - yPredicted
         if self.takeRelative:
             diff = diff/self.yTarget
-        return diff
+        if len(diff.shape)==1:
+            return diff
+        else:
+            return np.array(diff.ravel(),np.double)
 
     def goalRMSE(self,parameters):
         rmse = math.sqrt((self.getResiduals(parameters) ** 2).mean())
@@ -1010,8 +1062,12 @@ class PKPDOptimizer:
 
     def _printFitting(self, x, y, yp):
         self._evaluateQuality(x, y, yp)
-        for n in range(0,x.shape[0]):
-            print("%f %f %f %f"%(x[n],y[n],yp[n],y[n]-yp[n]))
+        if self.model.model.getResponseDimension()==1:
+            for n in range(0,x.shape[0]):
+                print("%f %f %f %f"%(x[n],y[n],yp[n],y[n]-yp[n]))
+        else:
+            for n in range(0,x.shape[0]):
+                print("%f %s %s %s"%(x[n],str(y[n,:]),str(yp[n,:]),str(y[n,:]-yp[n,:])))
         print("------------------------")
         print("Mean error = %f"%np.mean(self.e))
         print("Std error = %f"%np.std(self.e))
@@ -1059,7 +1115,7 @@ class PKPDLSOptimizer(PKPDOptimizer):
         if self.verbose>0:
             print("Optimizing with Least Squares (LS), a local optimizer")
             print("Initial parameters: "+str(self.model.parameters))
-        self.optimum, self.cov_x, self.info, _, _ = leastsq(self.getResiduals, self.model.parameters, full_output=True)
+        self.optimum, self.cov_x, self.info, mesg, _ = leastsq(self.getResiduals, self.model.parameters, full_output=True)
         if self.verbose>0:
             print("Best LS function value: "+str(self.goalFunction(self.optimum)))
             print("Best LS parameters: "+str(self.optimum))
@@ -1162,7 +1218,7 @@ class PKPDSampleFit:
             fh.write("%f [%s,%s] %s\n"%(parameter,str(lower),str(upper),significance))
         fh.write("X   Y   Ypredicted [Ylower,Yupper] -------\n")
         for x,y,yp,yl,yu in izip(self.x,self.y,self.yp,self.yl,self.yu):
-            fh.write("%f %f %f [%s,%s]\n"%(x,y,yp,str(yl),str(yu)))
+            fh.write("%f %s %s [%s,%s]\n"%(x,str(y),str(yp),str(yl),str(yu)))
         fh.write("\n")
 
     def restartReadingState(self):
@@ -1402,7 +1458,12 @@ class PKPDFitting(EMObject):
         fh.write("Predictor (X): ")
         self.predictor._printToStream(fh)
         fh.write("Predicted (Y): ")
-        self.predicted._printToStream(fh)
+        if type(self.predicted)==list:
+            fh.write("Predicted list=%d"%len(self.predicted))
+            for y in self.predicted:
+                y._printToStream(fh)
+        else:
+            self.predicted._printToStream(fh)
         fh.write("Model: %s\n"%self.modelDescription)
         fh.write("\n")
 

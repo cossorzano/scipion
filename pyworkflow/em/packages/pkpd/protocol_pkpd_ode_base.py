@@ -302,7 +302,12 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         self.fitting = PKPDFitting()
         self.fitting.fnExperiment.set(self._getPath("experiment.pkpd"))
         self.fitting.predictor=self.experiment.variables[self.varNameX]
-        self.fitting.predicted=self.experiment.variables[self.varNameY]
+        if type(self.varNameY)==list:
+            self.fitting.predicted=[]
+            for y in self.varNameY:
+                self.fitting.predicted.append(self.experiment.variables[y])
+        else:
+            self.fitting.predicted=self.experiment.variables[self.varNameY]
         self.fitting.modelParameterUnits = None
 
         # Actual fitting
@@ -346,11 +351,19 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                 optimizer1 = PKPDDEOptimizer(self,fitType)
                 optimizer1.optimize()
             else:
-                self.parameters = []
+                self.parameters = np.zeros(len(self.boundsList),np.double)
+                n = 0
                 for bound in self.boundsList:
-                    self.parameters.append(0.5*(bound[0]+bound[1]))
-            optimizer2 = PKPDLSOptimizer(self,fitType)
-            optimizer2.optimize()
+                    self.parameters[n] = 0.5*(bound[0]+bound[1])
+                    n += 1
+            try:
+                optimizer2 = PKPDLSOptimizer(self,fitType)
+                optimizer2.optimize()
+            except Exception as e:
+                msg=str(e)
+                msg+="Errors in the local optimizer may be caused by starting from a bad initial guess\n"
+                msg+="Try performing a global search first or changing the bounding box"
+                raise Exception("Error in the local optimizer\n"+msg)
             optimizer2.setConfidenceInterval(self.confidenceInterval.get())
             self.setParameters(optimizer2.optimum)
 
@@ -413,8 +426,13 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
             experiment = self.readExperiment(self.getInputExperiment().fnPKPD, False)
             if not self.varNameX in experiment.variables:
                 errors.append("Cannot find %s as variable"%self.varNameX)
-            if not self.varNameY in experiment.variables:
-                errors.append("Cannot find %s as variable"%self.varNameY)
+            if type(self.varNameY)==list:
+                for y in self.varNameY:
+                    if not y in experiment.variables:
+                        errors.append("Cannot find %s as variable"%y)
+            else:
+                if not self.varNameY in experiment.variables:
+                    errors.append("Cannot find %s as variable"%self.varNameY)
         if self.findtlag and self.bounds.get()=="":
             errors.append("Empty bound for tlag")
         if self.compulsoryBounds and self.bounds.get()=="":
