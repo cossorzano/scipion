@@ -482,21 +482,15 @@ class PKPDSample:
         xs = self.getValues(varNameX)
         if type(varNameY)==list:
             ys = self.getValues(varNameY)
-            for i in range(0,len(xs)):
-                validSample = xs[i] != "NA" and xs[i]!="LLOQ"
-                if validSample:
-                    yToAdd = []
-                    for y in ys:
-                        if y==None:
-                            validSample = False
-                        else:
-                            if y[i]!= "NA" and y[i]!= "LLOQ" and y[i]!="ULOQ":
-                                yToAdd.append(float(y[i]))
-                            else:
-                                validSample = False
-                if validSample:
-                    xl.append(float(xs[i]))
-                    yl.append(yToAdd)
+            for ysi in ys:
+                xPartial =[]
+                yPartial = []
+                for x, y in izip(xs, ysi):
+                    if x != "NA" and x!="LLOQ" and y!="ULOQ" and y != "NA" and y!= "LLOQ" and y!="ULOQ":
+                        xPartial.append(float(x))
+                        yPartial.append(float(y))
+                xl.append(xPartial)
+                yl.append(yPartial)
         else:
             ys = self.getValues(varNameY)
             for x, y in izip(xs, ys):
@@ -870,9 +864,9 @@ class PKPDModelBase2(PKPDModelBase):
         return self.bounds
 
     def setConfidenceInterval(self,lowerBound,upperBound):
-        yPredictedBackup = self.yPredicted.copy()
-        self.yPredictedUpper = self.yPredicted.copy()
-        self.yPredictedLower = self.yPredicted.copy()
+        yPredictedBackup = copy.copy(self.yPredicted)
+        self.yPredictedUpper = copy.copy(self.yPredicted)
+        self.yPredictedLower = copy.copy(self.yPredicted)
         for i in range(0,int(math.pow(2,self.getNumberOfParameters()))):
             pattern = ("{0:0%db}"%(self.getNumberOfParameters())).format(i)
             p = np.where(np.array(list(pattern))=="1",upperBound,lowerBound)
@@ -880,7 +874,8 @@ class PKPDModelBase2(PKPDModelBase):
             if not self.areParametersValid(p):
                 continue
             y = self.forwardModel(p)
-            if len(y.shape)==1:
+            print(y)
+            if type(y[0])!=list:
                 for n in range(len(y)):
                     if y[n]<self.yPredictedLower[n]:
                         if y[n]<0:
@@ -890,16 +885,17 @@ class PKPDModelBase2(PKPDModelBase):
                     if y[n]>self.yPredictedUpper[n]:
                         self.yPredictedUpper[n]=y[n]
             else:
-                for i in range(y.shape[0]):
-                    for j in range(y.shape[1]):
-                        if y[i,j]<self.yPredictedLower[i,j]:
-                            if y[i,j]<0:
-                                self.yPredictedLower[i,j]=0
+                for j in range(len(y)):
+                    yj=y[j]
+                    for n in range(len(yj)):
+                        if yj[n]<self.yPredictedLower[j][n]:
+                            if yj[n]<0:
+                                self.yPredictedLower[j][n]=0
                             else:
-                                self.yPredictedLower[i,j]=y[i,j]
-                        if y[i,j]>self.yPredictedUpper[i,j]:
-                            self.yPredictedUpper[i,j]=y[i,j]
-        self.yPredicted = yPredictedBackup.copy()
+                                self.yPredictedLower[j][n]=yj[n]
+                        if yj[n]>self.yPredictedUpper[j][n]:
+                            self.yPredictedUpper[j][n]=yj[n]
+        self.yPredicted = yPredictedBackup
 
     def setConfidenceIntervalNA(self):
         self.yPredictedUpper = ["NA"]*len(self.yPredicted)
@@ -982,9 +978,9 @@ class PKPDODEModel(PKPDModelBase2):
         if self.getResponseDimension()==1:
             self.yPredicted = np.interp(x,Xt,Yt)
         else:
-            self.yPredicted = np.zeros((len(x),self.getResponseDimension()),np.double)
+            self.yPredicted = []
             for j in range(0,self.getResponseDimension()):
-                self.yPredicted[:,j] = np.interp(x,Xt,Yt[:,j])
+                self.yPredicted.append(np.interp(x[j],Xt,Yt[:,j]))
         return self.yPredicted
 
 class PKPDOptimizer:
@@ -1044,9 +1040,9 @@ class PKPDOptimizer:
 
     def _evaluateQuality(self, x, y, yp):
         # Spiess and Neumeyer, BMC Pharmacology 2010, 10:6
-        self.e = y-yp
+        self.e = np.asarray(y).flatten()-np.asarray(yp).flatten()
         self.R2 = (1-np.var(self.e)/np.var(y))
-        n=x.shape[0] # Number of samples
+        n=self.e.shape[0] # Number of samples
         p=self.model.getNumberOfParameters()
         if n-p>0:
             self.R2adj = 1-self.R2*(n-1)/(n-p)*(1-self.R2)
@@ -1066,8 +1062,13 @@ class PKPDOptimizer:
             for n in range(0,x.shape[0]):
                 print("%f %f %f %f"%(x[n],y[n],yp[n],y[n]-yp[n]))
         else:
-            for n in range(0,x.shape[0]):
-                print("%f %s %s %s"%(x[n],str(y[n,:]),str(yp[n,:]),str(y[n,:]-yp[n,:])))
+            for j in range(len(x)):
+                print("Series %d ---------"%j)
+                xj=x[j]
+                yj=y[j]
+                ypj=yp[j]
+                for n in range(0,xj.shape[0]):
+                    print("%f %f %f %f"%(xj[n],yj[n],ypj[n],yj[n]-ypj[n]))
         print("------------------------")
         print("Mean error = %f"%np.mean(self.e))
         print("Std error = %f"%np.std(self.e))
@@ -1217,8 +1218,19 @@ class PKPDSampleFit:
                                                           self.significance):
             fh.write("%f [%s,%s] %s\n"%(parameter,str(lower),str(upper),significance))
         fh.write("X   Y   Ypredicted [Ylower,Yupper] -------\n")
-        for x,y,yp,yl,yu in izip(self.x,self.y,self.yp,self.yl,self.yu):
-            fh.write("%f %s %s [%s,%s]\n"%(x,str(y),str(yp),str(yl),str(yu)))
+        if  any(isinstance(el, list) for el in self.x):
+            for j in range(len(self.x)):
+                fh.write("Series %d -----\n"%j)
+                xj = self.x[j]
+                yj = self.y[j]
+                ypj = self.yp[j]
+                ylj = self.yl[j]
+                yuj = self.yu[j]
+                for x,y,yp,yl,yu in izip(xj,yj,ypj,ylj,yuj):
+                    fh.write("%f %s %s [%s,%s]\n"%(x,str(y),str(yp),str(yl),str(yu)))
+        else:
+            for x,y,yp,yl,yu in izip(self.x,self.y,self.yp,self.yl,self.yu):
+                fh.write("%f %s %s [%s,%s]\n"%(x,str(y),str(yp),str(yl),str(yu)))
         fh.write("\n")
 
     def restartReadingState(self):
