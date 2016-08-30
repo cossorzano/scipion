@@ -28,6 +28,7 @@
 import math
 import numpy as np
 from itertools import izip
+from datetime import datetime
 import Tkinter as tk
 
 import pyworkflow.gui.dialog as dialog
@@ -35,6 +36,7 @@ import pyworkflow.gui as gui
 from pyworkflow.gui.tree import TreeProvider, BoundTree
 from pyworkflow.em.plotter import EmPlotter
 from pyworkflow.em.pkpd_units import strUnit
+
 
 class SamplesTreeProvider(TreeProvider):
     def __init__(self, experiment, fitting=None):
@@ -67,9 +69,11 @@ class MinMaxSlider(tk.Frame):
     """
     def __init__(self, master, label, from_=0, to=100, callback=None,
                  numberOfSteps=25):
+
+        self.callback = callback
+        self.numberOfSteps = numberOfSteps
         step = (to - from_) / numberOfSteps
         value = (from_ + to) * 0.5
-        self.numberOfSteps = numberOfSteps
         self.var = tk.DoubleVar()
         self.var.set(float(value))
         self.varMin = tk.DoubleVar()
@@ -92,11 +96,9 @@ class MinMaxSlider(tk.Frame):
                                bigincrement=step, resolution=step,
                                orient=tk.HORIZONTAL)
         self.slider.pack(side=tk.LEFT, padx=2)
+        self.slider.bind('<ButtonRelease-1>', self._onButtonRelease)
 
         _entry(self.varMax)
-
-        if callback:
-            self.var.trace('w', callback)
 
     def getMinMax(self):
         return (self.varMin.get(), self.varMax.get())
@@ -112,6 +114,10 @@ class MinMaxSlider(tk.Frame):
                            bigincrement=step, resolution=step)
         if v > maxV or v < minV:
             self.var.set(0.5 * (minV + maxV))
+
+    def _onButtonRelease(self, e=None):
+        if self.callback:
+            self.callback(e)
 
 
 class PKPDODEDialog(dialog.Dialog):
