@@ -874,7 +874,6 @@ class PKPDModelBase2(PKPDModelBase):
             if not self.areParametersValid(p):
                 continue
             y = self.forwardModel(p)
-            print(y)
             if type(y[0])!=list:
                 for n in range(len(y)):
                     if y[n]<self.yPredictedLower[n]:
@@ -898,8 +897,15 @@ class PKPDModelBase2(PKPDModelBase):
         self.yPredicted = yPredictedBackup
 
     def setConfidenceIntervalNA(self):
-        self.yPredictedUpper = ["NA"]*len(self.yPredicted)
-        self.yPredictedLower = ["NA"]*len(self.yPredicted)
+        if type(self.yPredicted[0])!=np.ndarray:
+            self.yPredictedUpper = ["NA"]*len(self.yPredicted)
+            self.yPredictedLower = ["NA"]*len(self.yPredicted)
+        else:
+            self.yPredictedUpper = []
+            self.yPredictedLower = []
+            for y in self.yPredicted:
+                self.yPredictedUpper.append(["NA"]*len(y))
+                self.yPredictedLower.append(["NA"]*len(y))
 
 class PKPDModel(PKPDModelBase2):
     def prepare(self):
@@ -1187,6 +1193,8 @@ class PKPDSampleFit:
         self.upperBound = None
         self.significance = None
 
+        self.multiOutputSeries = False
+
     def printForPopulation(self,fh,observations):
         outputStr = ""
         for parameter in self.parameters:
@@ -1295,12 +1303,28 @@ class PKPDSampleFit:
 
         elif self.state==PKPDSampleFit.READING_SAMPLEFITTINGS_SAMPLE_VALUES:
             tokens=line.split()
-            self.x.append(float(tokens[0]))
-            self.y.append(float(tokens[1]))
-            self.yp.append(float(tokens[2]))
-            tokens=(tokens[3])[1:-1].split(',')
-            self.yl.append(tokens[0])
-            self.yu.append(tokens[1])
+            if tokens[0].strip()=="Series":
+                self.x.append([])
+                self.y.append([])
+                self.yp.append([])
+                self.yl.append([])
+                self.yu.append([])
+                self.multiOutputSeries = True
+            else:
+                if self.multiOutputSeries:
+                    self.x[-1].append(float(tokens[0]))
+                    self.y[-1].append(float(tokens[1]))
+                    self.yp[-1].append(float(tokens[2]))
+                    tokens=(tokens[3])[1:-1].split(',')
+                    self.yl[-1].append(tokens[0])
+                    self.yu[-1].append(tokens[1])
+                else:
+                    self.x.append(float(tokens[0]))
+                    self.y.append(float(tokens[1]))
+                    self.yp.append(float(tokens[2]))
+                    tokens=(tokens[3])[1:-1].split(',')
+                    self.yl.append(tokens[0])
+                    self.yu.append(tokens[1])
 
     def copyFromOptimizer(self,optimizer):
         self.R2 = optimizer.R2
@@ -1416,11 +1440,12 @@ class PKPDFitting(EMObject):
     READING_FITTING_EXPERIMENT = 1
     READING_FITTING_PREDICTOR = 2
     READING_FITTING_PREDICTED = 3
-    READING_FITTING_MODEL = 4
-    READING_POPULATION_HEADER = 5
-    READING_POPULATION = 6
-    READING_SAMPLEFITTINGS_BEGIN = 7
-    READING_SAMPLEFITTINGS_CONTINUE = 8
+    READING_FITTING_PREDICTED_LIST = 4
+    READING_FITTING_MODEL = 5
+    READING_POPULATION_HEADER = 6
+    READING_POPULATION = 7
+    READING_SAMPLEFITTINGS_BEGIN = 8
+    READING_SAMPLEFITTINGS_CONTINUE = 9
 
     def __init__(self, cls="", **args):
         EMObject.__init__(self, **args)
@@ -1471,7 +1496,7 @@ class PKPDFitting(EMObject):
         self.predictor._printToStream(fh)
         fh.write("Predicted (Y): ")
         if type(self.predicted)==list:
-            fh.write("Predicted list=%d"%len(self.predicted))
+            fh.write("Predicted list=%d\n"%len(self.predicted))
             for y in self.predicted:
                 y._printToStream(fh)
         else:
@@ -1552,10 +1577,25 @@ class PKPDFitting(EMObject):
 
             elif state==PKPDFitting.READING_FITTING_PREDICTED:
                 tokens = line.split(':')
-                self.predicted = PKPDVariable()
-                self.predicted.parseTokens(tokens[1].split(';'))
-                state = PKPDFitting.READING_FITTING_MODEL
-                self.summaryLines.append(line)
+                if (tokens[1].strip().startswith("Predicted list")):
+                    state = PKPDFitting.READING_FITTING_PREDICTED_LIST
+                    self.remainingPredicted = int(tokens[1].split('=')[1])
+                    self.predicted = []
+                    self.summaryLines.append(line)
+                else:
+                    self.predicted = PKPDVariable()
+                    self.predicted.parseTokens(tokens[1].split(';'))
+                    state = PKPDFitting.READING_FITTING_MODEL
+                    self.summaryLines.append(line)
+
+            elif state==PKPDFitting.READING_FITTING_PREDICTED_LIST:
+                    self.summaryLines.append(line)
+                    newVar = PKPDVariable()
+                    newVar.parseTokens(line.split(';'))
+                    self.predicted.append(newVar)
+                    self.remainingPredicted -= 1
+                    if self.remainingPredicted == 0:
+                        state = PKPDFitting.READING_FITTING_MODEL
 
             elif state==PKPDFitting.READING_FITTING_MODEL:
                 tokens = line.split(':')
