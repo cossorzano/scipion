@@ -169,12 +169,12 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
             sampleFit.yB = []
 
             # Bootstrap samples
-            if type(x)==list:
+            if type(x[0])==list:
                 idx = [[k for k in range(0,len(xj))] for xj in x]
             else:
                 idx = [k for k in range(0,len(x))]
             for n in range(0,self.Nbootstrap.get()):
-                if type(x)==list:
+                if type(x[0])==list:
                     idxB = [sorted(np.random.choice(idxj,len(idxj))) for idxj in idx]
                     xB=[]
                     yB=[]
