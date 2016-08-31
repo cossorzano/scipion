@@ -528,15 +528,6 @@ class ExperimentWindow(gui.Window):
         sampleKeys = self.samplesTree.selection()
 
         if sampleKeys:
-            # Get first selected element
-            fit = self.fitting.getSampleFit(sampleKeys[0])
-            plotter = EmPlotter()
-            varLabelX = self.getLabel(self.fitting.predictor.varName,
-                                      self.useTimeLog())
-            varLabelY = self.getLabel(self.fitting.predicted.varName,
-                                      self.useMeasureLog())
-            ax = plotter.createSubPlot("Plot", varLabelX, varLabelY)
-
             def _value(v, useLog):
                 if useLog:
                     return math.log10(v) if v > 0 else None
@@ -545,15 +536,31 @@ class ExperimentWindow(gui.Window):
             def _values(values, useLog=self.useMeasureLog()):
                 return [_value(float(x), useLog) for x in values]
 
-            xValues = _values(fit.x, useLog=self.useTimeLog())
+            def _plot(varLabelX, varLabelY, x, y, yp):
+                plotter = EmPlotter()
+                ax = plotter.createSubPlot("Plot", varLabelX, varLabelY)
+                xValues = _values(x, useLog=self.useTimeLog())
+                ax.plot(xValues, _values(y), 'x', label="Observations")
+                ax.plot(xValues, _values(yp), 'g', label="Fit")
+                ax.legend()
 
-            ax.plot(xValues, _values(fit.y), 'x', label="Observations")
-            ax.plot(xValues, _values(fit.yp), 'g', label="Fit")
-            #ax.plot(xValues, _values(fit.yl), 'b--', label="Lower bound")
-            #ax.plot(xValues, _values(fit.yu), 'b--', label="Upper bound")
-            ax.legend()
+                plotter.show()
 
-            plotter.show()
+            # Get first selected element
+            fit = self.fitting.getSampleFit(sampleKeys[0])
+            varLabelX = self.getLabel(self.fitting.predictor.varName,
+                                      self.useTimeLog())
+            if type(self.fitting.predicted)==list:
+                i=0
+                for v in self.fitting.predicted:
+                    varLabelY = self.getLabel(v.varName, self.useMeasureLog())
+                    _plot(varLabelX, varLabelY, fit.x[i], fit.y[i], fit.yp[i])
+                    i+=1
+            else:
+                varLabelY = self.getLabel(self.fitting.predicted.varName,
+                                          self.useMeasureLog())
+                _plot(varLabelX, varLabelY, fit.x, fit.y, fit.yp)
+
         else:
             self.showInfo("Please select some sample(s) to plot.")
 
