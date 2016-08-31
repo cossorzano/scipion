@@ -1351,8 +1351,8 @@ class PKPDSampleFitBootstrap:
         self.AICc = []
         self.BIC = []
         self.parameters = None
-        self.xB = None
-        self.yB = None
+        self.xB = []
+        self.yB = []
 
     def _printSample(self,fh,n, n0=0):
         outputStr = "%d: "%(n+n0)
@@ -1370,15 +1370,8 @@ class PKPDSampleFitBootstrap:
     def _printToStream(self,fh):
         fh.write("Sample name: %s\n"%self.sampleName)
         for n in range(0,self.parameters.shape[0]):
-            outputStr = "xB: "
-            for x in self.xB[n,:]:
-                outputStr += "%f "%x
-            fh.write(outputStr+"\n")
-
-            outputStr = "yB: "
-            for y in self.yB[n,:]:
-                outputStr += "%f "%y
-            fh.write(outputStr+"\n")
+            fh.write("xB: %s\n"%self.xB[n])
+            fh.write("yB: %s\n"%self.yB[n])
 
             outputStr = ""
             for parameter in self.parameters[n,:]:
@@ -1398,18 +1391,12 @@ class PKPDSampleFitBootstrap:
 
         elif self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_XB:
             tokens = line.split(':')
-            tokensXB = tokens[1].strip().split(' ')
-            if self.xB == None:
-                self.xB = np.empty((0,len(tokensXB)),np.double)
-            self.xB = np.vstack([self.xB, [float(x) for x in tokensXB]])
+            self.xB.append(tokens[1].strip())
             self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_YB
 
         elif self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_YB:
             tokens = line.split(':')
-            tokensYB = tokens[1].strip().split(' ')
-            if self.yB == None:
-                self.yB = np.empty((0,len(tokensYB)),np.double)
-            self.yB = np.vstack([self.yB, [float(y) for y in tokensYB]])
+            self.yB.append(tokens[1].strip())
             self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_PARAMETERS
 
         elif self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_PARAMETERS:

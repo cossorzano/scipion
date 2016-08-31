@@ -41,7 +41,8 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
     def _defineParams(self, form):
         form.addSection('Input')
         form.addParam('inputODE', params.PointerParam, label="Input ODE model",
-                      pointerClass='ProtPKPDIVMonoCompartment, ProtPKPDEV1MonoCompartment', help='Select a run of an ODE model')
+                      pointerClass='ProtPKPDIVMonoCompartment, ProtPKPDIVMonoCompartmentUrine, ProtPKPDEV0MonoCompartment, ProtPKPDEV01MonoCompartment, ProtPKPDEV1MonoCompartment',
+                      help='Select a run of an ODE model')
         form.addParam('Nbootstrap', params.IntParam, label="Bootstrap samples", default=200, expertLevel=LEVEL_ADVANCED,
                       help='Number of bootstrap realizations for each sample')
         form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval", default=95, expertLevel=LEVEL_ADVANCED,
@@ -97,7 +98,10 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
         self.model.deltaT = self.deltaT.get()
         self.model.setExperiment(self.experiment)
         self.varNameX = self.fitting.predictor.varName
-        self.varNameY = self.fitting.predicted.varName
+        if type(self.fitting.predicted)==list:
+            self.varNameY = [v.varName for v in self.fitting.predicted]
+        else:
+            self.varNameY = self.fitting.predicted.varName
         self.model.setXVar(self.varNameX)
         self.model.setYVar(self.varNameY)
 
@@ -105,7 +109,10 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
         self.fitting = PKPDFitting("PKPDSampleFitBootstrap")
         self.fitting.fnExperiment.set(self.experiment.fnPKPD.get())
         self.fitting.predictor=self.experiment.variables[self.varNameX]
-        self.fitting.predicted=self.experiment.variables[self.varNameY]
+        if type(self.varNameY)==list:
+            self.fitting.predicted=[self.experiment.variables[v] for v in self.varNameY]
+        else:
+            self.fitting.predicted=self.experiment.variables[self.varNameY]
         self.fitting.modelParameterUnits = None
 
         # Actual fitting
@@ -158,15 +165,29 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
             sampleFit = PKPDSampleFitBootstrap()
             sampleFit.sampleName = sample.varName
             sampleFit.parameters = np.zeros((self.Nbootstrap.get(),len(parameters0)),np.double)
-            sampleFit.xB = np.zeros((self.Nbootstrap.get(),len(x)),np.double)
-            sampleFit.yB = np.zeros((self.Nbootstrap.get(),len(x)),np.double)
+            sampleFit.xB = []
+            sampleFit.yB = []
 
             # Bootstrap samples
-            idx = [k for k in range(0,len(x))]
+            if type(x)==list:
+                idx = [[k for k in range(0,len(xj))] for xj in x]
+            else:
+                idx = [k for k in range(0,len(x))]
             for n in range(0,self.Nbootstrap.get()):
-                idxB = sorted(np.random.choice(idx,len(idx)))
-                xB = [x[i] for i in idxB]
-                yB = [y[i] for i in idxB]
+                if type(x)==list:
+                    idxB = [sorted(np.random.choice(idxj,len(idxj))) for idxj in idx]
+                    xB=[]
+                    yB=[]
+                    for j in range(len(idxB)):
+                        idxBj = idxB[j]
+                        xj=x[j]
+                        yj=y[j]
+                        xB.append([xj[i] for i in idxBj])
+                        yB.append([yj[i] for i in idxBj])
+                else:
+                    idxB = sorted(np.random.choice(idx,len(idx)))
+                    xB = [x[i] for i in idxB]
+                    yB = [y[i] for i in idxB]
                 print("Bootstrap sample %d"%n)
                 print("X= "+str(xB))
                 print("Y= "+str(yB))
@@ -186,8 +207,8 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
 
                 # Keep this result
                 sampleFit.parameters[n,:] = optimizer2.optimum
-                sampleFit.xB[n,:] = xB
-                sampleFit.yB[n,:] = yB
+                sampleFit.xB.append(str(xB))
+                sampleFit.yB.append(str(yB))
                 sampleFit.copyFromOptimizer(optimizer2)
 
             self.fitting.sampleFits.append(sampleFit)

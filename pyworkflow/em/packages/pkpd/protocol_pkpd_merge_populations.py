@@ -73,8 +73,8 @@ class ProtPKPDMergePopulations(ProtPKPD):
         for sampleFit in self.population1.sampleFits:
             if newSampleFit.parameters == None:
                 newSampleFit.parameters = np.copy(sampleFit.parameters)
-                newSampleFit.xB = np.copy(sampleFit.xB)
-                newSampleFit.yB = np.copy(sampleFit.yB)
+                newSampleFit.xB = copy.copy(sampleFit.xB)
+                newSampleFit.yB = copy.copy(sampleFit.yB)
                 newSampleFit.R2 = copy.copy(sampleFit.R2)
                 newSampleFit.R2adj = copy.copy(sampleFit.R2adj)
                 newSampleFit.AIC = copy.copy(sampleFit.AIC)
@@ -82,8 +82,8 @@ class ProtPKPDMergePopulations(ProtPKPD):
                 newSampleFit.BIC = copy.copy(sampleFit.BIC)
             else:
                 newSampleFit.parameters = np.vstack([newSampleFit.parameters, sampleFit.parameters])
-                newSampleFit.xB = np.vstack([newSampleFit.xB, sampleFit.xB])
-                newSampleFit.yB = np.vstack([newSampleFit.yB, sampleFit.yB])
+                newSampleFit.xB += sampleFit.xB
+                newSampleFit.yB += sampleFit.yB
                 newSampleFit.R2 += sampleFit.R2
                 newSampleFit.R2adj += sampleFit.R2adj
                 newSampleFit.AIC += sampleFit.AIC
@@ -91,8 +91,10 @@ class ProtPKPDMergePopulations(ProtPKPD):
                 newSampleFit.BIC += sampleFit.BIC
         for sampleFit in self.population2.sampleFits:
             newSampleFit.parameters = np.vstack([newSampleFit.parameters, sampleFit.parameters])
-            newSampleFit.xB = np.vstack([newSampleFit.xB, sampleFit.xB])
-            newSampleFit.yB = np.vstack([newSampleFit.yB, sampleFit.yB])
+            print(type(newSampleFit.xB))
+            print(type(sampleFit.xB))
+            newSampleFit.xB += sampleFit.xB
+            newSampleFit.yB += sampleFit.yB
             newSampleFit.R2 += sampleFit.R2
             newSampleFit.R2adj += sampleFit.R2adj
             newSampleFit.AIC += sampleFit.AIC
