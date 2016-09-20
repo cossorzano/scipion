@@ -69,3 +69,6 @@ from viewer import *
 from wizard import *
 
 from bibtex import _bibtex
+
+# Pending:
+# Batch effects, Reese2013
