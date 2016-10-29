@@ -30,6 +30,15 @@ Bibtex string file for Simple package.
 
 _bibtexStr = """
 
+@Article{CHMPEWP56095,
+  Title                    = {Guideline on the investigation of drug interactions},
+  Author                   = {European Medicines Agency Committee for Human Medicinal Products},
+  Journal                  = {CHMP/EWP/560/95},
+  Year                     = {2012},
+  Doi                      = {http://www.ema.europa.eu/docs/en_GB/document_library/Scientific_guideline/2012/07/WC500129606.pdf}
+  Url                      = {http://www.ema.europa.eu/docs/en_GB/document_library/Scientific_guideline/2012/07/WC500129606.pdf}
+}
+
 @Article{Spiess2010,
   Title                    = {An evaluation of R2 as an inadequate measure for nonlinear models in pharmacological and biochemical research: a Monte Carlo approach.},
   Author                   = {Spiess, A. and Neumeyer, N.},

@@ -183,4 +183,15 @@ Protocols = [{
 		"value": "ProtPKPDGenericFit",
 		"text": "fit pd generic"
 	}]
-    }]
+    },
+    {
+	"tag": "section",
+	"text": "Misc",
+	"icon": "bookmark.png",
+	"children": [{
+		"tag": "protocol",
+		"value": "ProtPKPDSimulateDrugInteractions",
+		"text": "simulate drug interactions"
+	}]
+    }
+    ]
