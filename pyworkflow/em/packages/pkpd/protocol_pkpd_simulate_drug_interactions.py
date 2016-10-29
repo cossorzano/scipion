@@ -42,15 +42,32 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
     def _defineParams(self, form, fullForm=True):
         form.addSection('Input')
         fromTo = form.addLine('Inhibitor range [I]',
-                           help='[I] is the maximal total (free and bound) systemic inhibitor concentration in plasma at the highest dose')
+                           help='[I] is [I]gut = Molar Dose/250mL.')
         fromTo.addParam('I0', params.FloatParam, default=0, label='Min (uM)')
         fromTo.addParam('IF', params.FloatParam, default=10, label='Max (uM)')
 
-        form.addParam('Ki', params.StringParam, default="5", label='Ki (uM)',
+        form.addParam("doReversible", params.BooleanParam, default=False, label="Reversible inhibition",
+                      help="Investigational drug likely to be a reversible inhibitor if R1=1+[I]/Ki>1.02")
+        form.addParam('KiReversible', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doReversible",
                       help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
-        form.addParam("doBasic", params.BooleanParam, default=True, label="Basic model",
-                      help="Investigational drug likely to be a reversible inhibitor if [I]/Ki>0.02")
 
+        form.addParam("doTimeDependent", params.BooleanParam, default=False, label="Time dependent inhibition",
+                      help="Investigational drug likely to be a time dependent inhibitor if R2=1+kinact/kdeg*[I]/([I]+Ki)>1.25")
+        form.addParam("kinact",params.StringParam, default="0.01", label='Max. inactivation rate (kinact [min^-1])', condition="doTimeDependent",
+                      help="Maximal inactivation rate. Several constants can be given separated by space, e.g., 0.01 0.005")
+        form.addParam("kdeg",params.StringParam, default="0.008", label='Apparent first order degradation rate (kdeg [min^-1])', condition="doTimeDependent",
+                      help="kdeg is the apparent first order degradation rate constant of the affected enzyme. Several constants can be given separated by space, e.g., 0.01 0.005")
+        form.addParam('KiTime', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doTimeDependent",
+                      help="KI is the inhibitor concentration which yields 50% of the maximum inactivation rate. Several constants can be given separated by space, e.g., 5 10")
+
+        form.addParam("doInduction", params.BooleanParam, default=False, label="Induction",
+                      help="Investigational drug likely to be a time dependent inhibitor if R2=1+kinact/kdeg*[I]/([I]+Ki)>1.25")
+        form.addParam("d",params.StringParam, default="1", label='Scaling factor', condition="doInduction",
+                      help="Several constants can be given separated by space, e.g., 1 1.05")
+        form.addParam("Emax",params.StringParam, default="1", label='Max. Induction effect (Emax)', condition="doInduction",
+                      help="Several constants can be given separated by space, e.g., 1 2")
+        form.addParam('EC50', params.StringParam, default="5", label='Half Max. Effect Conc (EC50 [uM])', condition="doInduction",
+                      help="EC50 is the concentration causing half maximal effect. Several constants can be given separated by space, e.g., 5 6")
 
     #--------------------------- INSERT steps functions --------------------------------------------
     def _insertAllSteps(self):
@@ -61,12 +78,41 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
         return [float(v) for v in strList.split(' ')]
 
     def runSimulate(self):
-        KiList = self.parseList(self.Ki.get())
         I = np.arange(self.I0.get(), self.IF.get(), (self.IF.get()-self.I0.get())/100)
-        if self.doBasic:
-            R1basic = np.empty((len(KiList),I.size))
-            for i,Ki in enumerate(KiList):
-                R1basic[i,:] = 1+I/Ki
+        R = []
+        Rlegends = []
+        if self.doReversible:
+            KiList = self.parseList(self.KiReversible.get())
+            R1 = np.empty((len(KiList),I.size))
+            for Ki in KiList:
+                legend="Rev. Inh. Ki=%f [uM]"%Ki
+                print("Simulating %s"%legend)
+                R.append(1+I/Ki)
+                Rlegends.append(legend)
+
+        if self.doTimeDependent:
+            KiList = self.parseList(self.KiReversible.get())
+            kdegList = self.parseList(self.kdeg.get())
+            kinactList = self.parseList(self.kinact.get())
+            for Ki in KiList:
+                for kdeg in kdegList:
+                    for kinact in kinactList:
+                        legend="Time Dep. Inh. Ki=%f [uM], kdeg=%f [min^-1], kinact=%f [min^-1]"%(Ki,kdeg,kinact)
+                        print("Simulating %s"%legend)
+                        R.append(1+kinact/kdeg*I/(Ki+I))
+                        Rlegends.append(legend)
+
+        if self.doInduction:
+            EC50List = self.parseList(self.EC50.get())
+            EmaxList = self.parseList(self.Emax.get())
+            dList = self.parseList(self.d.get())
+            for EC50 in EC50List:
+                for Emax in EmaxList:
+                    for d in dList:
+                        legend="Induction EC50=%f [uM], Emax=%f, d=%f"%(EC50,Emax,d)
+                        print("Simulating %s"%legend)
+                        R.append(1/(1+d*Emax*I/(EC50+I)))
+                        Rlegends.append(legend)
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
