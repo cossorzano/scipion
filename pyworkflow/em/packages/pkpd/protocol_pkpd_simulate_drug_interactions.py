@@ -24,13 +24,13 @@
 # *
 # **************************************************************************
 
-import math
-import sys
+from itertools import izip
 import numpy as np
+import os
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDVariable
+from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
 class ProtPKPDSimulateDrugInteractions(ProtPKPD):
     """ Simulate drug interactions as recommended in EMA CHMP/EWP/560/95 \n
@@ -69,6 +69,37 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
         form.addParam('EC50', params.StringParam, default="5", label='Half Max. Effect Conc (EC50 [uM])', condition="doInduction",
                       help="EC50 is the concentration causing half maximal effect. Several constants can be given separated by space, e.g., 5 6")
 
+        form.addSection('Static model')
+        form.addParam("doStatic", params.BooleanParam, default=False, label="Static",
+                      help="Mechanistic static model, Fahmi2009")
+        form.addParam("Nsteps",params.IntParam, default=50, label='Number of steps', condition="doStatic", expertLevel = LEVEL_ADVANCED,
+                      help="Number of steps for mechanistic plot")
+        form.addParam('KiStatic', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doStatic",
+                      help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
+        form.addParam("EmaxStatic",params.StringParam, default="1", label='Max. Induction effect (Emax)', condition="doStatic",
+                      help="Several constants can be given separated by space, e.g., 1 2")
+        form.addParam('EC50Static', params.StringParam, default="5", label='Half Max. Effect Conc (EC50 [uM])', condition="doStatic",
+                      help="EC50 is the concentration causing half maximal effect. Several constants can be given separated by space, e.g., 5 6")
+        form.addParam("kinactStatic",params.StringParam, default="0.01", label='Max. inactivation rate (kinact [min^-1])', condition="doStatic",
+                      help="Maximal inactivation rate. Several constants can be given separated by space, e.g., 0.01 0.005")
+        form.addParam("dStatic",params.StringParam, default="1", label='Scaling factor', condition="doStatic",
+                      help="Scaling factor determined with linear regression of the control data set")
+        form.addParam("fm",params.FloatParam, default=0.1, label='fm', condition="doStatic",
+                      help="fm is the fraction of systemic clearance of the substrate mediated by the enzyme that is subject to inhibition/induction")
+        form.addParam("fg",params.FloatParam, default=0.1, label='fg', condition="doStatic",
+                      help="fg is the fraction available after intestinal metabolism")
+        fromToG = form.addLine('Inhibitor range Gut [Ig]', condition="doStatic", help='[Ig] is [I]gut = Molar Dose/250mL.')
+        fromToG.addParam('Ig0', params.FloatParam, default=0, condition="doStatic", label='Min (uM)')
+        fromToG.addParam('IgF', params.FloatParam, default=10, condition="doStatic", label='Max (uM)')
+        form.addParam("kdeggStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Gut (kdeg [min^-1])', condition="doStatic",
+                      help="kdeg,g is the apparent first order degradation rate constant of the affected enzyme at the gut. Several constants can be given separated by space, e.g., 0.01 0.005")
+        fromToH = form.addLine('Inhibitor range Liver [Ih]', condition="doStatic", help='[Ih] is [I]liver = Molar Dose/250mL.')
+        fromToH.addParam('Ih0', params.FloatParam, default=0, condition="doStatic", label='Min (uM)')
+        fromToH.addParam('IhF', params.FloatParam, default=10, condition="doStatic", label='Max (uM)')
+        form.addParam("kdeghStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Liver (kdeg [min^-1])', condition="doStatic",
+                      help="kdeg,h is the apparent first order degradation rate constant of the affected enzyme at the liver. Several constants can be given separated by space, e.g., 0.01 0.005")
+
+
     #--------------------------- INSERT steps functions --------------------------------------------
     def _insertAllSteps(self):
         self._insertFunctionStep('runSimulate')
@@ -83,11 +114,10 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
         Rlegends = []
         if self.doReversible:
             KiList = self.parseList(self.KiReversible.get())
-            R1 = np.empty((len(KiList),I.size))
             for Ki in KiList:
                 legend="Rev. Inh. Ki=%f [uM]"%Ki
                 print("Simulating %s"%legend)
-                R.append(1+I/Ki)
+                R.append((I,1+I/Ki))
                 Rlegends.append(legend)
 
         if self.doTimeDependent:
@@ -99,7 +129,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
                     for kinact in kinactList:
                         legend="Time Dep. Inh. Ki=%f [uM], kdeg=%f [min^-1], kinact=%f [min^-1]"%(Ki,kdeg,kinact)
                         print("Simulating %s"%legend)
-                        R.append(1+kinact/kdeg*I/(Ki+I))
+                        R.append((I,1+kinact/kdeg*I/(Ki+I)))
                         Rlegends.append(legend)
 
         if self.doInduction:
@@ -111,17 +141,69 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
                     for d in dList:
                         legend="Induction EC50=%f [uM], Emax=%f, d=%f"%(EC50,Emax,d)
                         print("Simulating %s"%legend)
-                        R.append(1/(1+d*Emax*I/(EC50+I)))
+                        R.append((I,1/(1+d*Emax*I/(EC50+I))))
                         Rlegends.append(legend)
+
+        if self.doStatic:
+            KiList = self.parseList(self.KiStatic.get())
+            EmaxList = self.parseList(self.EmaxStatic.get())
+            EC50List = self.parseList(self.EC50Static.get())
+            kinactList = self.parseList(self.kinactStatic.get())
+            dList = self.parseList(self.dStatic.get())
+            kdeggList = self.parseList(self.kdeggStatic.get())
+            kdeghList = self.parseList(self.kdeghStatic.get())
+            Ig = np.arange(self.Ig0.get(), self.IgF.get(), (self.IgF.get()-self.Ig0.get())/self.Nsteps.get())
+            Ih = np.arange(self.Ih0.get(), self.IhF.get(), (self.IhF.get()-self.Ih0.get())/self.Nsteps.get())
+            fm=self.fm.get()
+            fg=self.fg.get()
+            for Ki in KiList:
+                for Emax in EmaxList:
+                    for EC50 in EC50List:
+                        for kinact in kinactList:
+                            for d in dList:
+                                for kdegg in kdeggList:
+                                    for kdegh in kdeghList:
+                                        Ah = kdegh/(kdegh+Ih*kinact/(Ih+Ki))
+                                        Bh = 1+d*Emax*Ih/(Ih+EC50)
+                                        Ch = 1/(1+Ih/Ki)
+
+                                        Ag = kdegg/(kdegg+Ig*kinact/(Ig+Ki))
+                                        Bg = 1+d*Emax*Ig/(Ig+EC50)
+                                        Cg = 1/(1+Ig/Ki)
+
+                                        legend="Static Ki=%f [uM], EC50=%f [uM], Emax=%f, kinact=%f [min^-1], d=%f, kdegg=%f [min^-1], kdegh=%f [min^-1]"%\
+                                               (Ki,EC50,Emax,kinact,d,kdegg,kdegh)
+                                        print("Simulating %s"%legend)
+                                        R.append((Ig,Ih,1/(Ah*Bh*Ch*fm+(1-fm))*1/(Ag*Bg*Cg*fg+(1-fg))))
+                                        Rlegends.append(legend)
+
+        if len(R)>0:
+            fh=open(self._getPath("profiles.txt"),'w')
+            fhSummary=open(self._getPath("summary.txt"),"w")
+            for toPlot, legend in izip(R,Rlegends):
+                fh.write(legend+"\n")
+                fhSummary.write("Simulated %s\n"%legend)
+                if len(toPlot)==2:
+                    I, Ri = toPlot
+                    for n in range(I.size):
+                        fh.write("%f %f\n"%(I[n],Ri[n]))
+                else:
+                    Ig, Ih, Ri = toPlot
+                    for n in range(Ig.size):
+                        fh.write("%f %f %f\n"%(Ig[n],Ih[n],Ri[n]))
+                fh.write("\n")
+            fh.close()
+            fhSummary.close()
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
         msg=[]
-        return msg
-
-    def _validate(self):
-        msg=[]
+        if os.path.exists(self._getPath("summary.txt")):
+            fh=open(self._getPath("summary.txt"))
+            for line in fh:
+                msg.append(line.strip())
+            fh.close()
         return msg
 
     def _citations(self):
-        return ['CHMPEWP56095']
+        return ['CHMPEWP56095','Fahmi2009']
