@@ -39,6 +39,17 @@ _bibtexStr = """
   Url                      = {http://www.ema.europa.eu/docs/en_GB/document_library/Scientific_guideline/2012/07/WC500129606.pdf}
 }
 
+@Article{Fahmi2009,
+  Title                    = {Comparison of Different Algorithms for Predicting Clinical Drug-Drug Interactions, Based on the Use of CYP3A4 in Vitro Data: Predictions of Compounds as Precipitants of Interaction},
+  Author                   = {Fahmi, O.A. et al},
+  Journal                  = {Drug metabolism and disposition},
+  Pages                    = {1658-1666},
+  Volume                   = {37},
+  Year                     = {2009},
+  Doi                      = {http://www.ema.europa.eu/docs/en_GB/document_library/Scientific_guideline/2012/07/WC500129606.pdf}
+  Url                      = {http://dmd.aspetjournals.org/content/37/8/1658}
+}
+
 @Article{Spiess2010,
   Title                    = {An evaluation of R2 as an inadequate measure for nonlinear models in pharmacological and biochemical research: a Monte Carlo approach.},
   Author                   = {Spiess, A. and Neumeyer, N.},
