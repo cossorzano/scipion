@@ -71,5 +71,7 @@ from wizard import *
 
 from bibtex import _bibtex
 
+from viewer_pkpd_simulate_drug_interactions import PKPDSimulateDrugInteractionsViewer
+
 # Pending:
 # Batch effects, Reese2013
