@@ -162,6 +162,10 @@ Protocols = [{
 		"text": "ev0 monocompartment"
 	},{
 		"tag": "protocol",
+		"value": "ProtPKPDEV0TwoCompartments",
+		"text": "ev0 two-compartments"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDEV01MonoCompartment",
 		"text": "ev0&1 monocompartment"
 	},{
