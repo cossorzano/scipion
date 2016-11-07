@@ -299,9 +299,9 @@ class PK_Monocompartment(PKPDODEModel):
         ClLower = lowerBound[0]
         ClUpper = upperBound[0]
         if ClLower<0 and ClUpper>0:
-            retval.append("Suspicious, Ka looks like a constant")
+            retval.append("Suspicious, Cl looks like a constant")
         elif ClLower<0:
-            retval.append("Suspicious, Ka may be unstable")
+            retval.append("Suspicious, Cl may be unstable")
         elif ClLower>0:
             retval.append("True")
         else:
@@ -316,6 +316,103 @@ class PK_Monocompartment(PKPDODEModel):
             retval.append("Suspicious, V seems to be negative")
         else:
             retval.append("True")
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p[0:1]<0)==0
+
+class PK_Twocompartments(PKPDODEModel):
+    def F(self, t, y):
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        Clp=self.parameters[2]
+        Vp=self.parameters[3]
+        C=y[0]
+        Cp=y[1]
+
+        Q12 = Clp * (C-Cp)
+        return np.array([-Cl/V * C - Q12/V, Q12/Vp],np.double)
+
+    def G(self, t, dD):
+        V=self.parameters[1]
+        return np.array([dD/V,0.0],np.double)
+
+    def getResponseDimension(self):
+        return 1
+
+    def getStateDimension(self):
+        return 2
+
+    def getDescription(self):
+        return "Two-compartments model (%s)"%self.__class__.__name__
+
+    def getModelEquation(self):
+        return "dC/dt = -Cl/V * C - Clp/V * (C-Cp) + 1/V * dD/dt; dCp/dt = Clp/Vp * (C-Cp)"
+
+    def getEquation(self):
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        Clp=self.parameters[2]
+        Vp=self.parameters[3]
+        return "dC/dt = -(%f)/(%f) * C - (%f)/(%f) * (C-Cp) + 1/(%f) * dD/dt; dCp/dt = (%f)/(%f) * (C-Cp)"%(Cl,V,Clp,V,V,Clp,Vp)
+
+    def getParameterNames(self):
+        return ['Cl','V','Clp','Vp']
+
+    def calculateParameterUnits(self,sample):
+        xunits = unitFromString("min")
+        yunits = self.experiment.getVarUnits(self.yName)
+        Vunits = divideUnits(self.Dunits,yunits)
+        Clunits = divideUnits(Vunits,xunits)
+        self.parameterUnits = [Clunits,Vunits,Clunits,Vunits]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        # Cl
+        ClLower = lowerBound[0]
+        ClUpper = upperBound[0]
+        if ClLower<0 and ClUpper>0:
+            retval.append("Suspicious, Cl looks like a constant")
+        elif ClLower<0:
+            retval.append("Suspicious, Cl may be unstable")
+        elif ClLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # V
+        VLower = lowerBound[1]
+        VUpper = upperBound[1]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, V looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, V seems to be negative")
+        else:
+            retval.append("True")
+
+        # Clp
+        ClLower = lowerBound[2]
+        ClUpper = upperBound[2]
+        if ClLower<0 and ClUpper>0:
+            retval.append("Suspicious, Clp looks like a constant")
+        elif ClLower<0:
+            retval.append("Suspicious, Clp may be unstable")
+        elif ClLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # Vp
+        VLower = lowerBound[3]
+        VUpper = upperBound[3]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, Vp looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, Vp seems to be negative")
+        else:
+            retval.append("True")
+
         return retval
 
     def areParametersValid(self, p):
