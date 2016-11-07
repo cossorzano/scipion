@@ -347,7 +347,7 @@ class PK_Twocompartments(PKPDODEModel):
         return "Two-compartments model (%s)"%self.__class__.__name__
 
     def getModelEquation(self):
-        return "dC/dt = -Cl/V * C - Clp/V * (C-Cp) + 1/V * dD/dt; dCp/dt = Clp/Vp * (C-Cp)"
+        return "dC/dt = -Cl/V * C - Clp/V * (C-Cp) + 1/V * dD/dt and dCp/dt = Clp/Vp * (C-Cp)"
 
     def getEquation(self):
         Cl=self.parameters[0]
