@@ -33,7 +33,7 @@ import biopharmaceutics
 class ProtPKPDIVTwoCompartments(ProtPKPDODEBase):
     """ Fit a two-compartmentx model with intravenous absorption to a set of measurements (any arbitrary dosing regimen is allowed)\n
         The central compartment is referred to as C, while the peripheral compartment as Cp.
-        The differential equation is V dC/dt = -(Cl+Clp) * C + Clp * Cp + dD/dt Vp dCp/dt = Clp * C - Clp * Cp\n
+        The differential equation is V dC/dt = -(Cl+Clp) * C + Clp * Cp + dD/dt, Vp dCp/dt = Clp * C - Clp * Cp\n
         where C is the concentration of the central compartment, Cl the clearance, V and Vp the distribution volume of the central and peripheral compartment,
         Clp is the distribution rate between the central and the peripheral compartments, and D the input dosing regime.
         Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
