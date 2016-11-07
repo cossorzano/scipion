@@ -982,7 +982,10 @@ class PKPDODEModel(PKPDModelBase2):
             x = self.x
 
         if self.getResponseDimension()==1:
-            self.yPredicted = np.interp(x,Xt,Yt)
+            if self.getStateDimension()==1:
+                self.yPredicted = np.interp(x,Xt,Yt)
+            else:
+                self.yPredicted = np.interp(x,Xt,Yt[:,0])
         else:
             self.yPredicted = []
             for j in range(0,self.getResponseDimension()):
