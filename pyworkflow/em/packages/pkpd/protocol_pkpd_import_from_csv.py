@@ -178,7 +178,7 @@ class ProtPKPDImportFromCSV(ProtPKPDImportFromText):
                 varNo = 0
                 sampleName = tokens[iSampleName].strip()
                 if not sampleName in self.experiment.samples:
-                    print("Skipping sample: The sample %s does not have a dose"%varName)
+                    print("Skipping sample: The sample %s does not have a dose"%sampleName)
                     continue
                 samplePtr=self.experiment.samples[sampleName]
                 for skip in listOfSkips:
@@ -195,7 +195,6 @@ class ProtPKPDImportFromCSV(ProtPKPDImportFromText):
                                 if not hasattr(samplePtr,"measurement_%s"%varName):
                                     setattr(samplePtr,"measurement_%s"%varName,[])
                                     samplePtr.measurementPattern.append(varName)
-                                    print(samplePtr.measurementPattern)
                                 exec("samplePtr.measurement_%s.append('%s')"%(varName,tokens[varNo].strip()))
                             else:
                                 raise Exception("Time measurements cannot be NA")
