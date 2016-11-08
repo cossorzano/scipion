@@ -331,7 +331,7 @@ class PK_Twocompartments(PKPDODEModel):
         Cp=y[1]
 
         Q12 = Clp * (C-Cp)
-        return np.array([-Cl/V * C - Q12/V, Q12/Vp],np.double)
+        return np.array([-(Cl*C - Q12)/V, Q12/Vp],np.double)
 
     def G(self, t, dD):
         V=self.parameters[1]
