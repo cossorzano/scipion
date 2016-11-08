@@ -55,6 +55,7 @@ from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
 from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsExp2Subgroups2Mean
 from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile, getVarNamesFromCSVfile
 from protocol_pkpd_bootstrap_simulate import ProtPKPDODESimulate
+from protocol_pkpd_ev_monocompartment_urine import ProtPKPDEV1MonoCompartmentUrine
 
 from tk_ode import PKPDODEDialog
 
@@ -109,6 +110,9 @@ class PKPDChooseVariableWizard(Wizard):
                 (ProtPKPDEV0TwoCompartments, ['predicted']),
                 (ProtPKPDEV1TwoCompartments, ['predictor']),
                 (ProtPKPDEV1TwoCompartments, ['predicted']),
+                (ProtPKPDEV1MonoCompartmentUrine, ['predictor']),
+                (ProtPKPDEV1MonoCompartmentUrine, ['predicted']),
+                (ProtPKPDEV1MonoCompartmentUrine, ['Au']),
                 (ProtPKPDSimulateGenericPD, ['predictor']),
                 (ProtPKPDStatsExp2Subgroups2Mean, ['label1', 'inputExperiment1']),
                 (ProtPKPDStatsExp2Subgroups2Mean, ['label2', 'inputExperiment2'])
@@ -272,7 +276,8 @@ class PKPDODEWizard(Wizard):
                 (ProtPKPDIVMonoCompartment, ['bounds']),
                 (ProtPKPDIVTwoCompartments, ['bounds']),
                 (ProtPKPDEV0TwoCompartments, ['bounds']),
-                (ProtPKPDEV1TwoCompartments, ['bounds'])
+                (ProtPKPDEV1TwoCompartments, ['bounds']),
+                (ProtPKPDEV1MonoCompartmentUrine, ['bounds'])
                 ]
 
     def show(self, form, *params):
