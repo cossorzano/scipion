@@ -985,7 +985,7 @@ class PKPDODEModel(PKPDModelBase2):
         if x==None:
             x = self.x
 
-        if self.getResponseDimension()==1:
+        if type(x[0])!=list:
             if self.getStateDimension()==1:
                 self.yPredicted = np.interp(x,Xt,Yt)
             else:
