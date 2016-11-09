@@ -152,9 +152,13 @@ class MeasurementTreeProvider(TreeProvider):
 class FitValuesTreeProvider(TreeProvider):
     def __init__(self, fitting, sampleFit):
         self.sampleFit = sampleFit
-        self.columns = [(fitting.predictor.getLabel(), 60),
-                        (fitting.predicted.getLabel(), 60),
-                        ("Fitted Value", 60)]
+        if type(fitting.predicted)==list:
+            self.columns = [('n',30), (fitting.predictor.getLabel(), 60)]+[(y.getLabel(),60) for y in fitting.predicted]+\
+                           [("Fitted Value", 60)]
+        else:
+            self.columns = [('n',30), (fitting.predictor.getLabel(), 60),
+                            (fitting.predicted.getLabel(), 60),
+                            ("Fitted Value", 60)]
 
     def getColumns(self):
         return self.columns
@@ -162,20 +166,45 @@ class FitValuesTreeProvider(TreeProvider):
     def getObjects(self):
         fit = self.sampleFit
 
-        def _object(x, y, yp):
+        def _object(n, x, y, yp):
             obj = pwobj.Object()
+            obj.n = n
             obj.x = x
             obj.y = y
             obj.yp = yp
             return obj
 
-        return [_object(x, y, yp) for x, y, yp in izip(fit.x, fit.y, fit.yp)]
+        if type(fit.y[0])==list:
+            retval = []
+            Ncols=len(fit.y)
+            n=0
+            i=0
+            for xi, yi, ypi in izip(fit.x,fit.y,fit.yp):
+                for x,y,yp in izip(xi,yi,ypi):
+                    yList=[]
+                    for ii in range(Ncols):
+                        if ii==i:
+                            yList.append(y)
+                        else:
+                            yList.append("NA")
+                    retval.append(_object(n, x, yList, yp))
+                    n+=1
+                i+=1
+            return retval
+        else:
+            nrange=[x for x in range(len(fit.x))]
+            return [_object(n, x, y, yp) for n, x, y, yp in izip(nrange, fit.x, fit.y, fit.yp)]
 
     def getObjectInfo(self, obj):
-        key = obj.x
-        return {'key': key, 'text': key,
-                'values': (obj.y, obj.yp)
-                }
+        key = obj.n
+        if type(obj.y)==list:
+            return {'key': key, 'text': key,
+                    'values': tuple([obj.x]+obj.y+[obj.yp])
+                    }
+        else:
+            return {'key': key, 'text': key,
+                    'values': (obj.x, obj.y, obj.yp)
+                    }
 
 
 class ExperimentWindow(gui.Window):
