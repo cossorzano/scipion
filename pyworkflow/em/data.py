@@ -795,8 +795,12 @@ class PKPDModelBase:
 
     def setXYValues(self, x, y):
         self.x = np.array(x)
-        self.y = np.array(y)
-        self.ylog = np.log(self.y)
+        if type(y[0])!=list and type(y[0])!=np.ndarray:
+            self.y = np.array(y)
+            self.ylog = np.log10(self.y)
+        else:
+            self.y = [np.array(yi) for yi in y]
+            self.ylog = [np.log10(yi) for yi in self.y]
 
     def getNumberOfParameters(self):
         return len(self.getParameterNames())
@@ -874,7 +878,7 @@ class PKPDModelBase2(PKPDModelBase):
             if not self.areParametersValid(p):
                 continue
             y = self.forwardModel(p)
-            if type(y[0])!=list:
+            if type(y[0])!=list and type(y[0])!=np.ndarray:
                 for n in range(len(y)):
                     if y[n]<self.yPredictedLower[n]:
                         if y[n]<0:
@@ -996,8 +1000,13 @@ class PKPDOptimizer:
     def __init__(self,model,fitType,goalFunction="RMSE"):
         self.model = model
 
-        self.yTarget = np.array(model.y, dtype=np.float32)
-        self.yTargetLogs = np.log10(self.yTarget)
+        if type(model.y[0])!=list and type(model.y[0])!=np.ndarray:
+            self.yTarget = np.array(model.y, dtype=np.float32)
+            self.yTargetLogs = [np.log10(self.yTarget)]
+        else:
+            self.yTarget = [np.array(yi, dtype=np.float32) for yi in model.y]
+            self.yTargetLogs = [np.log10(yi) for yi in self.yTarget]
+
         if fitType=="linear":
             self.takeYLogs = False
             self.takeRelative = False
@@ -1028,30 +1037,60 @@ class PKPDOptimizer:
 
     def getResiduals(self,parameters):
         if not self.inBounds(parameters):
-            return 1e38*np.ones(self.yTarget.shape)
-        yPredicted = np.array(self.model.forwardModel(parameters),dtype=np.float32)
-        if self.takeYLogs:
-            idx = yPredicted>=1e-20
-            nonIdx = yPredicted<1e-20
-            yPredicted[idx] = np.log10(yPredicted[idx])
-            yPredicted[nonIdx] = -100
-        diff = self.yTarget - yPredicted
-        if self.takeRelative:
-            diff = diff/self.yTarget
-        if len(diff.shape)==1:
-            return diff
+            allDiffs = None
+            for yTarget in self.yTarget:
+                diff = 1e38*np.ones(yTarget.shape)
+                if allDiffs==None:
+                    allDiffs = diff
+                else:
+                    allDiffs = np.concatenate([allDiffs, diff])
+            return allDiffs
+        yPredicted = self.model.forwardModel(parameters)
+        if type(yPredicted[0])!=list and type(yPredicted[0])!=np.ndarray:
+            yPredicted = [np.array(yPredicted,dtype=np.float32)]
         else:
-            return np.array(diff.ravel(),np.double)
+            yPredicted = [np.array(yi,dtype=np.float32) for yi in yPredicted]
+
+        allDiffs = None
+        for y, yTarget in izip(yPredicted,self.yTarget):
+            if self.takeYLogs:
+                idx = y>=1e-20
+                nonIdx = y<1e-20
+                y[idx] = np.log10(y[idx])
+                y[nonIdx] = -100
+            diff = yTarget - y
+            if self.takeRelative:
+                diff = diff/yTarget
+            if allDiffs==None:
+                allDiffs = diff
+            else:
+                allDiffs = np.concatenate([allDiffs, diff])
+        return allDiffs
 
     def goalRMSE(self,parameters):
-        rmse = math.sqrt((self.getResiduals(parameters) ** 2).mean())
+        e = self.getResiduals(parameters)
+        rmse = math.sqrt(np.power(e,2).mean())
         return rmse
 
     def _evaluateQuality(self, x, y, yp):
         # Spiess and Neumeyer, BMC Pharmacology 2010, 10:6
-        self.e = np.asarray(y).flatten()-np.asarray(yp).flatten()
-        self.R2 = (1-np.var(self.e)/np.var(y))
-        n=self.e.shape[0] # Number of samples
+        if type(y[0])==list or type(y[0])==np.ndarray:
+            self.e = None
+            yToUse = None
+            for yi, ypi in izip(y,yp):
+                diff = yi - ypi
+                if self.e==None:
+                    self.e = diff
+                    yToUse = np.asarray(yi)
+                else:
+                    self.e = np.concatenate([self.e, diff])
+                    yToUse = np.concatenate([yToUse, yi])
+        else:
+            yToUse = np.asarray(y).flatten()
+            self.e = yToUse-np.asarray(yp).flatten()
+
+        self.R2 = (1-np.var(self.e)/np.var(yToUse))
+        n=len(self.e) # Number of samples
         p=self.model.getNumberOfParameters()
         if n-p>0:
             self.R2adj = 1-self.R2*(n-1)/(n-p)*(1-self.R2)
@@ -1073,7 +1112,7 @@ class PKPDOptimizer:
         else:
             for j in range(len(x)):
                 print("Series %d ---------"%j)
-                xj=x[j]
+                xj=np.asarray(x[j])
                 yj=y[j]
                 ypj=yp[j]
                 for n in range(0,xj.shape[0]):
@@ -1093,7 +1132,7 @@ class PKPDOptimizer:
         self._evaluateQuality(self.model.x, self.model.y, yPredicted)
 
     def printFitting(self):
-        yPredicted = np.array(self.model.forwardModel(self.model.parameters),dtype=np.float32)
+        yPredicted = self.model.forwardModel(self.model.parameters)
         print("==========================================")
         print("X     Y    Ypredicted  Error=Y-Ypredicted ")
         print("==========================================")
@@ -1101,7 +1140,12 @@ class PKPDOptimizer:
         print("==================================================================")
         print("X    log10(Y)  log10(Ypredicted)  Error=log10(Y)-log10(Ypredicted)")
         print("==================================================================")
-        self._printFitting(self.model.x, np.log10(self.model.y), np.log10(yPredicted))
+        if type(self.model.y[0])!=list and type(self.model.y[0])!=np.ndarray:
+            self._printFitting(self.model.x, np.log10(self.model.y), np.log10(yPredicted))
+        else:
+            logY = [np.log10(np.asarray(y)) for y in self.model.y]
+            logYp = [np.log10(np.asarray(y)) for y in yPredicted]
+            self._printFitting(self.model.x, logY, logYp)
 
 class PKPDDEOptimizer(PKPDOptimizer):
     def optimize(self):
