@@ -238,6 +238,8 @@ class PKPDODEDialog(dialog.Dialog):
         self.protODE.setParameters(currentParams)
         # self.protODE.model.deltaT = 0.25
         self.ypValues = self.protODE.forwardModel(currentParams, self.xpValues)
+        if type(self.ypValues)==list:
+            self.ypValues = self.ypValues[0]
 
     def getBoundsList(self):
         boundList = []
