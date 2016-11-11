@@ -36,16 +36,60 @@ class PKPDSimulateDrugInteractionsViewer(Viewer):
     _targets = [ProtPKPDSimulateDrugInteractions]
     _environments = [DESKTOP_TKINTER]
 
+    def addLimits(self,plotter,previousType,minX,maxX):
+        if previousType=="ReversibleLiver":
+            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[1.02,1.02],'r--', label="EMA")
+            ax.legend()
+            plotter.draw()
+
+            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[1.1,1.1],'r-.', label="FDA")
+            leg=ax.legend()
+            if leg:
+                leg.draggable()
+            plotter.draw()
+        elif previousType=="ReversibleGut" or previousType=="TimeDependentGut":
+            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[11,11],'r--', label="EMA/FDA")
+            leg=ax.legend()
+            if leg:
+                leg.draggable()
+            plotter.draw()
+        elif previousType=="TimeDependentLiver":
+            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[1.25,1.25],'r--', label="EMA")
+            ax.legend()
+            plotter.draw()
+
+            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[1.1,1.1],'r-.', label="FDA")
+            leg=ax.legend()
+            if leg:
+                leg.draggable()
+            plotter.draw()
+        elif previousType=="InductionLiver":
+            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[0.9,0.9],'r--', label="FDA")
+            leg=ax.legend()
+            if leg:
+                leg.draggable()
+            plotter.draw()
+
+
     def visualize(self, obj, **kwargs):
         prot = obj
         fnProfiles = prot._getPath("profiles.txt")
         fh = open(fnProfiles,"r")
+        Rtype = []
         Rlegends = []
         R = []
         state = 0
         for line in fh:
             if state==0:
-                Rlegends.append(line.strip())
+                tokens = line.split("::")
+                Rtype.append(tokens[0])
+                Rlegends.append(tokens[1].strip())
                 Ri=[]
                 state=1
             elif state==1:
@@ -62,21 +106,40 @@ class PKPDSimulateDrugInteractionsViewer(Viewer):
         fh.close()
 
         plotter = None
-        for legend, Ri  in izip(Rlegends, R):
-            if plotter is None:
+        previousType = ""
+        for legend, Ri, Rtypei  in izip(Rlegends, R, Rtype):
+            if plotter is None or Rtypei!=previousType:
+                if previousType!="":
+                    self.addLimits(plotter,previousType,minX,maxX)
                 plotter = EmPlotter()
                 doShow = True
-                ax = plotter.createSubPlot("Plot", "[I]", "R")
+                if Rtypei=="ReversibleLiver" or Rtypei=="TimeDependentLiver" or Rtypei=="InductionLiver" or Rtypei=="StaticLiver":
+                    Ilabel="[Ih] [uM]"
+                elif Rtypei=="ReversibleGut" or Rtypei=="TimeDependentGut" or Rtypei=="InductionGut" or Rtypei=="StaticGut":
+                    Ilabel="[Ig] [uM]"
+                ax = plotter.createSubPlot("Plot", Ilabel, "R")
+                previousType = Rtypei
+                minX = None
+                maxX = None
             else:
                 doShow = False
                 ax = plotter.getLastSubPlot()
 
-            x = np.asarray(Ri[0])
+            x = np.asarray(Ri[0],dtype=np.float64)
             if len(Ri)==2:
-                y=np.asarray(Ri[1])
+                y=np.asarray(Ri[1],dtype=np.float64)
             else:
-                y=np.asarray(Ri[2])
+                y=np.asarray(Ri[2],dtype=np.float64)
             ax.plot(x, y, label=legend)
+
+            minXi = np.min(x)
+            maxXi = np.max(x)
+            if minX==None:
+                minX=minXi
+                maxX=maxXi
+            minX=min(minXi,minX)
+            maxX=min(maxXi,maxX)
+
             leg = ax.legend()
             if leg:
                 leg.draggable()
@@ -85,3 +148,4 @@ class PKPDSimulateDrugInteractionsViewer(Viewer):
                 plotter.show()
             else:
                 plotter.draw()
+        self.addLimits(plotter,previousType,minX,maxX)
