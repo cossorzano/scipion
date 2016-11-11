@@ -40,40 +40,67 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
     #--------------------------- DEFINE param functions --------------------------------------------
 
     def _defineParams(self, form, fullForm=True):
-        form.addSection('Input')
-        fromTo = form.addLine('Inhibitor range [I]',
-                           help='[I] is [I]gut = Molar Dose/250mL.')
-        fromTo.addParam('I0', params.FloatParam, default=0, label='Min (uM)')
-        fromTo.addParam('IF', params.FloatParam, default=10, label='Max (uM)')
+        form.addSection('Basic models Liver')
+        fromToLiver = form.addLine('Inhibitor range [I] at liver')
+        fromToLiver.addParam('I0Liver', params.FloatParam, default=0, label='Min (ng/mL)')
+        fromToLiver.addParam('IFLiver', params.FloatParam, default=10, label='Max (ng/mL)')
+        form.addParam("MWLiver", params.FloatParam, default=1, label="Molecular weight (g/mol)")
 
-        form.addParam("doReversible", params.BooleanParam, default=False, label="Reversible inhibition",
+        form.addParam("doReversibleLiver", params.BooleanParam, default=False, label="Reversible inhibition",
                       help="Investigational drug likely to be a reversible inhibitor if R1=1+[I]/Ki>1.02")
-        form.addParam('KiReversible', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doReversible",
+        form.addParam('KiReversibleLiver', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doReversibleLiver",
                       help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
 
-        form.addParam("doTimeDependent", params.BooleanParam, default=False, label="Time dependent inhibition",
+        form.addParam("doTimeDependentLiver", params.BooleanParam, default=False, label="Time dependent inhibition",
                       help="Investigational drug likely to be a time dependent inhibitor if R2=1+kinact/kdeg*[I]/([I]+Ki)>1.25")
-        form.addParam("kinact",params.StringParam, default="0.01", label='Max. inactivation rate (kinact [min^-1])', condition="doTimeDependent",
+        form.addParam("kinactLiver",params.StringParam, default="0.01", label='Max. inactivation rate (kinact [min^-1])', condition="doTimeDependentLiver",
                       help="Maximal inactivation rate. Several constants can be given separated by space, e.g., 0.01 0.005")
-        form.addParam("kdeg",params.StringParam, default="0.008", label='Apparent first order degradation rate (kdeg [min^-1])', condition="doTimeDependent",
+        form.addParam("kdegLiver",params.StringParam, default="0.008", label='Apparent first order degradation rate (kdeg [min^-1])', condition="doTimeDependentLiver",
                       help="kdeg is the apparent first order degradation rate constant of the affected enzyme. Several constants can be given separated by space, e.g., 0.01 0.005")
-        form.addParam('KiTime', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doTimeDependent",
+        form.addParam('KiTimeLiver', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doTimeDependentLiver",
                       help="KI is the inhibitor concentration which yields 50% of the maximum inactivation rate. Several constants can be given separated by space, e.g., 5 10")
 
-        form.addParam("doInduction", params.BooleanParam, default=False, label="Induction",
+        form.addParam("doInductionLiver", params.BooleanParam, default=False, label="Induction",
                       help="Investigational drug likely to be a time dependent inhibitor if R2=1+kinact/kdeg*[I]/([I]+Ki)>1.25")
-        form.addParam("d",params.StringParam, default="1", label='Scaling factor', condition="doInduction",
+        form.addParam("dLiver",params.StringParam, default="1", label='Scaling factor', condition="doInductionLiver",
                       help="Several constants can be given separated by space, e.g., 1 1.05")
-        form.addParam("Emax",params.StringParam, default="1", label='Max. Induction effect (Emax)', condition="doInduction",
+        form.addParam("EmaxLiver",params.StringParam, default="1", label='Max. Induction effect (Emax)', condition="doInductionLiver",
                       help="Several constants can be given separated by space, e.g., 1 2")
-        form.addParam('EC50', params.StringParam, default="5", label='Half Max. Effect Conc (EC50 [uM])', condition="doInduction",
+        form.addParam('EC50Liver', params.StringParam, default="5", label='Half Max. Effect Conc (EC50 [uM])', condition="doInductionLiver",
+                      help="EC50 is the concentration causing half maximal effect. Several constants can be given separated by space, e.g., 5 6")
+
+        form.addSection('Basic models Gut')
+        fromToGut = form.addLine('Oral dose')
+        fromToGut.addParam('D0Gut', params.FloatParam, default=0, label='Min (mg)')
+        fromToGut.addParam('DFGut', params.FloatParam, default=10, label='Max (mg)')
+        form.addParam("MWGut", params.FloatParam, default=1, label="Molecular weight (g/mol)")
+
+        form.addParam("doReversibleGut", params.BooleanParam, default=False, label="Reversible inhibition",
+                      help="Investigational drug likely to be a reversible inhibitor if R1=1+[I]/Ki>1.02")
+        form.addParam('KiReversibleGut', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doReversibleGut",
+                      help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
+
+        form.addParam("doTimeDependentGut", params.BooleanParam, default=False, label="Time dependent inhibition",
+                      help="Investigational drug likely to be a time dependent inhibitor if R2=1+kinact/kdeg*[I]/([I]+Ki)>1.25")
+        form.addParam("kinactGut",params.StringParam, default="0.01", label='Max. inactivation rate (kinact [min^-1])', condition="doTimeDependentGut",
+                      help="Maximal inactivation rate. Several constants can be given separated by space, e.g., 0.01 0.005")
+        form.addParam("kdegGut",params.StringParam, default="0.008", label='Apparent first order degradation rate (kdeg [min^-1])', condition="doTimeDependentGut",
+                      help="kdeg is the apparent first order degradation rate constant of the affected enzyme. Several constants can be given separated by space, e.g., 0.01 0.005")
+        form.addParam('KiTimeGut', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doTimeDependentGut",
+                      help="KI is the inhibitor concentration which yields 50% of the maximum inactivation rate. Several constants can be given separated by space, e.g., 5 10")
+
+        form.addParam("doInductionGut", params.BooleanParam, default=False, label="Induction",
+                      help="Investigational drug likely to be a time dependent inhibitor if R2=1+kinact/kdeg*[I]/([I]+Ki)>1.25")
+        form.addParam("dGut",params.StringParam, default="1", label='Scaling factor', condition="doInductionGut",
+                      help="Several constants can be given separated by space, e.g., 1 1.05")
+        form.addParam("EmaxGut",params.StringParam, default="1", label='Max. Induction effect (Emax)', condition="doInductionGut",
+                      help="Several constants can be given separated by space, e.g., 1 2")
+        form.addParam('EC50Gut', params.StringParam, default="5", label='Half Max. Effect Conc (EC50 [uM])', condition="doInductionGut",
                       help="EC50 is the concentration causing half maximal effect. Several constants can be given separated by space, e.g., 5 6")
 
         form.addSection('Static model')
         form.addParam("doStatic", params.BooleanParam, default=False, label="Static",
                       help="Mechanistic static model, Fahmi2009")
-        form.addParam("Nsteps",params.IntParam, default=50, label='Number of steps', condition="doStatic", expertLevel = LEVEL_ADVANCED,
-                      help="Number of steps for mechanistic plot")
         form.addParam('KiStatic', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doStatic",
                       help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
         form.addParam("EmaxStatic",params.StringParam, default="1", label='Max. Induction effect (Emax)', condition="doStatic",
@@ -84,20 +111,47 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
                       help="Maximal inactivation rate. Several constants can be given separated by space, e.g., 0.01 0.005")
         form.addParam("dStatic",params.StringParam, default="1", label='Scaling factor', condition="doStatic",
                       help="Scaling factor determined with linear regression of the control data set")
-        form.addParam("fm",params.FloatParam, default=0.1, label='fm', condition="doStatic",
+        form.addParam("MWStatic", params.FloatParam, default=1, label="Molecular weight (g/mol)", condition="doStatic")
+
+        group = form.addGroup("Physiological", condition="doStatic")
+        group.addParam("doPhysiological", params.BooleanParam, default=False, label="Physiological model",
+                      help="The physiological model estimates the concentration at liver and gut from "
+                      "the input dose, the fraction available, the absorption rate, and the liver and gut blood flow."
+                      "The alternative to the physiological model needs a direct estimation of the gut and liver concentration of the inhibitor")
+        fromToGut = group.addLine('Oral dose', condition="doPhysiological and doStatic")
+        fromToGut.addParam('D0Phys', params.FloatParam, default=0, label='Min (mg)', condition="doPhysiological and doStatic")
+        fromToGut.addParam('DFPhys', params.FloatParam, default=10, label='Max (mg)', condition="doPhysiological and doStatic")
+        group.addParam("Fa", params.FloatParam, default=1, label="Fraction absorbed", condition="doPhysiological and doStatic",
+                       help="Fa is the fraction absorbed after oral administration (a value of 1 can be used if data are not available)")
+        group.addParam("ka", params.FloatParam, default=0.1, label="1st order absorption rate", condition="doPhysiological and doStatic",
+                       help="ka is the first order absorption rate constant in vivo and a value of 0.1 min^-1 can be used if data are not available.")
+        group.addParam("Qen", params.FloatParam, default=18, label="Blood flow at enterocytes [L/h/70kg", condition="doPhysiological and doStatic",
+                       help="Qen is blood flow through the enterocytes (e.g., 18L/hr/70kg taken from Yang2007a)")
+        group.addParam("fub", params.FloatParam, default=1, label="Fraction unbound in plasma", condition="doPhysiological and doStatic")
+        group.addParam("Imaxb", params.FloatParam, default=1, label="Maximal total [I] conc.", condition="doPhysiological and doStatic",
+                       help="[I]max,b is the maximal total (free and bound) inhibitor concentration in the blood at steady state")
+        group.addParam("Qh", params.FloatParam, default=97, label="Blood flow at hepatocytes [L/h/70kg", condition="doPhysiological and doStatic",
+                       help="Qh is hepatic blood flow (e.g., 97L/hr/70kg taken from Yang et al., 2007b)")
+
+        group = form.addGroup("Liver", condition="doStatic")
+        group.addParam("doStaticLiver", params.BooleanParam, default=False, label="Liver")
+        group.addParam("fm",params.FloatParam, default=0.1, label='fm', condition="doStaticLiver",
                       help="fm is the fraction of systemic clearance of the substrate mediated by the enzyme that is subject to inhibition/induction")
-        form.addParam("fg",params.FloatParam, default=0.1, label='fg', condition="doStatic",
-                      help="fg is the fraction available after intestinal metabolism")
-        fromToG = form.addLine('Inhibitor range Gut [Ig]', condition="doStatic", help='[Ig] is [I]gut = Molar Dose/250mL.')
-        fromToG.addParam('Ig0', params.FloatParam, default=0, condition="doStatic", label='Min (uM)')
-        fromToG.addParam('IgF', params.FloatParam, default=10, condition="doStatic", label='Max (uM)')
-        form.addParam("kdeggStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Gut (kdeg [min^-1])', condition="doStatic",
-                      help="kdeg,g is the apparent first order degradation rate constant of the affected enzyme at the gut. Several constants can be given separated by space, e.g., 0.01 0.005")
-        fromToH = form.addLine('Inhibitor range Liver [Ih]', condition="doStatic", help='[Ih] is [I]liver = Molar Dose/250mL.')
-        fromToH.addParam('Ih0', params.FloatParam, default=0, condition="doStatic", label='Min (uM)')
-        fromToH.addParam('IhF', params.FloatParam, default=10, condition="doStatic", label='Max (uM)')
-        form.addParam("kdeghStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Liver (kdeg [min^-1])', condition="doStatic",
+        fromToH = group.addLine('Inhibitor range Liver [Ih]', condition="doStaticLiver and not doPhysiological", help='[Ih] is [I]liver = Molar Dose/250mL.')
+        fromToH.addParam('Ih0', params.FloatParam, default=0, condition="doStaticLiver and not doPhysiological", label='Min (uM)')
+        fromToH.addParam('IhF', params.FloatParam, default=10, condition="doStaticLiver and not doPhysiological", label='Max (uM)')
+        group.addParam("kdeghStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Liver (kdeg [min^-1])', condition="doStaticLiver",
                       help="kdeg,h is the apparent first order degradation rate constant of the affected enzyme at the liver. Several constants can be given separated by space, e.g., 0.01 0.005")
+
+        group = form.addGroup("Gut", condition="doStatic")
+        group.addParam("doStaticGut", params.BooleanParam, default=False, label="Gut")
+        group.addParam("fg",params.FloatParam, default=0.1, label='fg', condition="doStaticGut",
+                      help="fg is the fraction available after intestinal metabolism")
+        fromToG = group.addLine('Inhibitor range Gut [Ig]', condition="doStaticGut and not doPhysiological", help='[Ig] is [I]gut = Molar Dose/250mL.')
+        fromToG.addParam('Ig0', params.FloatParam, default=0, condition="doStaticGut and not doPhysiological", label='Min (uM)')
+        fromToG.addParam('IgF', params.FloatParam, default=10, condition="doStaticGut and not doPhysiological", label='Max (uM)')
+        group.addParam("kdeggStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Gut (kdeg [min^-1])', condition="doStaticGut",
+                      help="kdeg,g is the apparent first order degradation rate constant of the affected enzyme at the gut. Several constants can be given separated by space, e.g., 0.01 0.005")
 
 
     #--------------------------- INSERT steps functions --------------------------------------------
@@ -109,33 +163,82 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
         return [float(v) for v in strList.split(' ')]
 
     def runSimulate(self):
-        I = np.arange(self.I0.get(), self.IF.get(), (self.IF.get()-self.I0.get())/100)
         R = []
         Rlegends = []
-        if self.doReversible:
-            KiList = self.parseList(self.KiReversible.get())
+        Type = []
+        if self.doReversibleLiver:
+            I = np.arange(self.I0Liver.get(), self.IFLiver.get(), (self.IFLiver.get()-self.I0Liver.get())/100) # I [ng/mL]
+            I /= self.MWLiver.get() # I [uM]
+            KiList = self.parseList(self.KiReversibleLiver.get())
             for Ki in KiList:
-                legend="Rev. Inh. Ki=%f [uM]"%Ki
+                legend="Liver Rev. Inh. Ki=%f [uM]"%Ki
                 print("Simulating %s"%legend)
                 R.append((I,1+I/Ki))
                 Rlegends.append(legend)
+                Type.append('ReversibleLiver')
 
-        if self.doTimeDependent:
-            KiList = self.parseList(self.KiReversible.get())
-            kdegList = self.parseList(self.kdeg.get())
-            kinactList = self.parseList(self.kinact.get())
+        if self.doReversibleGut:
+            D = np.arange(self.D0Gut.get(), self.DFGut.get(), (self.DFGut.get()-self.D0Gut.get())/100)
+            I = D/(250*self.MWGut.get()) # I [uM]
+            KiList = self.parseList(self.KiReversibleGut.get())
+            for Ki in KiList:
+                legend="Gut Rev. Inh. Ki=%f [uM]"%Ki
+                print("Simulating %s"%legend)
+                R.append((D,1+I/Ki))
+                Rlegends.append(legend)
+                Type.append('ReversibleGut')
+
+        if self.doTimeDependentLiver:
+            I = np.arange(self.I0Liver.get(), self.IFLiver.get(), (self.IFLiver.get()-self.I0Liver.get())/100) # I [ng/mL]
+            I /= self.MWLiver.get() # I [uM]
+            KiList = self.parseList(self.KiReversibleLiver.get())
+            kdegList = self.parseList(self.kdegLiver.get())
+            kinactList = self.parseList(self.kinactLiver.get())
             for Ki in KiList:
                 for kdeg in kdegList:
                     for kinact in kinactList:
-                        legend="Time Dep. Inh. Ki=%f [uM], kdeg=%f [min^-1], kinact=%f [min^-1]"%(Ki,kdeg,kinact)
+                        legend="Liver Time Dep. Inh. Ki=%f [uM], kdeg=%f [min^-1], kinact=%f [min^-1]"%(Ki,kdeg,kinact)
                         print("Simulating %s"%legend)
                         R.append((I,1+kinact/kdeg*I/(Ki+I)))
                         Rlegends.append(legend)
+                        Type.append('TimeDependentLiver')
 
-        if self.doInduction:
-            EC50List = self.parseList(self.EC50.get())
-            EmaxList = self.parseList(self.Emax.get())
-            dList = self.parseList(self.d.get())
+        if self.doTimeDependentGut:
+            D = np.arange(self.D0Gut.get(), self.DFGut.get(), (self.DFGut.get()-self.D0Gut.get())/100)
+            I = D/(250*self.MWGut.get()) # I [uM]
+            KiList = self.parseList(self.KiReversibleGut.get())
+            kdegList = self.parseList(self.kdegGut.get())
+            kinactList = self.parseList(self.kinactGut.get())
+            for Ki in KiList:
+                for kdeg in kdegList:
+                    for kinact in kinactList:
+                        legend="Gut Time Dep. Inh. Ki=%f [uM], kdeg=%f [min^-1], kinact=%f [min^-1]"%(Ki,kdeg,kinact)
+                        print("Simulating %s"%legend)
+                        R.append((I,1+kinact/kdeg*I/(Ki+I)))
+                        Rlegends.append(legend)
+                        Type.append('TimeDependentGut')
+
+        if self.doInductionLiver:
+            I = np.arange(self.I0Liver.get(), self.IFLiver.get(), (self.IFLiver.get()-self.I0Liver.get())/100) # I [ng/mL]
+            I /= self.MWLiver.get() # I [uM]
+            EC50List = self.parseList(self.EC50Liver.get())
+            EmaxList = self.parseList(self.EmaxLiver.get())
+            dList = self.parseList(self.dLiver.get())
+            for EC50 in EC50List:
+                for Emax in EmaxList:
+                    for d in dList:
+                        legend="Liver Induction EC50=%f [uM], Emax=%f, d=%f"%(EC50,Emax,d)
+                        print("Simulating %s"%legend)
+                        R.append((I,1/(1+d*Emax*I/(EC50+I))))
+                        Rlegends.append(legend)
+                        Type.append('InductionLiver')
+
+        if self.doInductionGut:
+            D = np.arange(self.D0Gut.get(), self.DFGut.get(), (self.DFGut.get()-self.D0Gut.get())/100)
+            I = D/(250*self.MWGut.get()) # I [uM]
+            EC50List = self.parseList(self.EC50Gut.get())
+            EmaxList = self.parseList(self.EmaxGut.get())
+            dList = self.parseList(self.dGut.get())
             for EC50 in EC50List:
                 for Emax in EmaxList:
                     for d in dList:
@@ -143,6 +246,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
                         print("Simulating %s"%legend)
                         R.append((I,1/(1+d*Emax*I/(EC50+I))))
                         Rlegends.append(legend)
+                        Type.append('InductionGut')
 
         if self.doStatic:
             KiList = self.parseList(self.KiStatic.get())
@@ -150,39 +254,64 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
             EC50List = self.parseList(self.EC50Static.get())
             kinactList = self.parseList(self.kinactStatic.get())
             dList = self.parseList(self.dStatic.get())
-            kdeggList = self.parseList(self.kdeggStatic.get())
-            kdeghList = self.parseList(self.kdeghStatic.get())
-            Ig = np.arange(self.Ig0.get(), self.IgF.get(), (self.IgF.get()-self.Ig0.get())/self.Nsteps.get())
-            Ih = np.arange(self.Ih0.get(), self.IhF.get(), (self.IhF.get()-self.Ih0.get())/self.Nsteps.get())
-            fm=self.fm.get()
-            fg=self.fg.get()
-            for Ki in KiList:
-                for Emax in EmaxList:
-                    for EC50 in EC50List:
-                        for kinact in kinactList:
-                            for d in dList:
-                                for kdegg in kdeggList:
+            if self.doStaticLiver:
+                kdeghList = self.parseList(self.kdeghStatic.get())
+                fm=self.fm.get()
+                if self.doPhysiological:
+                    D = np.arange(self.D0Phys.get(), self.DFPhys.get(), (self.DFPhys.get()-self.D0Phys.get())/100)
+                    Ih = self.fub.get()*(self.Imaxb.get()+self.Fa.get()*self.ka.get()*D/self.Qh.get())
+                else:
+                    Ih = np.arange(self.Ih0.get(), self.IhF.get(), (self.IhF.get()-self.Ih0.get())/100)
+                Ih/= self.MWStatic.get()
+                for Ki in KiList:
+                    for Emax in EmaxList:
+                        for EC50 in EC50List:
+                            for kinact in kinactList:
+                                for d in dList:
                                     for kdegh in kdeghList:
                                         Ah = kdegh/(kdegh+Ih*kinact/(Ih+Ki))
                                         Bh = 1+d*Emax*Ih/(Ih+EC50)
                                         Ch = 1/(1+Ih/Ki)
 
+                                        legend="Static Liver Ki=%f [uM], EC50=%f [uM], Emax=%f, kinact=%f [min^-1], d=%f, kdegh=%f [min^-1]"%\
+                                               (Ki,EC50,Emax,kinact,d,kdegh)
+                                        print("Simulating %s"%legend)
+                                        R.append((Ih,1/(Ah*Bh*Ch*fm+(1-fm))))
+                                        Rlegends.append(legend)
+                                        Type.append('StaticLiver')
+
+            if self.doStaticGut:
+                kdeggList = self.parseList(self.kdeggStatic.get())
+                if self.doPhysiological:
+                    D = np.arange(self.D0Phys.get(), self.DFPhys.get(), (self.DFPhys.get()-self.D0Phys.get())/100)
+                    Ig = self.Fa.get()*self.ka.get()*D/self.Qen.get()
+                else:
+                    Ig = np.arange(self.Ig0.get(), self.IgF.get(), (self.IgF.get()-self.Ig0.get())/100)
+                Ig/= self.MWStatic.get()
+                fg=self.fg.get()
+                for Ki in KiList:
+                    for Emax in EmaxList:
+                        for EC50 in EC50List:
+                            for kinact in kinactList:
+                                for d in dList:
+                                    for kdegg in kdeggList:
                                         Ag = kdegg/(kdegg+Ig*kinact/(Ig+Ki))
                                         Bg = 1+d*Emax*Ig/(Ig+EC50)
                                         Cg = 1/(1+Ig/Ki)
 
-                                        legend="Static Ki=%f [uM], EC50=%f [uM], Emax=%f, kinact=%f [min^-1], d=%f, kdegg=%f [min^-1], kdegh=%f [min^-1]"%\
-                                               (Ki,EC50,Emax,kinact,d,kdegg,kdegh)
+                                        legend="Static Gut Ki=%f [uM], EC50=%f [uM], Emax=%f, kinact=%f [min^-1], d=%f, kdegg=%f [min^-1]"%\
+                                               (Ki,EC50,Emax,kinact,d,kdegg)
                                         print("Simulating %s"%legend)
-                                        R.append((Ig,Ih,1/(Ah*Bh*Ch*fm+(1-fm))*1/(Ag*Bg*Cg*fg+(1-fg))))
+                                        R.append((Ig,1/(Ag*Bg*Cg*fg+(1-fg))))
                                         Rlegends.append(legend)
+                                        Type.append('StaticGut')
 
         if len(R)>0:
             fh=open(self._getPath("profiles.txt"),'w')
             fhSummary=open(self._getPath("summary.txt"),"w")
-            for toPlot, legend in izip(R,Rlegends):
-                fh.write(legend+"\n")
-                fhSummary.write("Simulated %s\n"%legend)
+            for toPlot, legend, plotType in izip(R,Rlegends,Type):
+                fh.write(plotType+"::"+legend+"\n")
+                fhSummary.write("Simulated %s:: %s\n"%(plotType,legend))
                 if len(toPlot)==2:
                     I, Ri = toPlot
                     for n in range(I.size):
@@ -206,4 +335,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
         return msg
 
     def _citations(self):
-        return ['CHMPEWP56095','Fahmi2009']
+        retval = ['CHMPEWP56095','Fahmi2009']
+        if self.doPhysiological:
+            retval+=['Yang2007a','Yang2007b','Rostami2004']
+        return retval
