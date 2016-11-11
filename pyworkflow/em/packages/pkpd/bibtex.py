@@ -50,6 +50,17 @@ _bibtexStr = """
   Url                      = {http://dmd.aspetjournals.org/content/37/8/1658}
 }
 
+@Article{Rostami2004,
+  Title                    = {In silico simulations to assess the in vivo consequences of in vitro metabolic drug?drug interactions},
+  Author                   = {Rostami-Hodjegan, A. and Tucker, G. T.},
+  Journal                  = {Drug Discovery Today},
+  Year                     = {2004},
+  Pages                    = {441-448},
+  Volume                   = {4},
+  Doi                      = {http://dx.doi.org/10.1016/j.ddtec.2004.10.002},
+  Url                      = {http://www.sciencedirect.com/science/article/pii/S174067490400037X}
+}
+
 @Article{Spiess2010,
   Title                    = {An evaluation of R2 as an inadequate measure for nonlinear models in pharmacological and biochemical research: a Monte Carlo approach.},
   Author                   = {Spiess, A. and Neumeyer, N.},
@@ -59,6 +70,28 @@ _bibtexStr = """
   Volume                   = {10},
   Doi                      = {http://dx.doi.org/10.1186/1471-2210-10-6},
   Url                      = {http://dx.doi.org/10.1186/1471-2210-10-6}
+}
+
+@Article{Yang2007a,
+  Title                    = {Misuse of the Well-Stirred Model of Hepatic Drug Clearance.},
+  Author                   = {Yang, J. and Jamei, M. and Yeo, K. R. and Rostami-Hodjegan, A. and Tucker, G. T.},
+  Journal                  = {Drug Metabolism and disposition},
+  Year                     = {2007},
+  Pages                    = {501-502},
+  Volume                   = {35},
+  Doi                      = {http://dx.doi.org/10.1124/dmd.106.013359},
+  Url                      = {http://dx.doi.org/10.1124/dmd.106.013359}
+}
+
+@Article{Yang2007b,
+  Title                    = {Prediction of Intestinal First-Pass Drug Metabolism.},
+  Author                   = {Yang, J. and Jamei, M. and Yeo, K. R. and Tucker, G. T. and Rostami-Hodjegan, A.},
+  Journal                  = {Current Drug Metabolism},
+  Year                     = {2007},
+  Pages                    = {676-684},
+  Volume                   = {8},
+  Doi                      = {http://dx.doi.org/10.2174/138920007782109733},
+  Url                      = {https://www.ncbi.nlm.nih.gov/labs/articles/17979655/}
 }
 
 """
