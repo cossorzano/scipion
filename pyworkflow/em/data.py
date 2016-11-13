@@ -1003,7 +1003,7 @@ class PKPDODEModel(PKPDModelBase2):
         if x==None:
             x = self.x
 
-        if type(x[0])!=list:
+        if type(x[0])!=list and type(x[0])!=np.ndarray:
             if self.getStateDimension()==1:
                 self.yPredicted = np.interp(x,Xt,Yt)
             else:
@@ -1125,6 +1125,8 @@ class PKPDOptimizer:
         self.BIC = p*math.log(n)-2*logL
 
     def _printFitting(self, x, y, yp):
+        if type(y[0])!=list and type(y[0])!=np.ndarray and (type(yp[0])==list or type(yp[0])==np.ndarray):
+            yp=yp[0]
         self._evaluateQuality(x, y, yp)
         if self.model.model.getResponseDimension()==1:
             for n in range(0,x.shape[0]):
