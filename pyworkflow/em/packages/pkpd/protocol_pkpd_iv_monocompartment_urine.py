@@ -47,8 +47,8 @@ are independent, which are not. Use Bootstrap estimates instead.\n
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):
         self._defineParams1(form)
-        form.addParam('t', params.StringParam, label="Time variable", default="t")
-        form.addParam('Cp', params.StringParam, label="Plasma concentration", default="Cp")
+        form.addParam('predictor', params.StringParam, label="Time variable", default="t")
+        form.addParam('predicted', params.StringParam, label="Plasma concentration", default="Cp")
         form.addParam('Au', params.StringParam, label="Cumulated amount in urine", default="Au")
         form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Cl, V, fe)", default="",
                       help="Bounds for the tlag (if it must be estimated), clearance, volume and fraction excreted."\
@@ -56,8 +56,8 @@ are independent, which are not. Use Bootstrap estimates instead.\n
                       'If tlag must be estimated, its bounds must always be specified')
 
     def getXYvars(self):
-        self.varNameX=self.t.get()
-        self.varNameY=[self.Cp.get(),self.Au.get()]
+        self.varNameX=self.predictor.get()
+        self.varNameY=[self.predicted.get(),self.Au.get()]
 
     def configureSource(self, drugSource):
         drugSource.type = biopharmaceutics.DrugSource.IV
