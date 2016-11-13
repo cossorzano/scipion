@@ -67,6 +67,7 @@ from protocol_pkpd_iv_two_compartments import ProtPKPDIVTwoCompartments
 from protocol_pkpd_ev0_two_compartments import ProtPKPDEV0TwoCompartments
 from protocol_pkpd_ev1_two_compartments import ProtPKPDEV1TwoCompartments
 from protocol_pkpd_ev_monocompartment_urine import ProtPKPDEV1MonoCompartmentUrine
+from protocol_pkpd_simulate_liver_flow import ProtPKPDSimulateLiverFlow
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
 
@@ -76,6 +77,7 @@ from wizard import *
 from bibtex import _bibtex
 
 from viewer_pkpd_simulate_drug_interactions import PKPDSimulateDrugInteractionsViewer
+from viewer_pkpd_simulate_liver_flow import PKPDSimulateLiverFlowViewer
 
 # Pending:
 # Batch effects, Reese2013

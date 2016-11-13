@@ -50,6 +50,17 @@ _bibtexStr = """
   Url                      = {http://dmd.aspetjournals.org/content/37/8/1658}
 }
 
+@Article{Kanamitsu2000,
+  Title                    = {Quantitative prediction of in vivo drug-drug interactions from in vitro data based on physiological pharmacokinetics: use of maximum unbound concentration of inhibitor at the inlet to the liver},
+  Author                   = {Kanamitsu, S. and Ito, K. and Sugiyama, Y.},
+  Journal                  = {Pharmaceutical research},
+  Pages                    = {336-343},
+  Volume                   = {17},
+  Year                     = {2000},
+  Doi                      = {http://dx.doi.org/10.1023/A:1007572803027}
+  Url                      = {http://link.springer.com/article/10.1023/A:1007572803027}
+}
+
 @Article{Rostami2004,
   Title                    = {In silico simulations to assess the in vivo consequences of in vitro metabolic drug?drug interactions},
   Author                   = {Rostami-Hodjegan, A. and Tucker, G. T.},
