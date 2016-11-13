@@ -48,6 +48,7 @@ from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
 from protocol_pkpd_ev01_monocompartment import ProtPKPDEV01MonoCompartment
 from protocol_pkpd_ev_monocompartment import ProtPKPDEV1MonoCompartment
 from protocol_pkpd_iv_monocompartment import ProtPKPDIVMonoCompartment
+from protocol_pkpd_iv_monocompartment_urine import ProtPKPDIVMonoCompartmentUrine
 from protocol_pkpd_iv_two_compartments import ProtPKPDIVTwoCompartments
 from protocol_pkpd_ev0_two_compartments import ProtPKPDEV0TwoCompartments
 from protocol_pkpd_ev1_two_compartments import ProtPKPDEV1TwoCompartments
@@ -274,6 +275,7 @@ class PKPDODEWizard(Wizard):
                 (ProtPKPDEV01MonoCompartment, ['bounds']),
                 (ProtPKPDEV1MonoCompartment, ['bounds']),
                 (ProtPKPDIVMonoCompartment, ['bounds']),
+                (ProtPKPDIVMonoCompartmentUrine, ['bounds']),
                 (ProtPKPDIVTwoCompartments, ['bounds']),
                 (ProtPKPDEV0TwoCompartments, ['bounds']),
                 (ProtPKPDEV1TwoCompartments, ['bounds']),
