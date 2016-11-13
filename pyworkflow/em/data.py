@@ -313,6 +313,17 @@ class PKPDDose:
     def getDUnitsString(self):
         return self.dunits._toString()
 
+
+def createDeltaDose(doseAmount,t=0,dunits="mg"):
+    dose = PKPDDose()
+    dose.varName = "Bolus"
+    dose.doseType = PKPDDose.TYPE_BOLUS
+    dose.doseAmount = doseAmount
+    dose.t0 = t
+    dose.tunits = PKPDUnit("min")
+    dose.dunits = PKPDUnit(dunits)
+    return dose
+
 class PKPDSample:
     def __init__(self):
         self.varName = ""
@@ -930,6 +941,9 @@ class PKPDODEModel(PKPDModelBase2):
     def G(self, t, dD):
         return 0
 
+    def imposeConstraints(self, yt):
+        pass
+
     def getResponseDimension(self):
         return None
 
@@ -972,6 +986,10 @@ class PKPDODEModel(PKPDModelBase2):
 
             # Update state
             yt += (0.5*(k1+k4)+k2+k3)*K+dyD
+
+            # Make sure it makes sense
+            self.imposeConstraints(yt)
+
             # if self.show:
             #     print("t=%f dD=%s dyD=%s dy=%s"%(t,str(dD),str(dyD),str((0.5*(k1+k4)+k2+k3)*K)))
 
@@ -989,7 +1007,9 @@ class PKPDODEModel(PKPDModelBase2):
             if self.getStateDimension()==1:
                 self.yPredicted = np.interp(x,Xt,Yt)
             else:
-                self.yPredicted = np.interp(x,Xt,Yt[:,0])
+                self.yPredicted = []
+                for j in range(0,self.getResponseDimension()):
+                    self.yPredicted.append(np.interp(x,Xt,Yt[:,j]))
         else:
             self.yPredicted = []
             for j in range(0,self.getResponseDimension()):
