@@ -87,3 +87,85 @@ class PDLinear(PDGenericModel):
 
     def areParametersValid(self, p):
         return True
+
+
+
+class PDLogLinear(PDGenericModel):
+
+    # voy a ultilizar la formula E = m*log(C(t) + c0) como  E = m*log(C(t) + 10^(e0/m) )
+    # suponemos que m esta dentro de parameters en parameters[0]
+
+    def forwardModel(self, parameters, x=None):
+        if x==None:
+            x = self.x
+
+        self.yPredicted = np.zeros(x.shape[0]) #queremos que el resultado y (E) tenga la misma dimension que x
+
+        m = parameters[0]
+        C0 = parameters[1] #cuando llamemos a esta funcion, le pasamos m; CO
+
+        self.yPredicted = m*np.log(x - C0)
+
+
+
+        # compruebo que todos los valores son reales en protocol_pkpd_simulate_generic linea 119
+
+
+        #if isinstance(self.yPredicted, numpy.float64)
+        #return self.yPredicted
+
+        # checking if it's a finite number
+        # idx = np.isreal(self.yPredicted)   #se crea un array {false,true, true, false, true...}
+        # y = self.yPredicted(idx)
+        # x = x(idx)
+
+
+
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Log-Linear (%s)"%self.__class__.__name__
+
+    def prepare(self):
+        if self.bounds == None:
+            print("prepare",self.y,self.x)
+            Cmin=np.min(self.x)
+            xprime = self.x - 0.9*Cmin
+            p = np.polyfit(np.log(xprime), self.y, 1)
+            C0=0.9*Cmin
+            m=p[0]
+            print("First estimate of log-linear term: ")
+            print("Y=(%f)*log(X - (%f))" % (m, C0))
+
+            self.bounds = []
+            self.bounds.append((0.1 * m, 10 * m))
+            self.bounds.append((0.1 * C0, 10 * C0))
+
+    def printSetup(self):
+        print ("Model: %s " %self.getModelEquation())
+        print ("Bounds:  " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = m*log(X - C0)"
+
+    def getEquation(self):
+        toPrint = "Y=(%f)*log(X - (%f))" % (self.parameters[0], self.parameters[1])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['m','C0']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y = m*log(X - C0'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE] # COSS: Buscar unidades de C
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
