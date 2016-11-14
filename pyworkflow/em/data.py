@@ -808,6 +808,9 @@ class PKPDModelBase:
         self.x = np.array(x)
         if type(y[0])!=list and type(y[0])!=np.ndarray:
             self.y = np.array(y)
+		    idx = np.logical_and(np.isfinite(self.x), np.isfinite(self.y))
+		    self.x = self.x[idx]
+		    self.y = self.y[idx]
             self.ylog = np.log10(self.y)
         else:
             self.y = [np.array(yi) for yi in y]
