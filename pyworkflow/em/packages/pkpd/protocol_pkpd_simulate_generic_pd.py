@@ -99,6 +99,8 @@ class ProtPKPDSimulateGenericPD(ProtPKPD):
         self.printSection("Model setup")
         if self.modelType.get()==0:
             model = PDLinear()
+        elif self.modelType.get()==1:
+            model = PDLogLinear()
         model.setExperiment(self.experiment)
         model.setXVar(self.predictor.get())
         model.printSetup()
@@ -161,6 +163,8 @@ class ProtPKPDSimulateGenericPD(ProtPKPD):
         modelTypeStr="unknown"
         if self.modelType.get()==0:
             modelTypeStr = "linear"
+        elif self.modelType.get()==1:
+           modelTypeStr = "Log-Linear"
         msg.append("Variable %s added to experiment by simulation of a %s model"%(self.predicted.get(),modelTypeStr))
         return msg
 

@@ -29,7 +29,7 @@ import math
 import pyworkflow.protocol.params as params
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from protocol_pkpd_fit_base import ProtPKPDFitBase
-from pd_models import PDLinear
+from pd_models import *
 
 
 class ProtPKPDGenericFit(ProtPKPDFitBase):
@@ -60,7 +60,13 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         form.addParam('reportX', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
                       help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: 0:2:10, from 0 to 10 in steps of 2')
 
+    def getListOfFormDependencies(self):
+        return [self.modelType.get(), self.fitType.get(), self.bounds.get(), self.confidenceInterval.get(),
+                self.reportX.get()]
+
     #--------------------------- STEPS functions --------------------------------------------
     def createModel(self):
         if self.modelType.get()==0:
             return PDLinear()
+        elif self.modelType.get() == 1:
+            return PDLogLinear()
