@@ -26,6 +26,8 @@
 """
 PD models
 """
+
+import math
 import numpy as np
 from pyworkflow.em.data import PKPDModel
 from pyworkflow.em.pkpd_units import PKPDUnit
@@ -98,29 +100,11 @@ class PDLogLinear(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x==None:
             x = self.x
-
-        self.yPredicted = np.zeros(x.shape[0]) #queremos que el resultado y (E) tenga la misma dimension que x
+        self.yPredicted = np.zeros(x.shape[0])
 
         m = parameters[0]
-        C0 = parameters[1] #cuando llamemos a esta funcion, le pasamos m; CO
-
-        self.yPredicted = m*np.log(x - C0)
-
-
-
-        # compruebo que todos los valores son reales en protocol_pkpd_simulate_generic linea 119
-
-
-        #if isinstance(self.yPredicted, numpy.float64)
-        #return self.yPredicted
-
-        # checking if it's a finite number
-        # idx = np.isreal(self.yPredicted)   #se crea un array {false,true, true, false, true...}
-        # y = self.yPredicted(idx)
-        # x = x(idx)
-
-
-
+        C0 = parameters[1]
+        self.yPredicted = [m*math.log(xi - C0) if np.isfinite(xi) and xi>C0 else float("inf") for xi in x]
         return self.yPredicted
 
     def getDescription(self):
@@ -128,7 +112,6 @@ class PDLogLinear(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
-            print("prepare",self.y,self.x)
             Cmin=np.min(self.x)
             xprime = self.x - 0.9*Cmin
             p = np.polyfit(np.log(xprime), self.y, 1)
@@ -139,7 +122,7 @@ class PDLogLinear(PDGenericModel):
 
             self.bounds = []
             self.bounds.append((0.1 * m, 10 * m))
-            self.bounds.append((0.1 * C0, 10 * C0))
+            self.bounds.append((-9 * C0, 11 * C0)) # C0 +- 10* C0
 
     def printSetup(self):
         print ("Model: %s " %self.getModelEquation())
@@ -156,7 +139,7 @@ class PDLogLinear(PDGenericModel):
         return ['m','C0']
 
     def getParameterDescriptions(self):
-        return ['Automatically fitted model of the form Y = m*log(X - C0'] * self.getNumberOfParameters()
+        return ['Automatically fitted model of the form Y = m*log(X - C0)'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self, sample):
         self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE] # COSS: Buscar unidades de C
