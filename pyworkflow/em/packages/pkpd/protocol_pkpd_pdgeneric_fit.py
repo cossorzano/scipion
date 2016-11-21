@@ -51,7 +51,7 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic","Relative"], label="Fit mode", default=1,
                       help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2\n'\
                            "Relative: sum ((Cobserved-Cpredicted)/Cobserved)^2")
-        form.addParam('bounds', params.StringParam, label="Amplitude and time constant bounds", default="", expertLevel=LEVEL_ADVANCED,
+        form.addParam('bounds', params.StringParam, label="Bounds", default="", expertLevel=LEVEL_ADVANCED,
                       help='Parameter values for the simulation.\nExample: (1,10);(0,0.05) is (1,10) for the first parameter, (0,0.05) for the second parameter\n'
                            'Linear: e0;s\n'\
                            'Log-linear: m;X0\n')
