@@ -31,6 +31,9 @@ import math
 import numpy as np
 from pyworkflow.em.data import PKPDModel
 from pyworkflow.em.pkpd_units import PKPDUnit
+from numpy import *
+
+import math
 
 class PDModel(PKPDModel):
     pass
@@ -84,7 +87,7 @@ class PDLinear(PDGenericModel):
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
         retval.append(lowerBound[0]>0 or upperBound[0]<0)
-        retval.append(lowerBound[0]>1 or upperBound[0]<1)
+        retval.append(lowerBound[1]>1 or upperBound[1]<1)
         return retval
 
     def areParametersValid(self, p):
@@ -114,7 +117,8 @@ class PDLogLinear(PDGenericModel):
         if self.bounds == None:
             Cmin=np.min(self.x)
             xprime = self.x - 0.9*Cmin
-            p = np.polyfit(np.log(xprime), self.y, 1)
+            idx = np.where(xprime>0)[0]
+            p = np.polyfit(np.log(xprime[idx]), self.y[idx], 1)
             C0=0.9*Cmin
             m=p[0]
             print("First estimate of log-linear term: ")
@@ -147,7 +151,532 @@ class PDLogLinear(PDGenericModel):
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
         retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+
+class PDSaturated(PDGenericModel):
+
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+
+        self.yPredicted = np.zeros(x.shape[0])
+
+        e0 = parameters[0]
+        emax = parameters[1]
+        eC50 = parameters[2]
+
+        self.yPredicted = e0 + (emax*x / (eC50 + x))
+
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Saturated (%s)"%self.__class__.__name__ #no se reconoce
+
+        #def prepare(self): #trabajar
+
+    def printSetup(self):
+        print("Model: %s"%self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = e0 + (emax*X / (eC50 + X))"
+
+    def getEquation(self):
+        toPrint = "Y = (%f) + ( (%f)*X / ((%f) + X) )"%(self.parameters[0], self.parameters[1], self.parameters[2])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['e0', 'emax', 'eC50']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y = e0 + (emax*X / (eC50 + X))'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self,sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
         retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(True)
+        retval.append(True)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+
+class PDSigmoid(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        e0 = parameters[0]
+        emax = parameters[1]
+        eC50 = parameters[2]
+        h = parameters[3]  #h es el numero de molec del farmaco que se combinan con el receptor
+                           #lo incluimos como parametro?
+        eC50prime = eC50**h
+        xprime = x**h
+        self.yPredicted = e0 - ( (emax*(xprime)) / ( (eC50prime) + (xprime)))
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Sigmoid (%s)"%self.__class__.__name__
+        #def prepare(self): #trabajar
+
+    def printSetup(self):
+        print("Model: %s"%self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = e0 - ( emax*(X**h) / ( (eC50**h) + (X**h)))"
+
+    def getEquation(self):
+        toPrint = "Y = (%f) - ( (%f)*(X**(%f)) / ( ((%f)**(%f)) + (X**(%f))))"%(self.parameters[0], self.parameters[1], self.parameters[3], self.parameters[2], self.parameters[3], self.parameters[3])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['e0', 'emax', 'eC50', 'h']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form  Y = e0 - ( emax*(X**h) / ( (eC50**h) + (X**h)) )'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self,sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+
+class PDGompertz(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x==None:
+            x = self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        a = parameters[0]
+        b = parameters[1]
+        g = parameters[2]
+
+        d = np.exp(b - (g*x))
+
+        self.yPredicted = a / (np.exp(d))
+
+        return self.yPredicted
+
+
+    def getDescription(self):
+        return "Gompertz (%s)"%self.__class__.__name__
+
+    # def prepare(self):
+
+    def printSetup(self):
+        print("Model: %s"%self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = a*exp(-exp(b-g*X))"
+
+    def getEquation(self):
+        toPrint = "Y = (%f)*exp(-exp((%f)-(%f)*X))"%(self.parameters[0], self.parameters[1], self.parameters[2])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['a', 'b', 'g']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=a*exp(-exp(b-g*X))']*self.getNumberOfParameters()
+
+    def calculateParameterUnits(self,sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+
+
+class PDLogistic1(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        a = parameters[0]
+        b = parameters[1]
+        g = parameters[2]
+
+        d = np.exp(b - (g * x))
+
+        self.yPredicted = a / (1 + d)
+
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Logistic1 (%s)" % self.__class__.__name__
+
+    # def prepare(self):
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = a/(1+exp(b-g*X))"
+
+    def getEquation(self):
+        toPrint = "Y = (%f)/(1+exp((%f)-(%f)*X))" % (self.parameters[0], self.parameters[1], self.parameters[2])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['a', 'b', 'g']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=a/(1+exp(b-g*X))'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+
+
+class PDLogistic2(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        a = parameters[0]
+        b = parameters[1]
+        g = parameters[2]
+
+        d = np.exp(b - (g * x))
+
+        self.yPredicted = 1 / (a + d)
+
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Logistic2 (%s)" % self.__class__.__name__
+
+    # def prepare(self):
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = 1/(a+exp(b-g*X))"
+
+    def getEquation(self):
+        toPrint = "Y = 1/((%f)+exp((%f)-(%f)*X))" % (self.parameters[0], self.parameters[1], self.parameters[2])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['a', 'b', 'g']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=1/(a+exp(b-g*X))'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+
+
+class PDLogistic3(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        a = parameters[0]
+        b = parameters[1]
+        g = parameters[2]
+
+        d = np.exp(-(g * x))
+
+        self.yPredicted = a / (1 + b*d)
+
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Logistic3 (%s)" % self.__class__.__name__
+
+    # def prepare(self):
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = a/(1+b*exp(-g*X))"
+
+    def getEquation(self):
+        toPrint = "Y = (%f)/(1+(%f)*exp(-(%f)*X))" % (self.parameters[0], self.parameters[1], self.parameters[2])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['a', 'b', 'g']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=a/(1+b*exp(-g*X))'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+
+
+class PDLogistic4(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        a = parameters[0]
+        b = parameters[1]
+        g = parameters[2]
+
+        d = np.exp(-(g * x))
+
+        self.yPredicted = 1 / (a + b*d)
+
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Logistic4 (%s)" % self.__class__.__name__
+
+    # def prepare(self):
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = 1/(a+b*exp(-g*X))"
+
+    def getEquation(self):
+        toPrint = "Y = 1/(%f)+(%f)*exp(-(%f)*X))" % (self.parameters[0], self.parameters[1], self.parameters[2])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['a', 'b', 'g']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=1/(a+b*exp(-g*X))'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+
+
+class PDRichards(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        a = parameters[0]
+        b = parameters[1]
+        g = parameters[2]
+        d = parameters[3]
+
+        p = np.exp(b-(g * x))
+
+        self.yPredicted = a / ((1+p)**(1/d))
+
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Richards (%s)" % self.__class__.__name__
+
+    # def prepare(self):
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = a/ ((1 + exp(b - g*X))^(1/d))"
+
+    def getEquation(self):
+        toPrint = "Y = (%f)/ ((1 + exp((%f) - (%f)*X))^(1/(%f)))" % (self.parameters[0], self.parameters[1], self.parameters[2], self.parameters[3])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['a', 'b', 'g', 'd']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y = a/ ((1 + exp(b - g*X))^(1/d))'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+
+
+class PDMorgan(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        b = parameters[0]
+        g = parameters[1]
+        a = parameters[2]
+        d = parameters[3]
+
+        xprime = x**d
+
+        self.yPredicted = ((b*g) + (a*xprime)) / (g + xprime)
+
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Morgan-Mercer-Flodin (%s)" % self.__class__.__name__
+
+    # def prepare(self):
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = (b*g + a*(X^d)) / (g + (X^d))"
+
+    def getEquation(self):
+        toPrint = "Y = ((%f)*(%f) + (%f)*(X^(%f))) / ((%f) + (X^(%f)))" % (self.parameters[0], self.parameters[1], self.parameters[2], self.parameters[3], self.parameters[1], self.parameters[3])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['b', 'g', 'a', 'd']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=(b*g+a*(X^d))/(g+(X^d))'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+
+
+class PDWeibull(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        a = parameters[0]
+        b = parameters[1]
+        g = parameters[2]
+        d = parameters[3]
+
+        xprime = x**d
+
+        self.yPredicted = a - (b*(np.exp(- g * xprime)))
+
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Wibull (%s)" % self.__class__.__name__
+
+    # def prepare(self):
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = a - b*exp(-g*(X^d))"
+
+    def getEquation(self):
+        toPrint = "Y  = (%f) - (%f)*exp(-(%f)*(X^(%f)))" % (self.parameters[0], self.parameters[1], self.parameters[2], self.parameters[3])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['a', 'b', 'g', 'd']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=a-b*exp(-g*(X^d))'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
         return retval
 
     def areParametersValid(self, p):

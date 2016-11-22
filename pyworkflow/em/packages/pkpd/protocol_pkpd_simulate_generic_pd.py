@@ -61,7 +61,8 @@ class ProtPKPDSimulateGenericPD(ProtPKPD):
                                                               "Logistic1 ","Logistic 2","Logistic 3","Logistic 4",
                                                               "Richards","Morgan-Mercer-Flodin","Weibull"],
                       label="Generic model", default=0,
-                      help='Linear: Y=e0+s*X\nLog-linear: Y=m*log(X-X0)\n')
+                      help='Linear: Y=e0+s*X\nLog-linear: Y=m*log(X-X0)\n'\
+                           'Saturated: Y=emin+emax*X/(ec50+X)')
         form.addParam('paramValues', params.StringParam, label="Parameter values", default="",
                       help='Parameter values for the simulation.\nExample: 3.5;-1 is 3.5 for the first parameter, -1 for the second parameter\n'
                            'Linear: e0;s\n'\
@@ -101,6 +102,27 @@ class ProtPKPDSimulateGenericPD(ProtPKPD):
             model = PDLinear()
         elif self.modelType.get()==1:
             model = PDLogLinear()
+        elif self.modelType.get()==2:
+            model = PDSaturated()
+        elif self.modelType.get()==3:
+            model = PDSigmoid()
+        elif self.modelType.get()==4:
+            model = PDGompertz()
+        elif self.modelType.get()==5:
+            model = PDLogistic1()
+        elif self.modelType.get()==6:
+            model = PDLogistic2()
+        elif self.modelType.get()==7:
+            model = PDLogistic3()
+        elif self.modelType.get()==8:
+            model = PDLogistic4()
+        elif self.modelType.get()==9:
+            model = PDRichards()
+        elif self.modelType.get()==10:
+            model = PDMorgan()
+        elif self.modelType.get()==11:
+            model = PDWeibull()
+
         model.setExperiment(self.experiment)
         model.setXVar(self.predictor.get())
         model.printSetup()
@@ -165,7 +187,29 @@ class ProtPKPDSimulateGenericPD(ProtPKPD):
             modelTypeStr = "linear"
         elif self.modelType.get()==1:
            modelTypeStr = "Log-Linear"
+        elif self.modelType.get()==2:
+            modelTypeStr = "Saturated"
+        elif self.modelType.get()==3:
+            modelTypeStr = "Sigmoid"
+        elif self.modelType.get()==4:
+            modelTypeStr = "Gompertz"
+        elif self.modelType.get()==5:
+            modelTypeStr == "Logistic1"
+        elif self.modelType.get() == 6:
+            modelTypeStr == "Logistic 2"
+        elif self.modelType.get() == 7:
+            modelTypeStr == "Logistic 3"
+        elif self.modelType.get() == 8:
+            modelTypeStr == "Logistic 4"
+        elif self.modelType.get() == 9:
+            modelTypeStr == "Richards"
+        elif self.modelType.get() == 10:
+            modelTypeStr == "Morgan-Mercer-Flodin"
+        elif self.modelType.get() == 11:
+            modelTypeStr == "Weibull"
+
         msg.append("Variable %s added to experiment by simulation of a %s model"%(self.predicted.get(),modelTypeStr))
+        msg.append("Parameter values: %s"%self.paramValues)
         return msg
 
     def _validate(self):

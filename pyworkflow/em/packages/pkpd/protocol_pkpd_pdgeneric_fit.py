@@ -47,14 +47,15 @@ are independent, which are not. Use Bootstrap estimates instead.\n
                                                               "Logistic1 ","Logistic 2","Logistic 3","Logistic 4",
                                                               "Richards","Morgan-Mercer-Flodin","Weibull"],
                       label="Generic model", default=0,
-                      help='Linear: Y=e0+s*X\nLog-linear: Y=m*log(X-X0)\n')
+                      help='Linear: Y=e0+s*X\nLog-linear: Y=m*log(X-X0)\nSaturated: Y=e0+(emax*X/(eC50+X))\n')
         form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic","Relative"], label="Fit mode", default=1,
                       help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2\n'\
                            "Relative: sum ((Cobserved-Cpredicted)/Cobserved)^2")
         form.addParam('bounds', params.StringParam, label="Bounds", default="", expertLevel=LEVEL_ADVANCED,
                       help='Parameter values for the simulation.\nExample: (1,10);(0,0.05) is (1,10) for the first parameter, (0,0.05) for the second parameter\n'
                            'Linear: e0;s\n'\
-                           'Log-linear: m;X0\n')
+                           'Log-linear: m;X0\n'\
+                           'Saturated: e0;emax;eC50\n')
         form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
         form.addParam('reportX', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
@@ -66,7 +67,27 @@ are independent, which are not. Use Bootstrap estimates instead.\n
 
     #--------------------------- STEPS functions --------------------------------------------
     def createModel(self):
-        if self.modelType.get()==0:
+        if self.modelType.get() == 0:
             return PDLinear()
         elif self.modelType.get() == 1:
             return PDLogLinear()
+        elif self.modelType.get() == 2:
+            return PDSaturated()
+        elif self.modelType.get() == 3:
+            return PDSigmoid()
+        elif self.modelType.get() == 4:
+            return PDGompertz()
+        elif self.modelType.get() == 5:
+            return PDLogistic1()
+        elif self.modelType.get() == 6:
+            return PDLogistic2()
+        elif self.modelType.get() == 7:
+            return PDLogistic3()
+        elif self.modelType.get() == 8:
+            return PDLogistic4()
+        elif self.modelType.get() == 9:
+            return PDRichards()
+        elif self.modelType.get() == 10:
+            return PDMorgan()
+        elif self.modelType.get() == 11:
+            return PDWeibull()
