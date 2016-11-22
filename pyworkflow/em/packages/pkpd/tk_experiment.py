@@ -570,8 +570,12 @@ class ExperimentWindow(gui.Window):
                 ax = plotter.createSubPlot("Plot", varLabelX, varLabelY)
                 xValues = _values(x, useLog=self.useTimeLog())
                 ax.plot(xValues, _values(y), 'x', label="Observations")
-                ax.plot(xValues, _values(yp), 'g', label="Fit")
-                ax.legend()
+                idx = np.argsort(xValues)
+                ypValues = _values(yp)
+                ax.plot(np.asarray(xValues)[idx], np.asarray(ypValues)[idx], 'g', label="Fit")
+                leg = ax.legend()
+                if leg:
+                    leg.draggable()
 
                 plotter.show()
 
