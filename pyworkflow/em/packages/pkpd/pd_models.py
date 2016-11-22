@@ -163,7 +163,6 @@ class PDSaturated(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-
         self.yPredicted = np.zeros(x.shape[0])
 
         e0 = parameters[0]
@@ -177,7 +176,18 @@ class PDSaturated(PDGenericModel):
     def getDescription(self):
         return "Saturated (%s)"%self.__class__.__name__ #no se reconoce
 
-        #def prepare(self): #trabajar
+    def prepare(self):
+        if self.bounds == None:
+            e0 = np.min(self.y)
+            emax = np.max(self.y-e0)
+            eC50 = 0.5*(np.max(self.x)+np.min(self.y))
+            print("First estimate of saturated term: ")
+            print("Y=(%f) + ( (%f)*X / ((%f) + X) )" % (e0, emax, eC50))
+
+            self.bounds = []
+            self.bounds.append((0.1 * e0, 10 * e0))
+            self.bounds.append((0.1 * emax, 10 * emax))
+            self.bounds.append((0.1 * eC50, 10 * eC50))
 
     def printSetup(self):
         print("Model: %s"%self.getModelEquation())
