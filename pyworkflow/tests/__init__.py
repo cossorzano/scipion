@@ -37,7 +37,11 @@ try:
 except ImportError:
     from unittest import _WritelnDecorator # Python <2.6
 
-    
+DataSet(name='Gabrielsson_PK01', folder='Gabrielsson_PK01',
+        files={
+               'experiment': 'experiment.pkpd'
+               })
+
 DataSet(name='model',  folder='model',
         files={
                'classesSelection': 'gold/classes_selection.sqlite',
