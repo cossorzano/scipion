@@ -811,7 +811,7 @@ class PKPDModelBase:
             idx = np.logical_and(np.isfinite(self.x), np.isfinite(self.y))
             self.x = self.x[idx]
             self.y = self.y[idx]
-            self.ylog = np.log10(self.y)
+            self.ylog = [math.log10(yi) if yi>0 else float("inf") for yi in self.y]
         else:
             self.y = [np.array(yi) for yi in y]
             self.ylog = [np.log10(yi) for yi in self.y]
@@ -1025,7 +1025,7 @@ class PKPDOptimizer:
 
         if type(model.y[0])!=list and type(model.y[0])!=np.ndarray:
             self.yTarget = np.array(model.y, dtype=np.float32)
-            self.yTargetLogs = [np.log10(self.yTarget)]
+            self.yTargetLogs = [np.array([math.log10(yi) if np.isfinite(yi) and yi>0 else float("inf") for yi in self.yTarget],dtype=np.float32)]
         else:
             self.yTarget = [np.array(yi, dtype=np.float32) for yi in model.y]
             self.yTargetLogs = [np.log10(yi) for yi in self.yTarget]
@@ -1060,14 +1060,17 @@ class PKPDOptimizer:
 
     def getResiduals(self,parameters):
         if not self.inBounds(parameters):
-            allDiffs = None
-            for yTarget in self.yTarget:
-                diff = 1e38*np.ones(yTarget.shape)
-                if allDiffs==None:
-                    allDiffs = diff
-                else:
-                    allDiffs = np.concatenate([allDiffs, diff])
-            return allDiffs
+            if type(self.yTarget[0])==list or type(self.yTarget[0])==np.ndarray:
+                allDiffs = None
+                for yTarget in self.yTarget:
+                    diff = 1e38*np.ones(yTarget.shape)
+                    if allDiffs==None:
+                        allDiffs = diff
+                    else:
+                        allDiffs = np.concatenate([allDiffs, diff])
+                return allDiffs
+            else:
+                return 1e38*np.ones(self.yTarget.shape)
         yPredicted = self.model.forwardModel(parameters)
         if type(yPredicted[0])!=list and type(yPredicted[0])!=np.ndarray:
             yPredicted = [np.array(yPredicted,dtype=np.float32)]
@@ -1077,8 +1080,8 @@ class PKPDOptimizer:
         allDiffs = None
         for y, yTarget in izip(yPredicted,self.yTarget):
             if self.takeYLogs:
-                idx = y>=1e-20
-                nonIdx = y<1e-20
+                idx = np.array([np.isfinite(yi) and yi>=1e-20 for yi in y])
+                nonIdx = np.logical_not(idx)
                 y[idx] = np.log10(y[idx])
                 y[nonIdx] = -100
             diff = yTarget - y
@@ -1088,7 +1091,9 @@ class PKPDOptimizer:
                 allDiffs = diff
             else:
                 allDiffs = np.concatenate([allDiffs, diff])
-        return allDiffs
+            idx = np.logical_not(np.isfinite(allDiffs))
+            allDiffs[idx]=1e38
+        return allDiffs[np.isfinite(allDiffs)]
 
     def goalRMSE(self,parameters):
         e = self.getResiduals(parameters)
@@ -1131,7 +1136,7 @@ class PKPDOptimizer:
         if type(y[0])!=list and type(y[0])!=np.ndarray and (type(yp[0])==list or type(yp[0])==np.ndarray):
             yp=yp[0]
         self._evaluateQuality(x, y, yp)
-        if self.model.model.getResponseDimension()==1:
+        if not hasattr(self.model,"model") or self.model.model.getResponseDimension()==1:
             for n in range(0,x.shape[0]):
                 print("%f %f %f %f"%(x[n],y[n],yp[n],y[n]-yp[n]))
         else:
@@ -1166,7 +1171,10 @@ class PKPDOptimizer:
         print("X    log10(Y)  log10(Ypredicted)  Error=log10(Y)-log10(Ypredicted)")
         print("==================================================================")
         if type(self.model.y[0])!=list and type(self.model.y[0])!=np.ndarray:
-            self._printFitting(self.model.x, np.log10(self.model.y), np.log10(yPredicted))
+            ylog = np.array([math.log10(yi) if np.isfinite(yi) and yi>0 else float("inf") for yi in self.model.y])
+            yplog = np.array([math.log10(ypi) if np.isfinite(ypi) and ypi>0 else float("inf") for ypi in yPredicted])
+            idx = np.array(np.where(np.logical_and(np.isfinite(ylog),np.isfinite(yplog))))
+            self._printFitting(self.model.x[idx].ravel(), ylog[idx].ravel(), yplog[idx].ravel())
         else:
             logY = [np.log10(np.asarray(y)) for y in self.model.y]
             logYp = [np.log10(np.asarray(y)) for y in yPredicted]
