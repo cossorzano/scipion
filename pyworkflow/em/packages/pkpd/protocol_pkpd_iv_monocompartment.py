@@ -51,7 +51,7 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         form.addParam('ncaProtocol', params.PointerParam, label="NCA protocol",
                       pointerClass='ProtPKPDNCAIVExp, ProtPKPDNCAIVObs', allowsNull = True, condition="initType==0",
                       help='NCA Protocol')
-        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Cl, V)", default="",
+        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Cl, V)", default="", condition="initType==1",
                       help="Bounds for the tlag (if it must be estimated), clearance and volume. Example: (0,2);(0.1,0.2);(10,20). "\
                       'Make sure that the bounds are expressed in the expected units (estimated from the sample itself).'\
                       'If tlag must be estimated, its bounds must always be specified')
@@ -98,6 +98,9 @@ are independent, which are not. Use Bootstrap estimates instead.\n
                 if "CL" in sampleNCA.descriptors:
                     Cl = float(sampleNCA.descriptors["CL"]) # NCA from exponential fitting
                     V  = float(sampleNCA.descriptors["Vd"])
+                elif "CL_0t" in sampleNCA.descriptors:
+                    Cl = float(sampleNCA.descriptors["CL_0t"]) # NCA from observations
+                    V  = float(sampleNCA.descriptors["Vd_0t"])
                 elif "CL_0inf" in sampleNCA.descriptors:
                     Cl = float(sampleNCA.descriptors["CL_0inf"]) # NCA from observations
                     V  = float(sampleNCA.descriptors["Vd_0inf"])
@@ -107,5 +110,5 @@ are independent, which are not. Use Bootstrap estimates instead.\n
             self.parseBounds(boundsString)
         else:
             self.parseBounds(self.bounds.get())
-        ProtPKPDODEBase.setBounds(self,sample)
+        ProtPKPDODEBase.setBoundsFromBoundsList(self)
         self.model.bounds = self.boundsPK
