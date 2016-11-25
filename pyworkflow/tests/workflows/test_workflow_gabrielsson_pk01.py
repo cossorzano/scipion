@@ -71,21 +71,21 @@ class TestGabrielssonPK01Workflow(TestWorkflow):
         # Non-compartmental analysis
         print "Performing Non-compartmental analysis..."
         protNCAIVObs = self.newProtocol(ProtPKPDNCAIVObs)
-        protNCAIVObs.inputExperiment.set(protEliminationRate.outputExperiment)
-        protNCAIVObs.protElimination.set(protEliminationRate.outputFitting)
+        protNCAIVObs.inputExperiment.set(protChangeUnits.outputExperiment)
+        protNCAIVObs.protElimination.set(protEliminationRate)
         self.launchProtocol(protNCAIVObs)
         self.assertIsNotNone(protNCAIVObs.outputExperiment.fnPKPD, "There was a problem with the Non-compartmental analysis ")
         self.validateFiles('protNCAIVObs', protNCAIVObs)
 
         # Fit a monocompartmental model
         print "Fitting monocompartmental model..."
-        ProtIVMonoCompartment = self.newProtocol(ProtPKPDIVMonoCompartment,
+        protIVMonoCompartment = self.newProtocol(ProtPKPDIVMonoCompartment,
                                                  findtlag=False, initType=0)
-        ProtIVMonoCompartment.inputExperiment.set(protChangeUnits.outputExperiment)
-        ProtIVMonoCompartment.ncaProtocol.set(protNCAIVObs.outputAnalysis)
-        self.launchProtocol(ProtIVMonoCompartment)
-        self.assertIsNotNone(ProtIVMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
-        self.validateFiles('ProtIVMonoCompartment', ProtIVMonoCompartment)
+        protIVMonoCompartment.inputExperiment.set(protChangeUnits.outputExperiment)
+        protIVMonoCompartment.ncaProtocol.set(protNCAIVObs)
+        self.launchProtocol(protIVMonoCompartment)
+        self.assertIsNotNone(protIVMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
+        self.validateFiles('ProtIVMonoCompartment', protIVMonoCompartment)
 
 if __name__ == "__main__":
     unittest.main()
