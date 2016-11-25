@@ -1133,6 +1133,8 @@ class PKPDOptimizer:
         self.BIC = p*math.log(n)-2*logL
 
     def _printFitting(self, x, y, yp):
+        if y.size==0:
+            return
         if type(y[0])!=list and type(y[0])!=np.ndarray and (type(yp[0])==list or type(yp[0])==np.ndarray):
             yp=yp[0]
         self._evaluateQuality(x, y, yp)
