@@ -62,7 +62,7 @@ gmon.out
 /pyworkflow/web/static
 /pyworkflow/resources/uploads
 /pyworkflow/tests/em/data
-/data
+#/data
 
 # Scipion
 /config/*.conf
