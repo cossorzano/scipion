@@ -1,0 +1,28 @@
+[EXPERIMENT] ===========================
+comment = 
+title = My experiment
+
+[VARIABLES] ============================
+Cp ; ug/L ; numeric[%f] ; measurement ; Plasma concentration
+t ; h ; numeric[%f] ; time ; 
+
+[DOSES] ================================
+Dose1 ; bolus t=0.000000 d=10; min; mg
+
+[SAMPLES] ================================
+Individual1; dose=Dose1 
+
+[MEASUREMENTS] ===========================
+Individual1 ; t; Cp
+10 920 
+20 800 
+30 750 
+40 630 
+50 610 
+60 530 
+70 520 
+90 380 
+110 350 
+150 200 
+
+
