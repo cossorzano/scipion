@@ -52,53 +52,51 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
 
         # Filter time variable
         print "Filter time"
-        ProtFilterTime = self.newProtocol(ProtPKPDFilterMeasurements,
+        protFilterTime = self.newProtocol(ProtPKPDFilterMeasurements,
                                                   objLabel='pkpd - filter measurements t>50',
                                                   filterType=1, condition='$(t)>50 and $(t)<=300')
-        ProtFilterTime.inputExperiment.set(protImport.outputExperiment)
-        self.launchProtocol(ProtFilterTime)
-        self.assertIsNotNone(ProtFilterTime.outputExperiment.fnPKPD, "There was a problem with the filter")
-        self.validateFiles('ProtFilterTime', ProtFilterTime)
+        protFilterTime.inputExperiment.set(protImport.outputExperiment)
+        self.launchProtocol(protFilterTime)
+        self.assertIsNotNone(protFilterTime.outputExperiment.fnPKPD, "There was a problem with the filter")
+        self.validateFiles('protFilterTime', protFilterTime)
 
         # Filter concentration variable
         print "Filter Cp"
-        ProtFilterCp = self.newProtocol(ProtPKPDFilterMeasurements,
+        protFilterCp = self.newProtocol(ProtPKPDFilterMeasurements,
                                         objLabel='pkpd - filter measurements Cp>0',
                                         filterType=0, condition='$(Cp)<=0')
-        ProtFilterCp.inputExperiment.set(protImport.outputExperiment)
-        self.launchProtocol(ProtFilterCp)
-        self.assertIsNotNone(ProtFilterCp.outputExperiment.fnPKPD, "There was a problem with the filter")
-        self.validateFiles('ProtFilterCp', ProtFilterCp)
+        protFilterCp.inputExperiment.set(protImport.outputExperiment)
+        self.launchProtocol(protFilterCp)
+        self.assertIsNotNone(protFilterCp.outputExperiment.fnPKPD, "There was a problem with the filter")
+        self.validateFiles('ProtFilterCp', protFilterCp)
 
         # Fit a single exponential to the input data
         print "Fitting an exponential..."
         protEliminationRate = self.newProtocol(ProtPKPDEliminationRate,
                                                predictor='t', predicted='Cp')
-        protEliminationRate.inputExperiment.set(ProtFilterTime.outputExperiment)
+        protEliminationRate.inputExperiment.set(protFilterTime.outputExperiment)
         self.launchProtocol(protEliminationRate)
         self.assertIsNotNone(protEliminationRate.outputExperiment.fnPKPD, "There was a problem with the exponential fitting")
         self.validateFiles('protEliminationRate', protEliminationRate)
 
+
         # Non-compartmental analysis
         print "Performing Non-compartmental analysis..."
-        ProtAbsorptionRate = self.newProtocol(ProtPKPDAbsorptionRate,
-                                              absorptionF=0)
-        ProtAbsorptionRate.inputExperiment.set(ProtFilterCp)
-        #ProtAbsorptionRate.inputExperiment.setExtended('outputExperiment')
-        ProtAbsorptionRate.protElimination.set(protEliminationRate)
-        self.launchProtocol(ProtAbsorptionRate)
-        self.assertIsNotNone(ProtAbsorptionRate.outputExperiment.fnPKPD, "There was a problem with the Non-compartmental analysis ")
-        self.validateFiles('ProtAbsorptionRate', ProtAbsorptionRate)
-        #
-        # # Fit a monocompartmental model
+        protAbsorptionRate = self.newProtocol(ProtPKPDAbsorptionRate)
+        protAbsorptionRate.inputExperiment.set(protFilterCp.outputExperiment)
+        protAbsorptionRate.protElimination.set(protEliminationRate)
+        self.launchProtocol(protAbsorptionRate)
+        self.assertIsNotNone(protAbsorptionRate.outputExperiment.fnPKPD, "There was a problem with the Non-compartmental analysis ")
+        self.validateFiles('protAbsorptionRate', protAbsorptionRate)
+
+        # Fit a monocompartmental model
         # print "Fitting monocompartmental model..."
-        # ProtIVMonoCompartment = self.newProtocol(ProtPKPDIVMonoCompartment,
-        #                                          findtlag=False, initType=0)
-        # ProtIVMonoCompartment.inputExperiment.set(protChangeUnits.outputExperiment)
-        # ProtIVMonoCompartment.ncaProtocol.set(protNCAIVObs.outputAnalysis)
-        # self.launchProtocol(ProtIVMonoCompartment)
-        # self.assertIsNotNone(ProtIVMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
-        # self.validateFiles('ProtIVMonoCompartment', ProtIVMonoCompartment)
+        # protIVMonoCompartment = self.newProtocol(ProtPKPDIVMonoCompartment, findtlag=False, initType=0)
+        # protIVMonoCompartment.inputExperiment.set(protFilterCp.outputExperiment.outputExperiment)
+        # protIVMonoCompartment.ncaProtocol.set(protNCAIVObs.outputAnalysis)
+        # self.launchProtocol(protIVMonoCompartment)
+        # self.assertIsNotNone(protIVMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
+        # self.validateFiles('protIVMonoCompartment', protIVMonoCompartment)
 
 if __name__ == "__main__":
     unittest.main()
