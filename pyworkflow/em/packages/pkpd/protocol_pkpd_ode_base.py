@@ -179,7 +179,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         if self.findtlag:
             Nsource+=1
         if Nbounds!=Nsource+Nmodel:
-            raise "The number of parameters (%d) and bounds (%d) are different"%(Nsource+Nmodel,Nbounds)
+            raise Exception("The number of parameters (%d) and bounds (%d) are different"%(Nsource+Nmodel,Nbounds))
         self.boundsSource = self.boundsList[0:Nsource]
         self.boundsPK = self.boundsList[Nsource:]
         self.model.bounds = self.boundsPK
