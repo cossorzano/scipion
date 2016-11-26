@@ -847,6 +847,10 @@ class PKPDModelBase2(PKPDModelBase):
         print("Variables: "+str(self.getParameterNames()))
         print("Bounds: "+str(self.getBounds()))
 
+    def setSample(self, sample):
+        self.sample = sample
+        self.Dunits = sample.getDoseUnits()
+
     def getEquation(self):
         pass
 
@@ -952,10 +956,6 @@ class PKPDODEModel(PKPDModelBase2):
 
     def getStateDimension(self):
         return None
-
-    def setSample(self, sample):
-        self.sample = sample
-        self.Dunits = sample.getDoseUnits()
 
     def forwardModel(self, parameters, x=None):
         self.parameters = parameters
