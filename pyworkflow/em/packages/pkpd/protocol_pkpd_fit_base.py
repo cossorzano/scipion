@@ -29,7 +29,7 @@ from itertools import izip
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDExperiment, PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, PKPDSampleFit, PKPDVariable
+from pyworkflow.em.data import PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, PKPDSampleFit
 from utils import parseRange
 
 class ProtPKPDFitBase(ProtPKPD):
@@ -69,8 +69,29 @@ class ProtPKPDFitBase(ProtPKPD):
         else:
             self.varNameY=None
 
+    def setExperiment(self, experiment):
+        self.experiment = experiment
+        if experiment!=None:
+            self.fnExperiment = experiment.fnPKPD
+
+    def setSample(self, sample):
+        self.sample = sample
+        self.model.setSample(sample)
+
     def createModel(self):
         pass
+
+    def setupModel(self):
+        # Setup model
+        self.model = self.createModel()
+        self.model.setExperiment(self.experiment)
+        self.setupFromFormParameters()
+        self.getXYvars()
+        self.model.setXVar(self.varNameX)
+        self.model.setYVar(self.varNameY)
+
+    def calculateParameterUnits(self,sample):
+        self.parameterUnits = self.model.calculateParameterUnits(sample)
 
     def setupFromFormParameters(self):
         pass
