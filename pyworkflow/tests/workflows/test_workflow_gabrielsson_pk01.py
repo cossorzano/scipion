@@ -60,7 +60,7 @@ class TestGabrielssonPK01Workflow(TestWorkflow):
         self.validateFiles('protChangeUnits', protChangeUnits)
 
         # Fit a single exponential to the input data
-        print "Fitting an exponential..."
+        print "Compute elimination rate..."
         protEliminationRate = self.newProtocol(ProtPKPDEliminationRate,
                                                predictor='t', predicted='Cp')
         protEliminationRate.inputExperiment.set(protChangeUnits.outputExperiment)
