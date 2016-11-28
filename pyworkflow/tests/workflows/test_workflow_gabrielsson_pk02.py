@@ -45,6 +45,7 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
 
         print "Import Experiment"
         protImport = self.newProtocol(ProtImportExperiment,
+                                      objLabel='pkpd - import experiment',
                                       inputFile=self.exptFn)
         self.launchProtocol(protImport)
         self.assertIsNotNone(protImport.outputExperiment.fnPKPD, "There was a problem with the import")
@@ -73,6 +74,7 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
         # Fit a single exponential to the input data
         print "Fitting an exponential..."
         protEliminationRate = self.newProtocol(ProtPKPDEliminationRate,
+                                               objLabel='pkpd - elimination rate',
                                                predictor='t', predicted='Cp')
         protEliminationRate.inputExperiment.set(protFilterTime.outputExperiment)
         self.launchProtocol(protEliminationRate)
@@ -80,23 +82,27 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
         self.validateFiles('protEliminationRate', protEliminationRate)
 
 
-        # Non-compartmental analysis
-        print "Performing Non-compartmental analysis..."
-        protAbsorptionRate = self.newProtocol(ProtPKPDAbsorptionRate)
+        # Estimate absorption rate
+        print "Estimation of the absorption rate..."
+        protAbsorptionRate = self.newProtocol(ProtPKPDAbsorptionRate,
+                                              objLabel='pkpd - absorption rate')
         protAbsorptionRate.inputExperiment.set(protFilterCp.outputExperiment)
         protAbsorptionRate.protElimination.set(protEliminationRate)
         self.launchProtocol(protAbsorptionRate)
-        self.assertIsNotNone(protAbsorptionRate.outputExperiment.fnPKPD, "There was a problem with the Non-compartmental analysis ")
+        self.assertIsNotNone(protAbsorptionRate.outputExperiment.fnPKPD, "There was a problem with the absorption rate estimation ")
         self.validateFiles('protAbsorptionRate', protAbsorptionRate)
 
-        # Fit a monocompartmental model
-        # print "Fitting monocompartmental model..."
-        # protIVMonoCompartment = self.newProtocol(ProtPKPDIVMonoCompartment, findtlag=False, initType=0)
-        # protIVMonoCompartment.inputExperiment.set(protFilterCp.outputExperiment.outputExperiment)
-        # protIVMonoCompartment.ncaProtocol.set(protNCAIVObs.outputAnalysis)
-        # self.launchProtocol(protIVMonoCompartment)
-        # self.assertIsNotNone(protIVMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
-        # self.validateFiles('protIVMonoCompartment', protIVMonoCompartment)
+        # Fit a monocompartmental model with first order absorption
+        print "Fitting monocompartmental model..."
+        protEV1MonoCompartment = self.newProtocol(ProtPKPDEV1MonoCompartment,
+                                                  objLabel='pkpd - ev1 monocompartment',
+                                                  findtlag=True,  predictor='t',
+                                                  predicted='Cp', initType=0)
+        protEV1MonoCompartment.inputExperiment.set(protFilterCp.outputExperiment)
+        protEV1MonoCompartment.absorptionProtocol.set(protAbsorptionRate)
+        self.launchProtocol(protEV1MonoCompartment)
+        self.assertIsNotNone(protEV1MonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
+        self.validateFiles('protEV1MonoCompartment', protEV1MonoCompartment)
 
 if __name__ == "__main__":
     unittest.main()
