@@ -194,5 +194,5 @@ class ProtPKPDSimulateLiverFlow(ProtPKPD):
         return msg
 
     def _citations(self):
-        retval = ['Kanamitsu2000','Ito2002']
+        retval = ['Kanamitsu2000']
         return retval

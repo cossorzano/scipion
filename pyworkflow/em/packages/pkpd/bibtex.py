@@ -35,7 +35,7 @@ _bibtexStr = """
   Author                   = {European Medicines Agency Committee for Human Medicinal Products},
   Journal                  = {CHMP/EWP/560/95},
   Year                     = {2012},
-  Doi                      = {http://www.ema.europa.eu/docs/en_GB/document_library/Scientific_guideline/2012/07/WC500129606.pdf}
+  Doi                      = {http://www.ema.europa.eu/docs/en_GB/document_library/Scientific_guideline/2012/07/WC500129606.pdf},
   Url                      = {http://www.ema.europa.eu/docs/en_GB/document_library/Scientific_guideline/2012/07/WC500129606.pdf}
 }
 
@@ -46,7 +46,7 @@ _bibtexStr = """
   Pages                    = {1658-1666},
   Volume                   = {37},
   Year                     = {2009},
-  Doi                      = {http://www.ema.europa.eu/docs/en_GB/document_library/Scientific_guideline/2012/07/WC500129606.pdf}
+  Doi                      = {http://dx.doi.org/10.1124/dmd.108.026252},
   Url                      = {http://dmd.aspetjournals.org/content/37/8/1658}
 }
 
@@ -57,7 +57,7 @@ _bibtexStr = """
   Pages                    = {336-343},
   Volume                   = {17},
   Year                     = {2000},
-  Doi                      = {http://dx.doi.org/10.1023/A:1007572803027}
+  Doi                      = {http://dx.doi.org/10.1023/A:1007572803027},
   Url                      = {http://link.springer.com/article/10.1023/A:1007572803027}
 }
 
