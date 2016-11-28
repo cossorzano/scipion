@@ -1,0 +1,30 @@
+[EXPERIMENT] ===========================
+comment = Decide between 1st order and 0th order absorption
+title = My experiment
+
+[VARIABLES] ============================
+Cp ; ug/L ; numeric[%f] ; measurement ; Plasma concentration
+t ; h ; numeric[%f] ; time ; 
+
+[DOSES] ================================
+Bolus ; bolus t=0.000000 d=20; h; mg
+
+[SAMPLES] ================================
+Individual; dose=Bolus 
+
+[MEASUREMENTS] ===========================
+Individual ; t; Cp
+0.5 10. 
+1.0 46 
+1.5 56 
+2.0 56 
+3.0 66. 
+4.0 87.0 
+5.0 69.0 
+6.0 45.0 
+7.0 29.0 
+8.0 15.0 
+9.0 10.0 
+10.0 9.0 
+
+
