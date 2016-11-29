@@ -83,39 +83,35 @@ class TestGabrielssonPK05Workflow(TestWorkflow):
         self.assertIsNotNone(protIVMonoCompartmentUrine.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
         self.validateFiles('protIVMonoCompartmentUrine', protIVMonoCompartmentUrine)
 
-        # # Filter time variable
-        # print "Filter time"
-        # protFilterTime = self.newProtocol(ProtPKPDFilterMeasurements,
-        #                                   objLabel='pkpd - filter measurements (t<=24h)',
-        #                                   filterType=1, condition='$(t)<=1440')
-        # protFilterTime.inputExperiment.set(protChangeTimeUnit.outputExperiment)
-        # self.launchProtocol(protFilterTime)
-        # self.assertIsNotNone(protFilterTime.outputExperiment.fnPKPD, "There was a problem with the filter")
-        # self.validateFiles('protFilterTime', protFilterTime)
-        #
-        # # Fit a monocompartmental model with first order absorption
-        # print "Fitting monocompartmental model with first order..."
-        # protEV1MonoCompartment2 = self.newProtocol(ProtPKPDEV1MonoCompartment,
-        #                                            objLabel='pkpd - ev1 monocompartment 2',
-        #                                            findtlag=True,  predictor='t',
-        #                                            predicted='Cp', initType=1, deltaT=1.0,
-        #                                            bounds='(0,120); (0.0, 0.01); (0.0, 1.0); (0.0, 200.0)')
-        # protEV1MonoCompartment2.inputExperiment.set(protFilterTime.outputExperiment)
-        # self.launchProtocol(protEV1MonoCompartment2)
-        # self.assertIsNotNone(protEV1MonoCompartment2.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
-        # self.validateFiles('protEV1MonoCompartment2', protEV1MonoCompartment2)
-        #
-        # # Fit a monocompartmental model with first order absorption
-        # print "Fitting monocompartmental model with first order..."
-        # protEV1MonoCompartment3 = self.newProtocol(ProtPKPDEV1MonoCompartment,
-        #                                            objLabel='pkpd - ev1 monocompartment',
-        #                                            findtlag=True,  predictor='t',
-        #                                            predicted='Cp', initType=1, globalSearch=False,
-        #                                            bounds='(0.0, 60.0); (0.0, 0.005); (0.05, 0.25); (30.0, 100.0)')
-        # protEV1MonoCompartment3.inputExperiment.set(protChangeTimeUnit.outputExperiment)
-        # self.launchProtocol(protEV1MonoCompartment3)
-        # self.assertIsNotNone(protEV1MonoCompartment3.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
-        # self.validateFiles('protEV1MonoCompartment3', protEV1MonoCompartment3)
+        # Fit a monocompartmental model to a set of measurements obtained by intravenous doses and urine
+        print "Fitting a monocompartmental model (intravenous doses and urine )..."
+        protIVMonoCompartmentUrine = self.newProtocol(ProtPKPDIVMonoCompartmentUrine,
+                                                  objLabel='pkpd - iv monocompartment urine',
+                                                  bounds='(0,0.04);(5,15);(0,1)')
+        protIVMonoCompartmentUrine.inputExperiment.set(protChangeTimeUnit.outputExperiment)
+        self.launchProtocol(protIVMonoCompartmentUrine)
+        self.assertIsNotNone(protIVMonoCompartmentUrine.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
+        self.validateFiles('protIVMonoCompartmentUrine', protIVMonoCompartmentUrine)
+
+        # Calculate statistics of the labels
+        print "Calculate statics of the labels"
+        protStatisticsLabel = self.newProtocol(ProtPKPDIVMonoCompartmentUrine,
+                                               objLabel='pkpd - statistics labels')
+        protStatisticsLabel.inputExperiment.set(protIVMonoCompartmentUrine.outputExperiment)
+        self.launchProtocol(protStatisticsLabel)
+        self.assertIsNotNone(protStatisticsLabel.outputExperiment.fnPKPD, "There was a problem with the statics calculation ")
+        self.validateFiles('protStatisticsLabel', protStatisticsLabel)
+
+        # Simulate a generic pharmacodynamic response Y=f(X)
+        print "Simulate a generic pharmacodynamic response"
+        protSimulateGenericPD = self.newProtocol(ProtPKPDSimulateGenericPD,
+                                                 objLabel='pkpd - simulate generic',
+                                                 paramValues='7;3')
+        protSimulateGenericPD.inputExperiment.set(protIVMonoCompartmentUrine.outputExperiment)
+        self.launchProtocol(protSimulateGenericPD)
+        self.assertIsNotNone(protSimulateGenericPD.outputExperiment.fnPKPD, "There was a problem with the simulation ")
+        self.validateFiles('protSimulateGenericPD', protSimulateGenericPD)
+
 
 if __name__ == "__main__":
     unittest.main()
