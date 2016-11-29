@@ -75,6 +75,27 @@ class PKPDSimulateDrugInteractionsViewer(Viewer):
             if leg:
                 leg.draggable()
             plotter.draw()
+        elif previousType=="TransporterGut":
+            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[1.1,1.1],'r--', label="EMA")
+            leg=ax.legend()
+            if leg:
+                leg.draggable()
+            plotter.draw()
+        elif previousType=="TransporterLiver":
+            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[1.04,1.04],'r--', label="EMA")
+            leg=ax.legend()
+            if leg:
+                leg.draggable()
+            plotter.draw()
+        elif previousType=="TransporterRenal":
+            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[1.02,1.02],'r--', label="EMA")
+            leg=ax.legend()
+            if leg:
+                leg.draggable()
+            plotter.draw()
 
 
     def visualize(self, obj, **kwargs):
@@ -113,10 +134,12 @@ class PKPDSimulateDrugInteractionsViewer(Viewer):
                     self.addLimits(plotter,previousType,minX,maxX)
                 plotter = EmPlotter()
                 doShow = True
-                if Rtypei=="ReversibleLiver" or Rtypei=="TimeDependentLiver" or Rtypei=="InductionLiver" or Rtypei=="StaticLiver":
+                if Rtypei=="ReversibleLiver" or Rtypei=="TimeDependentLiver" or Rtypei=="InductionLiver" or Rtypei=="StaticLiver" or Rtypei=="TransporterLiver":
                     Ilabel="[Ih] [uM]"
-                elif Rtypei=="ReversibleGut" or Rtypei=="TimeDependentGut" or Rtypei=="InductionGut" or Rtypei=="StaticGut":
+                elif Rtypei=="ReversibleGut" or Rtypei=="TimeDependentGut" or Rtypei=="InductionGut" or Rtypei=="StaticGut" or Rtypei=="TransporterGut":
                     Ilabel="[Ig] [uM]"
+                elif Rtypei=="TransporterRenal":
+                    Ilabel="[Cmax] [uM]"
                 ax = plotter.createSubPlot("Plot", Ilabel, "R")
                 previousType = Rtypei
                 minX = None

@@ -153,6 +153,28 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
         group.addParam("kdeggStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Gut (kdeg [min^-1])', condition="doStaticGut",
                       help="kdeg,g is the apparent first order degradation rate constant of the affected enzyme at the gut. Several constants can be given separated by space, e.g., 0.01 0.005")
 
+        form.addSection('Transporters')
+        form.addParam("doTransporterGut", params.BooleanParam, default=False, label="Gut transporter")
+        fromToGut = form.addLine('Oral dose', condition="doTransporterGut")
+        fromToGut.addParam('D0TransporterGut', params.FloatParam, default=0, label='Min (mg)')
+        fromToGut.addParam('DFTransporterGut', params.FloatParam, default=10, label='Max (mg)')
+        form.addParam("MWTransporterGut", params.FloatParam, default=1, label="Molecular weight (g/mol)", condition="doTransporterGut")
+        form.addParam('KiTransporterGut', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doTransporterGut",
+                      help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
+
+        form.addParam("doTransporterLiver", params.BooleanParam, default=False, label="Liver transporter")
+        fromToGut = form.addLine('Unbound hepatic inlet [I]', condition="doTransporterLiver")
+        fromToGut.addParam('I0TransporterLiver', params.FloatParam, default=0, label='Min (uM)')
+        fromToGut.addParam('IFTransporterLiver', params.FloatParam, default=10, label='Max (uM)')
+        form.addParam('KiTransporterLiver', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doTransporterLiver",
+                      help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
+
+        form.addParam("doTransporterRenal", params.BooleanParam, default=False, label="Renal transporter")
+        fromToGut = form.addLine('Unbound [Imax]', condition="doTransporterRenal")
+        fromToGut.addParam('I0TransporterRenal', params.FloatParam, default=0, label='Min (uM)')
+        fromToGut.addParam('IFTransporterRenal', params.FloatParam, default=10, label='Max (uM)')
+        form.addParam('KiTransporterRenal', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doTransporterRenal",
+                      help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
 
     #--------------------------- INSERT steps functions --------------------------------------------
     def _insertAllSteps(self):
@@ -184,7 +206,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
             for Ki in KiList:
                 legend="Gut Rev. Inh. Ki=%f [uM]"%Ki
                 print("Simulating %s"%legend)
-                R.append((D,1+I/Ki))
+                R.append((I,1+I/Ki))
                 Rlegends.append(legend)
                 Type.append('ReversibleGut')
 
@@ -306,6 +328,37 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
                                         Rlegends.append(legend)
                                         Type.append('StaticGut')
 
+        if self.doTransporterGut:
+            D = np.arange(self.D0TransporterGut.get(), self.DFTransporterGut.get(), (self.DFTransporterGut.get()-self.D0TransporterGut.get())/100)
+            I = D/(250*self.MWTransporterGut.get()) # I [uM]
+            KiList = self.parseList(self.KiTransporterGut.get())
+            for Ki in KiList:
+                legend="Gut Transporter Ki=%f [uM]"%Ki
+                print("Simulating %s"%legend)
+                R.append((I,1+I/Ki))
+                Rlegends.append(legend)
+                Type.append('TransporterGut')
+
+        if self.doTransporterLiver:
+            I = np.arange(self.I0TransporterLiver.get(), self.IFTransporterLiver.get(), (self.IFTransporterLiver.get()-self.I0TransporterLiver.get())/100)
+            KiList = self.parseList(self.KiTransporterLiver.get())
+            for Ki in KiList:
+                legend="Liver Transporter Ki=%f [uM]"%Ki
+                print("Simulating %s"%legend)
+                R.append((I,1+I/Ki))
+                Rlegends.append(legend)
+                Type.append('TransporterLiver')
+
+        if self.doTransporterRenal:
+            I = np.arange(self.I0TransporterRenal.get(), self.IFTransporterRenal.get(), (self.IFTransporterRenal.get()-self.I0TransporterRenal.get())/100)
+            KiList = self.parseList(self.KiTransporterLiver.get())
+            for Ki in KiList:
+                legend="Renal Transporter Ki=%f [uM]"%Ki
+                print("Simulating %s"%legend)
+                R.append((I,1+I/Ki))
+                Rlegends.append(legend)
+                Type.append('TransporterRenal')
+
         if len(R)>0:
             fh=open(self._getPath("profiles.txt"),'w')
             fhSummary=open(self._getPath("summary.txt"),"w")
@@ -338,4 +391,20 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
         retval = ['CHMPEWP56095','Fahmi2009']
         if self.doPhysiological:
             retval+=['Yang2007a','Yang2007b','Rostami2004']
+        return retval
+
+    def _methods(self):
+        retval = []
+        if self.doTransporterGut:
+            retval.append("We studied the inhibition of an intestinal transporter with a dose between %f and %f [mg] "
+                          "of a compound whose molecular weight was %f [g/mol]. The inhibition constant of the transporter "
+                          "was assumed to be %s [uM]"%(self.D0TransporterGut,self.DFTransporterGut,self.MWTransporterGut,self.KiTransporterGut))
+        if self.doTransporterLiver:
+            retval.append("We studied the inhibition of a hepatic transporter with a unbound hepatic concentration of the inhibitor at the liver inlet between %f and %f [uM]. "
+                          "The inhibition constant of the transporter "
+                          "was assumed to be %s [uM]"%(self.I0TransporterLiver,self.IFTransporterLiver,self.KiTransporterLiver))
+        if self.doTransporterRenal:
+            retval.append("We studied the inhibition of a renal transporter with a unbound hepatic concentration of the inhibitor at the liver inlet between %f and %f [uM]. "
+                          "The inhibition constant of the transporter "
+                          "was assumed to be %s [uM]"%(self.I0TransporterRenal,self.IFTransporterRenal,self.KiTransporterRenal))
         return retval
