@@ -111,9 +111,13 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         Cmaxlist = []
         Tmaxlist = []
         Tminlist = []
-        for ndose in range(0,len(self.drugSource.parsedDoseList)-1):
+        Ndoses=len(self.drugSource.parsedDoseList)
+        for ndose in range(0,max(Ndoses-1,1)):
             tperiod0 = self.drugSource.parsedDoseList[ndose].t0
-            tperiodF = self.drugSource.parsedDoseList[ndose+1].t0-self.model.deltaT
+            if ndose+1<Ndoses:
+                tperiodF = self.drugSource.parsedDoseList[ndose+1].t0-self.model.deltaT
+            else:
+                tperiodF =  np.max(t)-1
             idx0 = find_nearest(t,tperiod0)
             idxF = find_nearest(t,tperiodF)
 
