@@ -57,8 +57,9 @@ from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsEx
 from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile, getVarNamesFromCSVfile
 from protocol_pkpd_bootstrap_simulate import ProtPKPDODESimulate
 from protocol_pkpd_ev_monocompartment_urine import ProtPKPDEV1MonoCompartmentUrine
+from protocol_pkpd_pdgeneric_fit import ProtPKPDGenericFit
 
-from tk_ode import PKPDODEDialog
+from tk_ode import PKPDODEDialog, PKPDFitDialog
 
 
 class FilterVariablesTreeProvider(TreeProvider):
@@ -279,8 +280,12 @@ class PKPDODEWizard(Wizard):
                 (ProtPKPDIVTwoCompartments, ['bounds']),
                 (ProtPKPDEV0TwoCompartments, ['bounds']),
                 (ProtPKPDEV1TwoCompartments, ['bounds']),
-                (ProtPKPDEV1MonoCompartmentUrine, ['bounds'])
+                (ProtPKPDEV1MonoCompartmentUrine, ['bounds']),
+                (ProtPKPDEV1MonoCompartmentUrine, ['bounds']),
+                (ProtPKPDGenericFit, ['bounds']),
                 ]
+
+    _nonODE = [ProtPKPDGenericFit]
 
     def show(self, form, *params):
         label = params[0]
@@ -290,11 +295,13 @@ class PKPDODEWizard(Wizard):
         if experiment is None:
             form.showError("Select the input experiment first.")
         else:
-            try:
+            # try:
                 protocol.setInputExperiment() # this load the experiment
-                protocol.configureSource(protocol.createDrugSource())
+                if not type(protocol) in PKPDODEWizard._nonODE:
+                    protocol.configureSource(protocol.createDrugSource())
                 protocol.setupModel()
-                protocol.model.drugSource = protocol.drugSource
+                if not type(protocol) in PKPDODEWizard._nonODE:
+                    protocol.model.drugSource = protocol.drugSource
 
                 i = 0
                 for sampleName, sample in protocol.experiment.samples.iteritems():
@@ -304,10 +311,16 @@ class PKPDODEWizard(Wizard):
                         protocol.calculateParameterUnits(sample)
                     i+=1
 
-                dlg = PKPDODEDialog(form.root, "Select Parameter Bounds",
-                                    protODE=protocol,
-                                    varNameX=protocol.predictor.get(),
-                                    varNameY=protocol.predicted.get())
+                if not type(protocol) in PKPDODEWizard._nonODE:
+                    dlg = PKPDODEDialog(form.root, "Select Parameter Bounds",
+                                        targetProtocol=protocol,
+                                        varNameX=protocol.predictor.get(),
+                                        varNameY=protocol.predicted.get())
+                else:
+                    dlg = PKPDFitDialog(form.root, "Select Parameter Bounds",
+                                        targetProtocol=protocol,
+                                        varNameX=protocol.predictor.get(),
+                                        varNameY=protocol.predicted.get())
 
                 if dlg.resultYes():
                     boundStr = ""
@@ -319,5 +332,5 @@ class PKPDODEWizard(Wizard):
                         i += 1
                     if boundStr!="":
                         form.setVar(label, boundStr)
-            except Exception as e:
-                form.showError("Error: %s" % str(e))
+            # except Exception as e:
+            #     form.showError("Error: %s" % str(e))
