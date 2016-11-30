@@ -124,7 +124,8 @@ class SamplesTreeProvider(TreeProvider):
                                              if k in obj.descriptors]
 
         if self.fitting:
-            values.extend([getattr(obj.fit, attr) for attr in self.FIT_COLUMNS])
+            if obj.fit!=None:
+                values.extend([getattr(obj.fit, attr) for attr in self.FIT_COLUMNS])
 
         return {'key': key, 'text': key,
                 'values': tuple(values)
@@ -525,8 +526,7 @@ class ExperimentWindow(gui.Window):
         if sampleKeys and self.callback:
             self.callback()
         else:
-            self.showInfo("Please select some sample(s) to create a "
-                          "new experiment.")
+            self.showInfo("Please select some sample(s) to create a new experiment.")
 
     def _onSampleClick(self, obj):
         # In fitting mode we need to display some information for
@@ -581,6 +581,8 @@ class ExperimentWindow(gui.Window):
 
             # Get first selected element
             fit = self.fitting.getSampleFit(sampleKeys[0])
+            if fit==None:
+                return
             varLabelX = self.getLabel(self.fitting.predictor.varName,
                                       self.useTimeLog())
             if type(self.fitting.predicted)==list:
