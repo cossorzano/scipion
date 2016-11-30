@@ -166,6 +166,10 @@ class PKPDSimpleEVModel(PKModel):
                 idx.append(i-1)
                 if self.y[i-1]>self.y[i]:
                     break
+            if len(idx)<=1:
+                print("The first estimate of Ka and Vd cannot be determined")
+                self.bounds = None
+                return
             xAscending = self.x[idx]
             yAscending = self.y[idx]
 
