@@ -35,11 +35,11 @@ class ProtPKPDChangeUnits(ProtPKPD):
         Protocol created by http://www.kinestatpharma.com\n """
     _label = 'change units'
 
-    choicesTime=["H","min","sec"]
-    choicesInvTime=["1/H","1/min","1/sec"]
+    choicesTime=["h","min","sec"]
+    choicesInvTime=["1/h","1/min","1/sec"]
     choicesWeight=["kg","g","mg","ug","ng"]
     choicesVolume=["L","mL","uL","nL"]
-    choicesConc=["g/L","mg/L","ug/L","ng/L","g/mL","g/uL"]
+    choicesConc=["g/L","mg/L","ug/L","ng/L","g/mL","mg/mL","ug/mL","g/uL"]
     choicesAUC=["g*h/L","mg*h/L","ug*h/L","ng*h/L","g*h/mL","g*h/uL","g*min/L","mg*min/L",\
                  "ug*min/L","ng*min/L","g*min/mL","g*min/uL"]
     choicesAUMC=["mg*h^2/L","ug*h^2/L","ng*h^2/L","g*h^2/mL","g*h^2/uL","g*min^2/L","mg*min^2/L",\
