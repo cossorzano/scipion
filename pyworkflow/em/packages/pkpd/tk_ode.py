@@ -120,7 +120,7 @@ class MinMaxSlider(tk.Frame):
             self.callback(e)
 
 
-class PKPDODEDialog(dialog.Dialog):
+class PKPDResponsiveDialog(dialog.Dialog):
     def __init__(self, parent, title, **kwargs):
         """ From kwargs:
                 message: message tooltip to show when browsing.
@@ -129,20 +129,24 @@ class PKPDODEDialog(dialog.Dialog):
         """
         self.values = []
         self.plotter = None
-        self.protODE = kwargs['protODE']
-        self.experiment = self.protODE.experiment
+        self.targetProtocol = kwargs['targetProtocol']
+        self.experiment = self.targetProtocol.experiment
         self.varNameX = kwargs['varNameX']
         self.varNameY = kwargs['varNameY']
         self.provider = SamplesTreeProvider(self.experiment)
         self.model = self.loadModel()
         self.validateSelectionCallback = kwargs.get('validateSelectionCallback', None)
+        self.setLabels()
 
         dialog.Dialog.__init__(self, parent, title,
                         buttons=[('Select', dialog.RESULT_YES),
                                  ('Cancel', dialog.RESULT_CANCEL)])
 
+    def setLabels(self):
+        pass
+
     def loadModel(self):
-        model = self.protODE.createModel()
+        model = self.targetProtocol.createModel()
         model.setExperiment(self.experiment)
         # if hasattr(self.protODE, "deltaT"):
         #     model.deltaT = self.protODE.deltaT.get()
@@ -176,8 +180,8 @@ class PKPDODEDialog(dialog.Dialog):
 
         i = 0
         self.sliders = {}
-        paramUnits = self.protODE.parameterUnits
-        for paramName, bounds in self.protODE.getParameterBounds().iteritems():
+        paramUnits = self.targetProtocol.parameterUnits
+        for paramName, bounds in self.targetProtocol.getParameterBounds().iteritems():
             bounds = bounds or (0, 1)
             slider = MinMaxSlider(lfBounds, "%s [%s]"%(paramName,strUnit(paramUnits[i])),
                                   bounds[0], bounds[1],
@@ -232,18 +236,18 @@ class PKPDODEDialog(dialog.Dialog):
 
     def computeFit(self):
         currentParams = []
-        for paramName in self.protODE.getParameterNames():
+        for paramName in self.targetProtocol.getParameterNames():
             currentParams.append(self.sliders[paramName].getValue())
 
-        self.protODE.setParameters(currentParams)
+        self.targetProtocol.setParameters(currentParams)
         # self.protODE.model.deltaT = 0.25
-        self.ypValues = self.protODE.forwardModel(currentParams, self.xpValues)
+        self.ypValues = self.targetProtocol.forwardModel(currentParams, self.xpValues)
         if type(self.ypValues)==list or type(self.ypValues[0])==np.ndarray:
             self.ypValues = self.ypValues[0]
 
     def getBoundsList(self):
         boundList = []
-        for paramName in self.protODE.getParameterNames():
+        for paramName in self.targetProtocol.getParameterNames():
             boundList.append(self.sliders[paramName].getMinMax())
         return boundList
 
@@ -298,15 +302,15 @@ class PKPDODEDialog(dialog.Dialog):
 
     def _updateModel(self):
         """ This function should be called whenever the sample changes """
-        self.protODE.model.t0 = 0
-        self.protODE.model.tF = np.max(self.xValues)
-        self.protODE.drugSource.setDoses(self.sample.parsedDoseList,
-                                         self.protODE.model.t0,
-                                         self.protODE.model.tF)
-        self.protODE.configureSource(self.protODE.drugSource)
-        self.protODE.model.drugSource = self.protODE.drugSource
+        self.targetProtocol.model.t0 = 0
+        self.targetProtocol.model.tF = np.max(self.xValues)
+        self.targetProtocol.drugSource.setDoses(self.sample.parsedDoseList,
+                                                self.targetProtocol.model.t0,
+                                                self.targetProtocol.model.tF)
+        self.targetProtocol.configureSource(self.targetProtocol.drugSource)
+        self.targetProtocol.model.drugSource = self.targetProtocol.drugSource
         # Necessary to count the number of source and PK parameters
-        self.protODE.getParameterNames()
+        self.targetProtocol.getParameterNames()
 
     def _onLogChanged(self, *args):
         # We will treat a log change as a sample change to plot
@@ -358,3 +362,10 @@ class PKPDODEDialog(dialog.Dialog):
         if not (self.plotter is None or self.plotter.isClosed()):
             self.plotter.close()
         dialog.Dialog.destroy(self)
+
+
+class PKPDODEDialog(PKPDResponsiveDialog):
+    pass
+
+class PKPDFitDialog(PKPDResponsiveDialog):
+    pass
