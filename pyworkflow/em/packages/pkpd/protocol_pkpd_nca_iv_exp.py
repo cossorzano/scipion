@@ -107,16 +107,19 @@ class ProtPKPDNCAIVExp(ProtPKPDSABase):
 
     def _validate(self):
         msg = []
-        experiment = self.readExperiment(self.getInputExperiment().fnPKPD,show=False)
-        incorrectList = experiment.getNonBolusDoses()
-        if len(incorrectList)!=0:
-            msg.append("This protocol is meant only for intravenous bolus regimens. Check the doses for %s"%(','.join(incorrectList)))
-
         if self.protExponential.get().predictor.get()!=self.protElimination.get().predictor.get():
             msg.append("The predictor of the exponential fitting (%s) does not match the predictor of the elimination protocol (%s)"%\
                        (self.protExponential.get().predictor.get(),self.protElimination.get().predictor.get()))
         if self.protExponential.get().predicted.get()!=self.protElimination.get().predicted.get():
             msg.append("The predicted of the exponential fitting (%s) does not match the predicted of the elimination protocol (%s)"%\
                        (self.protExponential.get().predictor.get(),self.protElimination.get().predictor.get()))
+        return msg
+
+    def _warnings(self):
+        msg = []
+        experiment = self.readExperiment(self.getInputExperiment().fnPKPD,show=False)
+        incorrectList = experiment.getNonBolusDoses()
+        if len(incorrectList)!=0:
+            msg.append("This protocol is meant only for intravenous bolus regimens. Check the doses for %s"%(','.join(incorrectList)))
         return msg
 
