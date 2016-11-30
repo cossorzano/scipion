@@ -1173,6 +1173,8 @@ class PKPDOptimizer:
         print("X    log10(Y)  log10(Ypredicted)  Error=log10(Y)-log10(Ypredicted)")
         print("==================================================================")
         if type(self.model.y[0])!=list and type(self.model.y[0])!=np.ndarray:
+            if type(yPredicted[0])==list or type(yPredicted[0])==np.ndarray:
+                yPredicted=yPredicted[0]
             ylog = np.array([math.log10(yi) if np.isfinite(yi) and yi>0 else float("inf") for yi in self.model.y])
             yplog = np.array([math.log10(ypi) if np.isfinite(ypi) and ypi>0 else float("inf") for ypi in yPredicted])
             idx = np.array(np.where(np.logical_and(np.isfinite(ylog),np.isfinite(yplog))))
