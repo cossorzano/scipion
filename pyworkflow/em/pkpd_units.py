@@ -37,6 +37,7 @@ class PKPDUnit:
     UNIT_CONC_ng_L= 13
     UNIT_CONC_g_mL= 14
     UNIT_CONC_g_uL= 15
+    UNIT_CONC_ug_mL= 16
     UNIT_VOLUME_L=30
     UNIT_VOLUME_mL=31
     UNIT_VOLUME_uL=32
@@ -52,24 +53,28 @@ class PKPDUnit:
     UNIT_TIMECONC_H_ng_L = 203
     UNIT_TIMECONC_H_g_mL = 204
     UNIT_TIMECONC_H_g_uL = 205
+    UNIT_TIMECONC_H_ug_mL = 206
     UNIT_TIMECONC_MIN_g_L = 220
     UNIT_TIMECONC_MIN_mg_L = 221
     UNIT_TIMECONC_MIN_ug_L = 222
     UNIT_TIMECONC_MIN_ng_L = 223
     UNIT_TIMECONC_MIN_g_mL = 224
     UNIT_TIMECONC_MIN_g_uL = 225
+    UNIT_TIMECONC_MIN_ug_mL = 226
     UNIT_TIME2CONC_H2_g_L = 250
     UNIT_TIME2CONC_H2_mg_L = 251
     UNIT_TIME2CONC_H2_ug_L = 252
     UNIT_TIME2CONC_H2_ng_L = 253
     UNIT_TIME2CONC_H2_g_mL = 254
     UNIT_TIME2CONC_H2_g_uL = 255
+    UNIT_TIME2CONC_H2_ug_mL = 256
     UNIT_TIME2CONC_MIN2_g_L = 270
     UNIT_TIME2CONC_MIN2_mg_L = 271
     UNIT_TIME2CONC_MIN2_ug_L = 272
     UNIT_TIME2CONC_MIN2_ng_L = 273
     UNIT_TIME2CONC_MIN2_g_mL = 274
     UNIT_TIME2CONC_MIN2_g_uL = 275
+    UNIT_TIME2CONC_MIN2_ug_mL = 276
     UNIT_VOLUMEINVTIME_L_H = 300
     UNIT_VOLUMEINVTIME_mL_H = 301
     UNIT_VOLUMEINVTIME_uL_H = 302
@@ -114,6 +119,7 @@ class PKPDUnit:
         UNIT_CONC_ng_L: "ng/L",
         UNIT_CONC_g_mL: "g/mL",
         UNIT_CONC_g_uL: "g/uL",
+        UNIT_CONC_ug_mL: "ug/mL",
         UNIT_VOLUME_L: "L",
         UNIT_VOLUME_mL: "mL",
         UNIT_VOLUME_uL: "uL",
@@ -131,12 +137,14 @@ class PKPDUnit:
         UNIT_TIMECONC_H_ng_L: "ng*h/L",
         UNIT_TIMECONC_H_g_mL: "g*h/mL",
         UNIT_TIMECONC_H_g_uL: "g*h/uL",
+        UNIT_TIMECONC_H_ug_mL: "ug*h/mL",
         UNIT_TIMECONC_MIN_g_L: "g*min/L",
         UNIT_TIMECONC_MIN_mg_L: "mg*min/L",
         UNIT_TIMECONC_MIN_ug_L: "ug*min/L",
         UNIT_TIMECONC_MIN_ng_L: "ng*min/L",
         UNIT_TIMECONC_MIN_g_mL: "g*min/mL",
         UNIT_TIMECONC_MIN_g_uL: "g*min/uL",
+        UNIT_TIMECONC_MIN_ug_mL: "ug*min/mL",
 
         UNIT_TIME2CONC_H2_g_L: "g*h^2/L",
         UNIT_TIME2CONC_H2_mg_L: "mg*h^2/L",
@@ -144,12 +152,14 @@ class PKPDUnit:
         UNIT_TIME2CONC_H2_ng_L: "ng*h^2/L",
         UNIT_TIME2CONC_H2_g_mL: "g*h^2/mL",
         UNIT_TIME2CONC_H2_g_uL: "g*h^2/uL",
+        UNIT_TIME2CONC_H2_ug_mL: "ug*h^2/mL",
         UNIT_TIME2CONC_MIN2_g_L: "g*min^2/L",
         UNIT_TIME2CONC_MIN2_mg_L: "mg*min^2/L",
         UNIT_TIME2CONC_MIN2_ug_L: "ug*min^2/L",
         UNIT_TIME2CONC_MIN2_ng_L: "ng*min^2/L",
         UNIT_TIME2CONC_MIN2_g_mL: "g*min^2/mL",
         UNIT_TIME2CONC_MIN2_g_uL: "g*min^2/uL",
+        UNIT_TIME2CONC_MIN2_ug_mL: "ug*min^2/mL",
 
         UNIT_VOLUMEINVTIME_L_H: "L/h",
         UNIT_VOLUMEINVTIME_mL_H: "mL/h",
@@ -275,7 +285,7 @@ def convertUnits(x, unitsIn, unitsOut):
             raise Exception("Uknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
 
     elif unitsIn == PKPDUnit.UNIT_CONC_g_L:
-        if unitsOut == PKPDUnit.UNIT_CONC_mg_L:
+        if unitsOut == PKPDUnit.UNIT_CONC_mg_L or unitsOut==PKPDUnit.UNIT_CONC_ug_mL:
             return 1e3*x
         elif unitsOut == PKPDUnit.UNIT_CONC_ug_L:
             return 1e6*x
@@ -286,9 +296,11 @@ def convertUnits(x, unitsIn, unitsOut):
         elif unitsOut == PKPDUnit.UNIT_CONC_g_uL:
             return 1e-6*x
 
-    elif unitsIn == PKPDUnit.UNIT_CONC_mg_L:
+    elif unitsIn == PKPDUnit.UNIT_CONC_mg_L  or unitsIn==PKPDUnit.UNIT_CONC_ug_mL:
         if unitsOut == PKPDUnit.UNIT_CONC_g_L:
             return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L  or unitsOut==PKPDUnit.UNIT_CONC_ug_mL:
+            return 1
         elif unitsOut == PKPDUnit.UNIT_CONC_ug_L:
             return 1e3*x
         elif unitsOut == PKPDUnit.UNIT_CONC_ng_L:
@@ -301,7 +313,7 @@ def convertUnits(x, unitsIn, unitsOut):
     elif unitsIn == PKPDUnit.UNIT_CONC_ug_L:
         if unitsOut == PKPDUnit.UNIT_CONC_g_L:
             return 1e-6*x
-        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L:
+        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L  or unitsOut==PKPDUnit.UNIT_CONC_ug_mL:
             return 1e-3*x
         elif unitsOut == PKPDUnit.UNIT_CONC_ng_L:
             return 1e3*x
@@ -313,7 +325,7 @@ def convertUnits(x, unitsIn, unitsOut):
     elif unitsIn == PKPDUnit.UNIT_CONC_ng_L:
         if unitsOut == PKPDUnit.UNIT_CONC_g_L:
             return 1e-9*x
-        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L:
+        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L or unitsOut==PKPDUnit.UNIT_CONC_ug_mL:
             return 1e-6*x
         elif unitsOut == PKPDUnit.UNIT_CONC_ug_L:
             return 1e-3*x
@@ -325,7 +337,7 @@ def convertUnits(x, unitsIn, unitsOut):
     elif unitsIn == PKPDUnit.UNIT_CONC_g_mL:
         if unitsOut == PKPDUnit.UNIT_CONC_g_L:
             return 1e3*x
-        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L:
+        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L or unitsOut==PKPDUnit.UNIT_CONC_ug_mL:
             return x
         elif unitsOut == PKPDUnit.UNIT_CONC_ug_L:
             return 1e-3*x
@@ -337,7 +349,7 @@ def convertUnits(x, unitsIn, unitsOut):
     elif unitsIn == PKPDUnit.UNIT_CONC_g_uL:
         if unitsOut == PKPDUnit.UNIT_CONC_g_L:
             return 1e6*x
-        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L:
+        elif unitsOut == PKPDUnit.UNIT_CONC_mg_L or unitsOut==PKPDUnit.UNIT_CONC_ug_mL:
             return 1e3*x
         elif unitsOut == PKPDUnit.UNIT_CONC_ug_L:
             return x
@@ -384,6 +396,8 @@ def multiplyUnits(unitX,unitY):
             return PKPDUnit.UNIT_TIMECONC_H_g_mL
         elif unitY==PKPDUnit.UNIT_CONC_g_uL:
             return PKPDUnit.UNIT_TIMECONC_H_g_uL
+        elif unitY==PKPDUnit.UNIT_CONC_ug_mL:
+            return PKPDUnit.UNIT_TIMECONC_H_ug_mL
 
         elif unitY==PKPDUnit.UNIT_TIMECONC_H_g_L:
             return PKPDUnit.UNIT_TIME2CONC_H2_g_L
@@ -397,6 +411,8 @@ def multiplyUnits(unitX,unitY):
             return PKPDUnit.UNIT_TIME2CONC_H2_g_mL
         elif unitY==PKPDUnit.UNIT_TIMECONC_H_g_uL:
             return PKPDUnit.UNIT_TIME2CONC_H2_g_uL
+        elif unitY==PKPDUnit.UNIT_TIMECONC_H_ug_mL:
+            return PKPDUnit.UNIT_TIME2CONC_H2_ug_mL
 
         else:
             return PKPDUnit.UNIT_NONE
@@ -414,6 +430,8 @@ def multiplyUnits(unitX,unitY):
             return PKPDUnit.UNIT_TIMECONC_MIN_g_mL
         elif unitY==PKPDUnit.UNIT_CONC_g_uL:
             return PKPDUnit.UNIT_TIMECONC_MIN_g_uL
+        elif unitY==PKPDUnit.UNIT_CONC_ug_mL:
+            return PKPDUnit.UNIT_TIMECONC_MIN_ug_mL
 
         elif unitY==PKPDUnit.UNIT_TIMECONC_MIN_g_L:
             return PKPDUnit.UNIT_TIME2CONC_MIN2_g_L
@@ -427,6 +445,8 @@ def multiplyUnits(unitX,unitY):
             return PKPDUnit.UNIT_TIME2CONC_MIN2_g_mL
         elif unitY==PKPDUnit.UNIT_TIMECONC_MIN_g_uL:
             return PKPDUnit.UNIT_TIME2CONC_MIN2_g_uL
+        elif unitY==PKPDUnit.UNIT_TIMECONC_MIN_ug_mL:
+            return PKPDUnit.UNIT_TIME2CONC_MIN2_ug_mL
 
         else:
             return PKPDUnit.UNIT_NONE
