@@ -107,7 +107,7 @@ class ProtPKPDNCAEV(ProtPKPDSABase):
         msg.append("Non-compartmental analysis for the observations of the variable %s"%self.protAbsorption.get().protElimination.get().predicted.get())
         return msg
 
-    def _validate(self):
+    def _warnings(self):
         experiment = self.readExperiment(self.getInputExperiment().fnPKPD,show=False)
         incorrectList = experiment.getNonBolusDoses()
         if len(incorrectList)==0:
