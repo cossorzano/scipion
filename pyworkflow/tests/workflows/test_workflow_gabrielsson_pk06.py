@@ -31,32 +31,32 @@ from pyworkflow.tests import *
 from pyworkflow.em.packages.pkpd import *
 from test_workflow import TestWorkflow
 
-class TestGabrielssonPK05Workflow(TestWorkflow):
+class TestGabrielssonPK06Workflow(TestWorkflow):
 
     @classmethod
     def setUpClass(cls):
         tests.setupTestProject(cls)
-        cls.dataset = DataSet.getDataSet('Gabrielsson_PK05')
-        cls.exptFn = cls.dataset.getFile('experiment')
-
+        cls.dataset = DataSet.getDataSet('Gabrielsson_PK06')
+        cls.exptIVFn = cls.dataset.getFile('experiment_iv')
+        cls.exptEVFn = cls.dataset.getFile('experiment_ev')
     
-    def testGabrielssonPK05Workflow(self):
-        #First, import an experiment
+    def testGabrielssonPK06Workflow(self):
+        # Import an experiment (intravenous)
 
-        print "Import Experiment"
-        protImport = self.newProtocol(ProtImportExperiment,
-                                      objLabel='pkpd - import experiment',
-                                      inputFile=self.exptFn)
-        self.launchProtocol(protImport)
-        self.assertIsNotNone(protImport.outputExperiment.fnPKPD, "There was a problem with the import")
-        self.validateFiles('protImport', protImport)
+        print "Import Experiment (intravenous doses)"
+        protImportIV = self.newProtocol(ProtImportExperiment,
+                                      objLabel='pkpd - import experiment iv',
+                                      inputFile=self.exptIVFn)
+        self.launchProtocol(protImportIV)
+        self.assertIsNotNone(protImportIV.outputExperiment.fnPKPD, "There was a problem with the import")
+        self.validateFiles('protImportIV', protImportIV)
 
         # Change the time unit to minute
         print "Change Units"
         protChangeTimeUnit = self.newProtocol(ProtPKPDChangeUnits,
                                               objLabel='pkpd - change units (t to min)',
                                               labelToChange='t', newUnitsCategory=0, newUnitsCategoryTime=1)
-        protChangeTimeUnit.inputExperiment.set(protImport.outputExperiment)
+        protChangeTimeUnit.inputExperiment.set(protImportIV.outputExperiment)
         self.launchProtocol(protChangeTimeUnit)
         self.assertIsNotNone(protChangeTimeUnit.outputExperiment.fnPKPD, "There was a problem with changing units")
         self.validateFiles('protChangeUnits', protChangeTimeUnit)
@@ -66,8 +66,7 @@ class TestGabrielssonPK05Workflow(TestWorkflow):
         protIVMonoCompartment = self.newProtocol(ProtPKPDIVMonoCompartment,
                                                   objLabel='pkpd - iv monocompartment',
                                                   predictor='t', predicted='Cp',
-                                                  initType=1, globalSearch=False,
-                                                  bounds='(0.01, 0.1); (0.0, 20.0)')
+                                                  initType=1, bounds='(0.0, 0.1); (0.0, 300.0)')
         protIVMonoCompartment.inputExperiment.set(protChangeTimeUnit.outputExperiment)
         self.launchProtocol(protIVMonoCompartment)
         self.assertIsNotNone(protIVMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
@@ -76,32 +75,43 @@ class TestGabrielssonPK05Workflow(TestWorkflow):
         # Fit a monocompartmental model to a set of measurements obtained by intravenous doses and urine
         print "Fitting a monocompartmental model (intravenous doses and urine )..."
         protIVMonoCompartmentUrine = self.newProtocol(ProtPKPDIVMonoCompartmentUrine,
-                                                  objLabel='pkpd - iv monocompartment urine',
-                                                  bounds='(0,0.04);(5,15);(0,1)')
+                                                      objLabel='pkpd - iv monocompartment urine',
+                                                      globalSearch=False,
+                                                      bounds='(0.0,0.2);(150, 400.0);(0.0,1.0)')
         protIVMonoCompartmentUrine.inputExperiment.set(protChangeTimeUnit.outputExperiment)
         self.launchProtocol(protIVMonoCompartmentUrine)
         self.assertIsNotNone(protIVMonoCompartmentUrine.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
         self.validateFiles('protIVMonoCompartmentUrine', protIVMonoCompartmentUrine)
 
-        # Calculate statistics of the labels
-        print "Calculate statics of the labels"
-        protStatisticsLabel = self.newProtocol(ProtPKPDIVMonoCompartmentUrine,
-                                               objLabel='pkpd - statistics labels')
-        protStatisticsLabel.inputExperiment.set(protIVMonoCompartmentUrine.outputExperiment)
-        self.launchProtocol(protStatisticsLabel)
-        self.assertIsNotNone(protStatisticsLabel.outputExperiment.fnPKPD, "There was a problem with the statics calculation ")
-        self.validateFiles('protStatisticsLabel', protStatisticsLabel)
+        # Import an experiment (extravascular)
+        print "Import Experiment (extravascular)"
+        protImportEV = self.newProtocol(ProtImportExperiment,
+                                        objLabel='pkpd - import experiment po',
+                                        inputFile=self.exptEVFn)
+        self.launchProtocol(protImportEV)
+        self.assertIsNotNone(protImportEV.outputExperiment.fnPKPD, "There was a problem with the import")
+        self.validateFiles('protImportEV', protImportEV)
 
-        # Simulate a generic pharmacodynamic response Y=f(X)
-        print "Simulate a generic pharmacodynamic response"
-        protSimulateGenericPD = self.newProtocol(ProtPKPDSimulateGenericPD,
-                                                 objLabel='pkpd - simulate generic',
-                                                 paramValues='7;3')
-        protSimulateGenericPD.inputExperiment.set(protIVMonoCompartmentUrine.outputExperiment)
-        self.launchProtocol(protSimulateGenericPD)
-        self.assertIsNotNone(protSimulateGenericPD.outputExperiment.fnPKPD, "There was a problem with the simulation ")
-        self.validateFiles('protSimulateGenericPD', protSimulateGenericPD)
+        # Change the time unit to minute
+        print "Change Units"
+        protChangeTimeUnit2 = self.newProtocol(ProtPKPDChangeUnits,
+                                              objLabel='pkpd - change units (t to min)',
+                                              labelToChange='t', newUnitsCategory=0, newUnitsCategoryTime=1)
+        protChangeTimeUnit2.inputExperiment.set(protImportEV.outputExperiment)
+        self.launchProtocol(protChangeTimeUnit2)
+        self.assertIsNotNone(protChangeTimeUnit2.outputExperiment.fnPKPD, "There was a problem with changing units")
+        self.validateFiles('protChangeTimeUnit2', protChangeTimeUnit2)
 
+        # Fit a monocompartmental model to a set of measurements obtained by extravascular doses and urine
+        print "Fitting a monocompartmental model (extravascular and urine)..."
+        protEV1MonoCompartmentUrine = self.newProtocol(ProtPKPDEV1MonoCompartmentUrine,
+                                                       objLabel='pkpd - ev1 monocompartment urine',
+                                                       globalSearch=False,
+                                                       bounds='(0.0, 0.2); (0.0, 10.0); (170.0, 370.0); (0.0, 0.15)')
+        protEV1MonoCompartmentUrine.inputExperiment.set(protChangeTimeUnit2.outputExperiment)
+        self.launchProtocol(protEV1MonoCompartmentUrine)
+        self.assertIsNotNone(protEV1MonoCompartmentUrine.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
+        self.validateFiles('protEV1MonoCompartmentUrine', protEV1MonoCompartmentUrine)
 
 if __name__ == "__main__":
     unittest.main()
