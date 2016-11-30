@@ -29,9 +29,9 @@ PD models
 
 import math
 import numpy as np
+
 from pyworkflow.em.data import PKPDModel
-from pyworkflow.em.pkpd_units import PKPDUnit
-from numpy import *
+from pyworkflow.em.pkpd_units import inverseUnits, divideUnits, unitFromString, PKPDUnit
 
 import math
 
@@ -82,7 +82,10 @@ class PDLinear(PDGenericModel):
         return ['Automatically fitted model of the form Y=e0+s*X']*self.getNumberOfParameters()
 
     def calculateParameterUnits(self,sample):
-        self.parameterUnits=[PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        sunits = divideUnits(yunits,xunits)
+        self.parameterUnits=[yunits, sunits]
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
@@ -146,7 +149,9 @@ class PDLogLinear(PDGenericModel):
         return ['Automatically fitted model of the form Y = m*log(X - C0)'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self, sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE] # COSS: Buscar unidades de C
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, xunits]
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -207,7 +212,9 @@ class PDSaturated(PDGenericModel):
         return ['Automatically fitted model of the form Y = e0 + (emax*X / (eC50 + X))'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self,sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, yunits, xunits]
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -228,8 +235,7 @@ class PDSigmoid(PDGenericModel):
         e0 = parameters[0]
         emax = parameters[1]
         eC50 = parameters[2]
-        h = parameters[3]  #h es el numero de molec del farmaco que se combinan con el receptor
-                           #lo incluimos como parametro?
+        h = parameters[3]
         eC50prime = eC50**h
         xprime = x**h
         self.yPredicted = e0 - ( (emax*(xprime)) / ( (eC50prime) + (xprime)))
@@ -257,7 +263,9 @@ class PDSigmoid(PDGenericModel):
         return ['Automatically fitted model of the form  Y = e0 - ( emax*(X**h) / ( (eC50**h) + (X**h)) )'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self,sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, yunits, xunits]
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -281,7 +289,6 @@ class PDGompertz(PDGenericModel):
         g = parameters[2]
 
         d = np.exp(b - (g*x))
-
         self.yPredicted = a / (np.exp(d))
 
         return self.yPredicted
@@ -310,7 +317,9 @@ class PDGompertz(PDGenericModel):
         return ['Automatically fitted model of the form Y=a*exp(-exp(b-g*X))']*self.getNumberOfParameters()
 
     def calculateParameterUnits(self,sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
