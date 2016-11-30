@@ -25,6 +25,7 @@
 # **************************************************************************
 
 import math
+from collections import OrderedDict
 from itertools import izip
 
 import pyworkflow.protocol.params as params
@@ -80,6 +81,38 @@ class ProtPKPDFitBase(ProtPKPD):
 
     def createModel(self):
         pass
+
+    def parseBounds(self, boundsString):
+        self.boundsList = []
+
+        if boundsString!="" and boundsString!=None:
+            tokens = boundsString.split(';')
+            if len(tokens)!=self.getNumberOfParameters():
+                raise Exception("The number of bound intervals does not match the number of parameters")
+
+            for token in tokens:
+                values = token.strip().split(',')
+                self.boundsList.append((float(values[0][1:]),float(values[1][:-1])))
+
+    def getBounds(self):
+        return self.boundsList
+
+    def getParameterBounds(self):
+        """ Return a dictionary where the parameter name is the key
+        and the bounds are its values. """
+        boundsDict = OrderedDict()
+        self.parseBounds(self.bounds.get()) # after this we have boundsList
+        parameterNames = self.model.getParameterNames()
+
+        for paramName, bound in izip(parameterNames, self.getBounds()):
+            boundsDict[paramName] = bound
+
+        # Set None as bound for parameters not matched
+        for paramName in parameterNames:
+            if paramName not in boundsDict:
+                boundsDict[paramName] = None
+
+        return boundsDict
 
     def setupModel(self):
         # Setup model
@@ -149,6 +182,8 @@ class ProtPKPDFitBase(ProtPKPD):
             if self.fitting.modelParameterUnits==None:
                 self.fitting.modelParameterUnits = self.model.parameterUnits
             self.model.prepare()
+            if self.model.bounds == None:
+                continue
             print(" ")
 
             optimizer1 = PKPDDEOptimizer(self.model,fitType)
