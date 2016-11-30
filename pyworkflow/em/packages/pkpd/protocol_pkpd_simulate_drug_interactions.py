@@ -201,7 +201,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
 
         if self.doReversibleGut:
             D = np.arange(self.D0Gut.get(), self.DFGut.get(), (self.DFGut.get()-self.D0Gut.get())/100)
-            I = D/(250*self.MWGut.get()) # I [uM]
+            I = D/(250*self.MWGut.get()*1e-3) # I [uM]
             KiList = self.parseList(self.KiReversibleGut.get())
             for Ki in KiList:
                 legend="Gut Rev. Inh. Ki=%f [uM]"%Ki
@@ -330,7 +330,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
 
         if self.doTransporterGut:
             D = np.arange(self.D0TransporterGut.get(), self.DFTransporterGut.get(), (self.DFTransporterGut.get()-self.D0TransporterGut.get())/100)
-            I = D/(250*self.MWTransporterGut.get()) # I [uM]
+            I = D/(250*self.MWTransporterGut.get()*1e-3) # I [uM]
             KiList = self.parseList(self.KiTransporterGut.get())
             for Ki in KiList:
                 legend="Gut Transporter Ki=%f [uM]"%Ki
