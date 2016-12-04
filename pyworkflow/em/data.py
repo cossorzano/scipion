@@ -770,7 +770,7 @@ class PKPDExperiment(EMObject):
                 nonBolusList.append(sampleName)
         return nonBolusList
 
-class PKPDModelBase:
+class PKPDModelBase(object):
     def __init__(self):
         self.fnExperiment = None
         self.parameters = None
