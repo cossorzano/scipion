@@ -126,6 +126,15 @@ class ProtPKPDFitBase(ProtPKPD):
     def calculateParameterUnits(self,sample):
         self.parameterUnits = self.model.calculateParameterUnits(sample)
 
+    def getParameterNames(self):
+        return self.model.getParameterNames()
+
+    def setParameters(self,prm):
+        self.model.setParameters(prm)
+
+    def forwardModel(self,prm,xValues):
+        return self.model.forwardModel(prm,xValues)
+
     def setupFromFormParameters(self):
         pass
 
