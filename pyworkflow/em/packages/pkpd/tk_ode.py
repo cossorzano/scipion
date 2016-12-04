@@ -302,15 +302,7 @@ class PKPDResponsiveDialog(dialog.Dialog):
 
     def _updateModel(self):
         """ This function should be called whenever the sample changes """
-        self.targetProtocol.model.t0 = 0
-        self.targetProtocol.model.tF = np.max(self.xValues)
-        self.targetProtocol.drugSource.setDoses(self.sample.parsedDoseList,
-                                                self.targetProtocol.model.t0,
-                                                self.targetProtocol.model.tF)
-        self.targetProtocol.configureSource(self.targetProtocol.drugSource)
-        self.targetProtocol.model.drugSource = self.targetProtocol.drugSource
-        # Necessary to count the number of source and PK parameters
-        self.targetProtocol.getParameterNames()
+        pass
 
     def _onLogChanged(self, *args):
         # We will treat a log change as a sample change to plot
@@ -327,7 +319,6 @@ class PKPDResponsiveDialog(dialog.Dialog):
                                                                  self.varNameY)
             self.newXValues, self.newYValues = self.computePlotValues(self.xValues,
                                                                       self.yValues)
-            self.xpValues = [x for x in np.arange(0,np.max(self.xValues),4)]
             self._updateModel()
             self.computeFit()
             self.plotResults()
@@ -365,7 +356,20 @@ class PKPDResponsiveDialog(dialog.Dialog):
 
 
 class PKPDODEDialog(PKPDResponsiveDialog):
-    pass
+    def _updateModel(self):
+        self.xpValues = np.asarray([x for x in np.arange(0,np.max(self.xValues),4)])
+        self.targetProtocol.model.t0 = 0
+        self.targetProtocol.model.tF = np.max(self.xValues)
+        self.targetProtocol.drugSource.setDoses(self.sample.parsedDoseList,
+                                                self.targetProtocol.model.t0,
+                                                self.targetProtocol.model.tF)
+        self.targetProtocol.configureSource(self.targetProtocol.drugSource)
+        self.targetProtocol.model.drugSource = self.targetProtocol.drugSource
+        # Necessary to count the number of source and PK parameters
+        self.targetProtocol.getParameterNames()
 
 class PKPDFitDialog(PKPDResponsiveDialog):
-    pass
+    def _updateModel(self):
+        xLength=np.max(self.xValues)-np.min(self.xValues)
+        self.xpValues = np.asarray([x for x in np.arange(np.min(self.xValues),np.max(self.xValues),xLength/25)])
+        self.targetProtocol.getParameterNames()
