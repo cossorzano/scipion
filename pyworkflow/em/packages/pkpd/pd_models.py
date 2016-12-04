@@ -86,6 +86,7 @@ class PDLinear(PDGenericModel):
         xunits = self.experiment.getVarUnits(self.xName)
         sunits = divideUnits(yunits,xunits)
         self.parameterUnits=[yunits, sunits]
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
@@ -152,6 +153,7 @@ class PDLogLinear(PDGenericModel):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
         self.parameterUnits = [yunits, xunits]
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -164,7 +166,6 @@ class PDLogLinear(PDGenericModel):
 
 
 class PDSaturated(PDGenericModel):
-
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
@@ -215,6 +216,7 @@ class PDSaturated(PDGenericModel):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
         self.parameterUnits = [yunits, yunits, xunits]
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -266,6 +268,7 @@ class PDSigmoid(PDGenericModel):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
         self.parameterUnits = [yunits, yunits, xunits]
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -320,6 +323,7 @@ class PDGompertz(PDGenericModel):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
         self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -372,6 +376,7 @@ class PDLogistic1(PDGenericModel):
 
     def calculateParameterUnits(self, sample):
         self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -424,6 +429,7 @@ class PDLogistic2(PDGenericModel):
 
     def calculateParameterUnits(self, sample):
         self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -476,6 +482,7 @@ class PDLogistic3(PDGenericModel):
 
     def calculateParameterUnits(self, sample):
         self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -486,7 +493,6 @@ class PDLogistic3(PDGenericModel):
 
     def areParametersValid(self, p):
         return True
-
 
 
 class PDLogistic4(PDGenericModel):
@@ -528,6 +534,7 @@ class PDLogistic4(PDGenericModel):
 
     def calculateParameterUnits(self, sample):
         self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -581,6 +588,7 @@ class PDRichards(PDGenericModel):
 
     def calculateParameterUnits(self, sample):
         self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -635,6 +643,7 @@ class PDMorgan(PDGenericModel):
 
     def calculateParameterUnits(self, sample):
         self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
@@ -689,6 +698,7 @@ class PDWeibull(PDGenericModel):
 
     def calculateParameterUnits(self, sample):
         self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
