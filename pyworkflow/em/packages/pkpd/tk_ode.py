@@ -240,9 +240,8 @@ class PKPDResponsiveDialog(dialog.Dialog):
             currentParams.append(self.sliders[paramName].getValue())
 
         self.targetProtocol.setParameters(currentParams)
-        # self.protODE.model.deltaT = 0.25
         self.ypValues = self.targetProtocol.forwardModel(currentParams, self.xpValues)
-        if type(self.ypValues)==list or type(self.ypValues[0])==np.ndarray:
+        if type(self.ypValues[0])==list or type(self.ypValues[0])==np.ndarray:
             self.ypValues = self.ypValues[0]
 
     def getBoundsList(self):
