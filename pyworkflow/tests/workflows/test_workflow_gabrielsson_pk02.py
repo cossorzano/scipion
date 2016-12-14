@@ -136,6 +136,7 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
         protEV1MonoCompartment.absorptionProtocol.set(protAbsorptionRate)
         self.launchProtocol(protEV1MonoCompartment)
         self.assertIsNotNone(protEV1MonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
+        self.assertIsNotNone(protEV1MonoCompartment.outputFitting.fnFitting, "There was a problem with the monocompartmental model ")
         self.validateFiles('protEV1MonoCompartment', protEV1MonoCompartment)
 
         # Compare model parameter values with Gold standard values
