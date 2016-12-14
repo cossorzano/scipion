@@ -71,7 +71,29 @@ class TestGabrielssonPK04Workflow(TestWorkflow):
         protEV1MonoCompartment.inputExperiment.set(protChangeTimeUnit.outputExperiment)
         self.launchProtocol(protEV1MonoCompartment)
         self.assertIsNotNone(protEV1MonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
+        self.assertIsNotNone(protEV1MonoCompartment.outputFitting.fnFitting, "There was a problem with the monocompartmental model ")
         self.validateFiles('protEV1MonoCompartment', protEV1MonoCompartment)
+
+        # Compare model parameter values with Gold standard values
+        experiment = PKPDExperiment()
+        experiment.load(protEV1MonoCompartment.outputExperiment.fnPKPD)
+        Cl = float(experiment.samples['Individual'].descriptors['Cl'])
+        V = float(experiment.samples['Individual'].descriptors['V'])
+        Ka = float(experiment.samples['Individual'].descriptors['Ka'])
+        tlag = float(experiment.samples['Individual'].descriptors['tlag'])
+        self.assertAlmostEqual(Cl,0.1338,2)
+        self.assertAlmostEqual(V,96.6806,None,None,50.0)
+        self.assertAlmostEqual(Ka,0.003,2)
+        self.assertAlmostEqual(tlag,40.0001,1)
+
+        # Compare fitting parameter values with Gold standard values
+        fitting = PKPDFitting()
+        fitting.load(protEV1MonoCompartment.outputFitting.fnFitting)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.986,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.9843,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].AIC,-102.5974,1)
+        self.assertAlmostEqual(fitting.sampleFits[0].AICc,-101.5974,1)
+        self.assertAlmostEqual(fitting.sampleFits[0].BIC,-97.565,1)
 
         # Filter time variable
         print "Filter time"
@@ -95,6 +117,27 @@ class TestGabrielssonPK04Workflow(TestWorkflow):
         self.assertIsNotNone(protEV1MonoCompartment2.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
         self.validateFiles('protEV1MonoCompartment2', protEV1MonoCompartment2)
 
+        # Compare model parameter values with Gold standard values
+        experiment = PKPDExperiment()
+        experiment.load(protEV1MonoCompartment2.outputExperiment.fnPKPD)
+        Cl = float(experiment.samples['Individual'].descriptors['Cl'])
+        V = float(experiment.samples['Individual'].descriptors['V'])
+        Ka = float(experiment.samples['Individual'].descriptors['Ka'])
+        tlag = float(experiment.samples['Individual'].descriptors['tlag'])
+        self.assertAlmostEqual(Cl,0.1355,2)
+        self.assertAlmostEqual(V,52.1712,1)
+        self.assertAlmostEqual(Ka,0.0025,2)
+        self.assertAlmostEqual(tlag,38.3506,1)
+
+        # Compare fitting parameter values with Gold standard values
+        fitting = PKPDFitting()
+        fitting.load(protEV1MonoCompartment2.outputFitting.fnFitting)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.9992,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.9989,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].AIC,-76.4385,1)
+        self.assertAlmostEqual(fitting.sampleFits[0].AICc,-71.4385,1)
+        self.assertAlmostEqual(fitting.sampleFits[0].BIC,-74.4989,1)
+
         # Fit a monocompartmental model with first order absorption
         print "Fitting monocompartmental model with first order..."
         protEV1MonoCompartment3 = self.newProtocol(ProtPKPDEV1MonoCompartment,
@@ -106,6 +149,27 @@ class TestGabrielssonPK04Workflow(TestWorkflow):
         self.launchProtocol(protEV1MonoCompartment3)
         self.assertIsNotNone(protEV1MonoCompartment3.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
         self.validateFiles('protEV1MonoCompartment3', protEV1MonoCompartment3)
+
+        # Compare model parameter values with Gold standard values
+        experiment = PKPDExperiment()
+        experiment.load(protEV1MonoCompartment3.outputExperiment.fnPKPD)
+        Cl = float(experiment.samples['Individual'].descriptors['Cl'])
+        V = float(experiment.samples['Individual'].descriptors['V'])
+        Ka = float(experiment.samples['Individual'].descriptors['Ka'])
+        tlag = float(experiment.samples['Individual'].descriptors['tlag'])
+        self.assertAlmostEqual(Cl,0.1353,2)
+        self.assertAlmostEqual(V,54.4305,1)
+        self.assertAlmostEqual(Ka,0.0024,2)
+        self.assertAlmostEqual(tlag,31.1877,1)
+
+        # Compare fitting parameter values with Gold standard values
+        fitting = PKPDFitting()
+        fitting.load(protEV1MonoCompartment3.outputFitting.fnFitting)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.9733,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.9705,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].AIC,-85.8543,1)
+        self.assertAlmostEqual(fitting.sampleFits[0].AICc,-84.8543,1)
+        self.assertAlmostEqual(fitting.sampleFits[0].BIC,-80.822,1)
 
 if __name__ == "__main__":
     unittest.main()
