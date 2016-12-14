@@ -313,7 +313,8 @@ def main():
         runScript('scripts/run_tests.py %s' % ' '.join(sys.argv[2:]))
 
     elif mode == MODE_TEST_DATA:
-        runScript('scripts/sync_data.py %s' % ' '.join(sys.argv[2:]))
+        sys.exit(0)
+    # runScript('scripts/sync_data.py %s' % ' '.join(sys.argv[2:]))
 
     elif mode in MODE_VIEWER:
         runApp('pw_viewer.py', args=sys.argv[2:], chdir=False)
