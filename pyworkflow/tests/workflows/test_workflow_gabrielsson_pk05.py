@@ -71,7 +71,25 @@ class TestGabrielssonPK05Workflow(TestWorkflow):
         protIVMonoCompartment.inputExperiment.set(protChangeTimeUnit.outputExperiment)
         self.launchProtocol(protIVMonoCompartment)
         self.assertIsNotNone(protIVMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
+        self.assertIsNotNone(protIVMonoCompartment.outputFitting.fnFitting, "There was a problem with the monocompartmental model ")
         self.validateFiles('protIVMonoCompartment', protIVMonoCompartment)
+
+        # Compare model parameter values with Gold standard values
+        experiment = PKPDExperiment()
+        experiment.load(protIVMonoCompartment.outputExperiment.fnPKPD)
+        Cl = float(experiment.samples['Individual'].descriptors['Cl'])
+        V = float(experiment.samples['Individual'].descriptors['V'])
+        self.assertAlmostEqual(Cl,0.0204,3)
+        self.assertAlmostEqual(V,10.7141,3)
+
+        # Compare fitting parameter values with Gold standard values
+        fitting = PKPDFitting()
+        fitting.load(protIVMonoCompartment.outputFitting.fnFitting)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.9992,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.9991,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].AIC,-59.3335,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].AICc,-58.3335,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].BIC,-58.7284,3)
 
         # Fit a monocompartmental model to a set of measurements obtained by intravenous doses and urine
         print "Fitting a monocompartmental model (intravenous doses and urine )..."
@@ -81,15 +99,35 @@ class TestGabrielssonPK05Workflow(TestWorkflow):
         protIVMonoCompartmentUrine.inputExperiment.set(protChangeTimeUnit.outputExperiment)
         self.launchProtocol(protIVMonoCompartmentUrine)
         self.assertIsNotNone(protIVMonoCompartmentUrine.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
+        self.assertIsNotNone(protIVMonoCompartmentUrine.outputFitting.fnFitting, "There was a problem with the monocompartmental model ")
         self.validateFiles('protIVMonoCompartmentUrine', protIVMonoCompartmentUrine)
+
+        # Compare model parameter values with Gold standard values
+        experiment = PKPDExperiment()
+        experiment.load(protIVMonoCompartmentUrine.outputExperiment.fnPKPD)
+        Cl = float(experiment.samples['Individual'].descriptors['Cl'])
+        V = float(experiment.samples['Individual'].descriptors['V'])
+        fe = float(experiment.samples['Individual'].descriptors['fe'])
+        self.assertAlmostEqual(Cl,0.0204,3)
+        self.assertAlmostEqual(V,10.729,1)
+        self.assertAlmostEqual(fe,0.3533,1)
+
+        # Compare fitting parameter values with Gold standard values
+        fitting = PKPDFitting()
+        fitting.load(protIVMonoCompartmentUrine.outputFitting.fnFitting)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.997,2)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.9967,2)
+        self.assertAlmostEqual(fitting.sampleFits[0].AIC,-85.436,1)
+        self.assertAlmostEqual(fitting.sampleFits[0].AICc,-84.436,1)
+        self.assertAlmostEqual(fitting.sampleFits[0].BIC,-82.4488,1)
 
         # Calculate statistics of the labels
         print "Calculate statics of the labels"
-        protStatisticsLabel = self.newProtocol(ProtPKPDIVMonoCompartmentUrine,
+        protStatisticsLabel = self.newProtocol(ProtPKPDStatisticsLabel,
                                                objLabel='pkpd - statistics labels')
         protStatisticsLabel.inputExperiment.set(protIVMonoCompartmentUrine.outputExperiment)
         self.launchProtocol(protStatisticsLabel)
-        self.assertIsNotNone(protStatisticsLabel.outputExperiment.fnPKPD, "There was a problem with the statics calculation ")
+        #self.assertIsNotNone(protStatisticsLabel.outputExperiment.fnPKPD, "There was a problem with the statics calculation ")
         self.validateFiles('protStatisticsLabel', protStatisticsLabel)
 
         # Simulate a generic pharmacodynamic response Y=f(X)
@@ -99,7 +137,7 @@ class TestGabrielssonPK05Workflow(TestWorkflow):
                                                  paramValues='7;3')
         protSimulateGenericPD.inputExperiment.set(protIVMonoCompartmentUrine.outputExperiment)
         self.launchProtocol(protSimulateGenericPD)
-        self.assertIsNotNone(protSimulateGenericPD.outputExperiment.fnPKPD, "There was a problem with the simulation ")
+        self.assertIsNotNone(protSimulateGenericPD.outputFitting.fnPKPD, "There was a problem with the simulation ")
         self.validateFiles('protSimulateGenericPD', protSimulateGenericPD)
 
 
