@@ -177,6 +177,11 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         self.AUC0t = AUClist[-1]
         self.AUMC0t = AUMClist[-1]
         self.MRT = self.AUMC0t/self.AUC0t
+        self.Cmin = Cminlist[-1]
+        self.Cmax = Cmaxlist[-1]
+        self.Cavg = Cavglist[-1]
+        self.fluctuation = self.Cmax/self.Cmin
+        self.percentageAccumulation = Cavglist[-1]/Cavglist[0]
 
         print("   AUC0t=%f [%s]"%(self.AUC0t,strUnit(self.AUCunits)))
         print("   AUMC0t=%f [%s]"%(self.AUMC0t,strUnit(self.AUMCunits)))
@@ -253,6 +258,11 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         AUCarray = np.zeros(Nsimulations)
         AUMCarray = np.zeros(Nsimulations)
         MRTarray = np.zeros(Nsimulations)
+        CminArray = np.zeros(Nsimulations)
+        CmaxArray = np.zeros(Nsimulations)
+        CavgArray = np.zeros(Nsimulations)
+        fluctuationArray = np.zeros(Nsimulations)
+        percentageAccumulationArray = np.zeros(Nsimulations)
         for i in range(0,Nsimulations):
             self.setTimeRange(None)
 
@@ -313,17 +323,32 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
             AUCarray[i] = self.AUC0t
             AUMCarray[i] = self.AUMC0t
             MRTarray[i] = self.MRT
+            CminArray[i] = self.Cmin
+            CmaxArray[i] = self.Cmax
+            CavgArray[i] = self.Cavg
+            fluctuationArray[i] = self.fluctuation
+            percentageAccumulationArray[i] = self.percentageAccumulation
             if self.addIndividuals or self.paramsSource==ProtPKPDODESimulate.PRM_USER_DEFINED:
                 self.addSample("Simulation_%d"%i, dosename, simulationsX, y)
 
         # Report NCA statistics
         alpha_2 = (100-self.confidenceLevel.get())/2
         limits = np.percentile(AUCarray,[alpha_2,100-alpha_2])
-        print("AUC %f%% confidence interval=[%f,%f] [%s]"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(self.AUCunits)))
+        print("AUC %f%% confidence interval=[%f,%f] [%s] mean=%f"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(self.AUCunits),np.mean(AUCarray)))
         limits = np.percentile(AUMCarray,[alpha_2,100-alpha_2])
-        print("AUMC %f%% confidence interval=[%f,%f] [%s]"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(self.AUMCunits)))
+        print("AUMC %f%% confidence interval=[%f,%f] [%s] mean=%f"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(self.AUMCunits),np.mean(AUMCarray)))
         limits = np.percentile(MRTarray,[alpha_2,100-alpha_2])
-        print("MRT %f%% confidence interval=[%f,%f] [min]"%(self.confidenceLevel.get(),limits[0],limits[1]))
+        print("MRT %f%% confidence interval=[%f,%f] [min] mean=%f"%(self.confidenceLevel.get(),limits[0],limits[1],np.mean(MRTarray)))
+        limits = np.percentile(CminArray,[alpha_2,100-alpha_2])
+        print("Cmin %f%% confidence interval=[%f,%f] [%s] mean=%f"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(self.Cunits.unit),np.mean(CminArray)))
+        limits = np.percentile(CmaxArray,[alpha_2,100-alpha_2])
+        print("Cmax %f%% confidence interval=[%f,%f] [%s] mean=%f"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(self.Cunits.unit),np.mean(CmaxArray)))
+        limits = np.percentile(CavgArray,[alpha_2,100-alpha_2])
+        print("Cavg %f%% confidence interval=[%f,%f] [%s] mean=%f"%(self.confidenceLevel.get(),limits[0],limits[1],strUnit(self.Cunits.unit),np.mean(CavgArray)))
+        limits = np.percentile(fluctuationArray,[alpha_2,100-alpha_2])
+        print("Fluctuation %f%% confidence interval=[%f,%f] [%%] mean=%f"%(self.confidenceLevel.get(),limits[0]*100,limits[1]*100,np.mean(fluctuationArray)*100))
+        limits = np.percentile(percentageAccumulationArray,[alpha_2,100-alpha_2])
+        print("Accum(1) %f%% confidence interval=[%f,%f] [%%] mean=%f"%(self.confidenceLevel.get(),limits[0]*100,limits[1]*100,np.mean(percentageAccumulationArray)*100))
 
         # Calculate statistics
         if self.addStats:
