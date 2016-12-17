@@ -70,7 +70,29 @@ class TestGabrielssonPK07Workflow(TestWorkflow):
         protPKPDIVTwoCompartments.inputExperiment.set(protChangeTimeUnit.outputExperiment)
         self.launchProtocol(protPKPDIVTwoCompartments)
         self.assertIsNotNone(protPKPDIVTwoCompartments.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
+        self.assertIsNotNone(protPKPDIVTwoCompartments.outputFitting.fnFitting, "There was a problem with the two-compartmental model ")
         self.validateFiles('protPKPDIVTwoCompartments', protPKPDIVTwoCompartments)
+
+        # Compare model parameter values with Gold standard values
+        experiment = PKPDExperiment()
+        experiment.load(protPKPDIVTwoCompartments.outputExperiment.fnPKPD)
+        Cl = float(experiment.samples['Individual'].descriptors['Cl'])
+        Clp = float(experiment.samples['Individual'].descriptors['Clp'])
+        V = float(experiment.samples['Individual'].descriptors['V'])
+        Vp = float(experiment.samples['Individual'].descriptors['Vp'])
+        self.assertAlmostEqual(Cl,0.00611,3)
+        self.assertAlmostEqual(Clp,0.01703,3)
+        self.assertAlmostEqual(V,56.58054,1)
+        self.assertAlmostEqual(Vp,57.08366,1)
+
+        # Compare fitting parameter values with Gold standard values
+        fitting = PKPDFitting()
+        fitting.load(protPKPDIVTwoCompartments.outputFitting.fnFitting)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.99673,2)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.99576,2)
+        self.assertAlmostEqual(fitting.sampleFits[0].AIC,-71.32722,2)
+        self.assertAlmostEqual(fitting.sampleFits[0].AICc,-67.32722,2)
+        self.assertAlmostEqual(fitting.sampleFits[0].BIC,-68.77099,2)
 
 if __name__ == "__main__":
     unittest.main()

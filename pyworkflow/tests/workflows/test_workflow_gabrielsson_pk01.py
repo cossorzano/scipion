@@ -45,6 +45,7 @@ class TestGabrielssonPK01Workflow(TestWorkflow):
 
         print "Import Experiment"
         protImport = self.newProtocol(ProtImportExperiment,
+                                      objLabel='pkpd - import experiment',
                                       inputFile=self.exptFn)
         self.launchProtocol(protImport)
         self.assertIsNotNone(protImport.outputExperiment.fnPKPD, "There was a problem with the import")
@@ -53,7 +54,9 @@ class TestGabrielssonPK01Workflow(TestWorkflow):
         # Change the concentration unit to mg/L
         print "Change Units"
         protChangeUnits = self.newProtocol(ProtPKPDChangeUnits,
-                                           labelToChange='Cp', newUnitsCategory=4, newUnitsCategoryConc=1)
+                                           objLabel='pkpd - change units',
+                                           labelToChange='Cp', newUnitsCategory=4,
+                                           newUnitsCategoryConc=1)
         protChangeUnits.inputExperiment.set(protImport.outputExperiment)
         self.launchProtocol(protChangeUnits)
         self.assertIsNotNone(protChangeUnits.outputExperiment.fnPKPD, "There was a problem with changing units")
@@ -62,30 +65,97 @@ class TestGabrielssonPK01Workflow(TestWorkflow):
         # Fit a single exponential to the input data
         print "Compute elimination rate..."
         protEliminationRate = self.newProtocol(ProtPKPDEliminationRate,
+                                               objLabel='pkpd - elimination rate',
                                                predictor='t', predicted='Cp')
         protEliminationRate.inputExperiment.set(protChangeUnits.outputExperiment)
         self.launchProtocol(protEliminationRate)
         self.assertIsNotNone(protEliminationRate.outputExperiment.fnPKPD, "There was a problem with the exponential fitting")
+        self.assertIsNotNone(protEliminationRate.outputFitting.fnFitting, "There was a problem with the exponential fitting")
         self.validateFiles('protEliminationRate', protEliminationRate)
+
+        # Compare model parameter values with Gold standard values
+        experiment = PKPDExperiment()
+        experiment.load(protEliminationRate.outputExperiment.fnPKPD)
+        c1 = float(experiment.samples['Individual1'].descriptors['c1'])
+        lambda1 = float(experiment.samples['Individual1'].descriptors['lambda1'])
+        self.assertAlmostEqual(c1,1.011,3)
+        self.assertAlmostEqual(lambda1,0.0104,3)
+
+        # Compare fitting parameter values with Gold standard values
+        fitting = PKPDFitting()
+        fitting.load(protEliminationRate.outputFitting.fnFitting)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.9887,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.9874,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].AIC,-45.876,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].AICc,-44.876,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].BIC,-45.2708,3)
 
         # Non-compartmental analysis
         print "Performing Non-compartmental analysis..."
-        protNCAIVObs = self.newProtocol(ProtPKPDNCAIVObs)
+        protNCAIVObs = self.newProtocol(ProtPKPDNCAIVObs,
+                                        objLabel='pkpd - nca iv observations')
         protNCAIVObs.inputExperiment.set(protChangeUnits.outputExperiment)
         protNCAIVObs.protElimination.set(protEliminationRate)
         self.launchProtocol(protNCAIVObs)
         self.assertIsNotNone(protNCAIVObs.outputExperiment.fnPKPD, "There was a problem with the Non-compartmental analysis ")
+        self.assertIsNotNone(protNCAIVObs.outputAnalysis.fnAnalysis, "There was a problem with the Non-compartmental analysis ")
         self.validateFiles('protNCAIVObs', protNCAIVObs)
+
+        # Compare model parameter values with Gold standard values
+        experiment = PKPDExperiment()
+        experiment.load(protNCAIVObs.outputExperiment.fnPKPD)
+        AUC_0inf = float(experiment.samples['Individual1'].descriptors['AUC_0inf'])
+        AUC_0t = float(experiment.samples['Individual1'].descriptors['AUC_0t'])
+        AUMC_0inf = float(experiment.samples['Individual1'].descriptors['AUMC_0inf'])
+        AUMC_0t = float(experiment.samples['Individual1'].descriptors['AUMC_0t'])
+        CL_0inf = float(experiment.samples['Individual1'].descriptors['CL_0inf'])
+        CL_0t = float(experiment.samples['Individual1'].descriptors['CL_0t'])
+        MRT = float(experiment.samples['Individual1'].descriptors['MRT'])
+        Vd_0inf = float(experiment.samples['Individual1'].descriptors['Vd_0inf'])
+        Vd_0t = float(experiment.samples['Individual1'].descriptors['Vd_0t'])
+        Vss = float(experiment.samples['Individual1'].descriptors['Vss'])
+        thalf = float(experiment.samples['Individual1'].descriptors['thalf'])
+        self.assertAlmostEqual(AUC_0inf,86.4555,3)
+        self.assertAlmostEqual(AUC_0t,67.3003,3)
+        self.assertAlmostEqual(AUMC_0inf,9013.1394,3)
+        self.assertAlmostEqual(AUMC_0t,4305.2328,3)
+        self.assertAlmostEqual(CL_0inf,0.1156,3)
+        self.assertAlmostEqual(CL_0t,0.1485,3)
+        self.assertAlmostEqual(MRT,104.2516,3)
+        self.assertAlmostEqual(Vd_0inf,11.078,3)
+        self.assertAlmostEqual(Vd_0t,14.2311,3)
+        self.assertAlmostEqual(Vss,12.0584,3)
+        self.assertAlmostEqual(thalf,66.387,3)
+
 
         # Fit a monocompartmental model
         print "Fitting monocompartmental model..."
         protIVMonoCompartment = self.newProtocol(ProtPKPDIVMonoCompartment,
-                                                 findtlag=False, initType=0)
+                                                 objLabel='pkpd - iv monocompartment',
+                                                 findtlag=False, initType=0, deltaT=0.25)
         protIVMonoCompartment.inputExperiment.set(protChangeUnits.outputExperiment)
         protIVMonoCompartment.ncaProtocol.set(protNCAIVObs)
         self.launchProtocol(protIVMonoCompartment)
         self.assertIsNotNone(protIVMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
+        self.assertIsNotNone(protIVMonoCompartment.outputFitting.fnFitting, "There was a problem with the monocompartmental model ")
         self.validateFiles('ProtIVMonoCompartment', protIVMonoCompartment)
+
+        # Compare model parameter values with Gold standard values
+        experiment = PKPDExperiment()
+        experiment.load(protIVMonoCompartment.outputExperiment.fnPKPD)
+        Cl = float(experiment.samples['Individual1'].descriptors['Cl'])
+        V = float(experiment.samples['Individual1'].descriptors['V'])
+        self.assertAlmostEqual(Cl,0.1032,3)
+        self.assertAlmostEqual(V,9.889,3)
+
+        # Compare fitting parameter values with Gold standard values
+        fitting = PKPDFitting()
+        fitting.load(protIVMonoCompartment.outputFitting.fnFitting)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.9887,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.9874,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].AIC,-45.8759,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].AICc,-44.8759,3)
+        self.assertAlmostEqual(fitting.sampleFits[0].BIC,-45.2708,3)
 
 if __name__ == "__main__":
     unittest.main()
