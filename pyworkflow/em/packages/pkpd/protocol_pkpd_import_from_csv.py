@@ -60,7 +60,7 @@ class ProtPKPDImportFromText(ProtPKPD):
                            "t ; h ; numeric ; time ; \n"\
                            "Cp ; ug/mL ; numeric ; measurement ; plasma concentration\n"\
                            "weight ; g ; numeric; label ; weight of the animal\n"\
-                           "sex ; g ; text ; label ; sex of the animal\n")
+                           "sex ; none ; text ; label ; sex of the animal\n")
         form.addParam('doses', params.TextParam, height=5, width=70, label="Doses", default="",
                       help="Structure: [Dose Name] ; [Description] ; [Units] \n"\
                            "The dose name should have no space or special character\n"\
