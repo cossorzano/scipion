@@ -413,8 +413,11 @@ class PKPDSample:
                 raise Exception("Unrecognized variable %s"%varName)
 
     def addMeasurement(self,line):
+        line = line.strip()
+        if line=="":
+            return
         tokens = line.split()
-        if len(tokens)!=len(self.measurementPattern):
+        if len(tokens)<len(self.measurementPattern):
             raise Exception("Not enough values to fill measurement pattern")
         for n in range(0,len(tokens)):
             ok=True
