@@ -192,7 +192,7 @@ class PDSaturated(PDGenericModel):
 
             self.bounds = []
             self.bounds.append((0.1 * e0, 10 * e0))
-            self.bounds.append((0.1 * emax, 10 * emax))
+            self.bounds.append((min(0.1*emax, 10*emax),max(0.1*emax,10*emax)))
             self.bounds.append((0.1 * eC50, 10 * eC50))
 
     def printSetup(self):
@@ -257,7 +257,7 @@ class PDSigmoid(PDGenericModel):
 
             self.bounds = []
             self.bounds.append((0.1 * e0, 10 * e0))
-            self.bounds.append((0.1 * emax, 10 * emax))
+            self.bounds.append((min(0.1*emax, 10*emax),max(0.1*emax,10*emax)))
             self.bounds.append((0.1 * eC50, 10 * eC50))
             self.bounds.append((1 * h, 10 * h))
 
@@ -333,9 +333,9 @@ class PDGompertz(PDGenericModel):
             print("Y = (%f) *exp(-exp((%f) - (%f) * X))" %(a,b,g))
 
             self.bounds = []
-            self.bounds.append((0.1 *a, 10 * a))
-            self.bounds.append((0.1 * b, 10 * b))
-            self.bounds.append((0.1 * g, 10 * g))
+            self.bounds.append((min(0.1*a, 10*a),max(0.1*a,10*a)))
+            self.bounds.append((min(0.1*b, 10*b),max(0.1*b,10*b)))
+            self.bounds.append((min(0.1*g, 10*g),max(0.1*g,10*g)))
 
     def printSetup(self):
         print("Model: %s"%self.getModelEquation())
