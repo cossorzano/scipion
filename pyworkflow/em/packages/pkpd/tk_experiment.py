@@ -308,6 +308,8 @@ class ExperimentWindow(gui.Window):
         # Add a combobox with the variable for time
         timeVars = [v.varName for v in self.experiment.variables.values()
                     if v.role == v.ROLE_TIME]
+        timeVars += [v.varName for v in self.experiment.variables.values()
+                    if v.role == v.ROLE_MEASUREMENT]
 
         measureVars = [v.varName for v in self.experiment.variables.values()
                     if v.role == v.ROLE_MEASUREMENT]
@@ -471,7 +473,9 @@ class ExperimentWindow(gui.Window):
                     x, y = self.getPlotValues(s)
                     ax.plot(x, y, label=s.varName)
                     self.plotDict[s.varName] = True
-            ax.legend()
+            leg = ax.legend()
+            if leg:
+                leg.draggable()
 
             if doShow:
                 self.plotter.show()
