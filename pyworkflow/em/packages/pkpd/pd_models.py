@@ -186,7 +186,7 @@ class PDSaturated(PDGenericModel):
         if self.bounds == None:
             e0 = np.min(self.y)
             emax = np.max(self.y-e0)
-            eC50 = 0.5*(np.max(self.x)+np.min(self.y))
+            eC50 = 0.5*(np.max(self.x)+np.min(self.x))
             print("First estimate of saturated term: ")
             print("Y=(%f) + ( (%f)*X / ((%f) + X) )" % (e0, emax, eC50))
 
@@ -240,22 +240,38 @@ class PDSigmoid(PDGenericModel):
         h = parameters[3]
         eC50prime = eC50**h
         xprime = x**h
-        self.yPredicted = e0 - ( (emax*(xprime)) / ( (eC50prime) + (xprime)))
+        self.yPredicted = e0  + ( (emax*(xprime)) / ( (eC50prime) + (xprime)))
         return self.yPredicted
 
     def getDescription(self):
         return "Sigmoid (%s)"%self.__class__.__name__
-        #def prepare(self): #trabajar
+
+    def prepare(self):
+        if self.bounds == None:
+            e0 = np.min(self.y)
+            emax = np.max(self.y - e0)
+            eC50 = 0.5 * (np.max(self.x) + np.min(self.x))
+            h = 1 #por defecto
+            print("First estimate of saturated term: ")
+            print("Y = (%f) + ( (%f)*(X**(%f)) / ( ((%f)**(%f)) + (X**(%f))))" % (e0, emax, h, eC50, h, h))
+
+            self.bounds = []
+            self.bounds.append((0.1 * e0, 10 * e0))
+            self.bounds.append((0.1 * emax, 10 * emax))
+            self.bounds.append((0.1 * eC50, 10 * eC50))
+            self.bounds.append((1 * h, 10 * h))
 
     def printSetup(self):
         print("Model: %s"%self.getModelEquation())
         print("Bounds: " + str(self.bounds))
 
     def getModelEquation(self):
-        return "Y = e0 - ( emax*(X**h) / ( (eC50**h) + (X**h)))"
+        return "Y = e0 + ( emax*(X**h) / ( (eC50**h) + (X**h)))"
 
     def getEquation(self):
-        toPrint = "Y = (%f) - ( (%f)*(X**(%f)) / ( ((%f)**(%f)) + (X**(%f))))"%(self.parameters[0], self.parameters[1], self.parameters[3], self.parameters[2], self.parameters[3], self.parameters[3])
+        toPrint = "Y = (%f) + ( (%f)*(X**(%f)) / ( ((%f)**(%f)) + (X**(%f))))"%(self.parameters[0], self.parameters[1],
+                                                                                self.parameters[3], self.parameters[2],
+                                                                                self.parameters[3], self.parameters[3])
         return toPrint
 
     def getParameterNames(self):
@@ -292,7 +308,7 @@ class PDGompertz(PDGenericModel):
         g = parameters[2]
 
         d = np.exp(b - (g*x))
-        self.yPredicted = a / (np.exp(d))
+        self.yPredicted = a * np.exp(-d)
 
         return self.yPredicted
 
@@ -300,7 +316,26 @@ class PDGompertz(PDGenericModel):
     def getDescription(self):
         return "Gompertz (%s)"%self.__class__.__name__
 
-    # def prepare(self):
+    def prepare(self):
+        if self.bounds==None:
+            #self.y and self.x must be different to 0
+
+            emax = np.max(self.y)
+            a=emax
+
+            emin = 0.9*np.min(self.y)+0.1*emax
+
+            b = math.log(-math.log(emin/emax))
+            g = (b + 5) / np.max(self.x)
+
+
+            print("First estimate of Gompertz term: ")
+            print("Y = (%f) *exp(-exp((%f) - (%f) * X))" %(a,b,g))
+
+            self.bounds = []
+            self.bounds.append((0.1 *a, 10 * a))
+            self.bounds.append((0.1 * b, 10 * b))
+            self.bounds.append((0.1 * g, 10 * g))
 
     def printSetup(self):
         print("Model: %s"%self.getModelEquation())
@@ -355,7 +390,28 @@ class PDLogistic1(PDGenericModel):
     def getDescription(self):
         return "Logistic1 (%s)" % self.__class__.__name__
 
-    # def prepare(self):
+    def prepare(self):
+        if self.bounds == None:
+
+            a = np.max(self.y)
+
+            if np.min(self.y) == 0:
+                y = np.min(self.y) + 0.1
+
+            else: y = np.min(self.y)
+
+            b = math.log((a/y)-1)
+            g = (b+3)/np.max(self.x)
+
+
+            print("First estimate of Logistic 1 term: ")
+            print("Y = (%f) / (1+exp((%f) - (%f) * X))" % (a,b,g))
+
+            self.bounds = []
+            self.bounds.append((0.1 * a, 10 * a))
+            self.bounds.append((0.1 * b, 10 * b))
+            self.bounds.append((0.1 * g, 10 * g))
+
 
     def printSetup(self):
         print("Model: %s" % self.getModelEquation())
@@ -408,7 +464,27 @@ class PDLogistic2(PDGenericModel):
     def getDescription(self):
         return "Logistic2 (%s)" % self.__class__.__name__
 
-    # def prepare(self):
+    def prepare(self):
+        if self.bounds == None:
+
+            a = (1 / np.max(self.y))  #a tiene que ser +- 0
+
+            if np.min(self.y) == 0:
+                y = np.min(self.y) + 0.1
+
+            else:
+                y = np.min(self.y)
+
+            b = math.log((1 / y) - a)
+            g = (b + 3) / np.max(self.x)
+
+            print("First estimate of Logistic 2 term: ")
+            print("Y = 1 / ((%f) + exp((%f) - (%f) * X))" % (a, b, g))
+
+            self.bounds = []
+            self.bounds.append((0.01 * a, 10 * a))
+            self.bounds.append((0.1 * b, 10 * b))
+            self.bounds.append((0.1 * g, 10 * g))
 
     def printSetup(self):
         print("Model: %s" % self.getModelEquation())
@@ -461,7 +537,27 @@ class PDLogistic3(PDGenericModel):
     def getDescription(self):
         return "Logistic3 (%s)" % self.__class__.__name__
 
-    # def prepare(self):
+    def prepare(self):
+        if self.bounds == None:
+
+            a = np.max(self.y)
+
+            if np.min(self.y) == 0:
+                y = np.min(self.y) + 0.1
+
+            else:
+                y = np.min(self.y)
+
+            b = (a/y) - 1
+            g = 3 / np.max(self.x)
+
+            print("First estimate of Logistic 3 term: ")
+            print("Y = (%f) / (1 + (%f) * exp(-(%f) * X))" % (a, b, g))
+
+            self.bounds = []
+            self.bounds.append((0.1 * a, 10 * a))
+            self.bounds.append((0.1 * b, 10 * b))
+            self.bounds.append((0.1 * g, 10 * g))
 
     def printSetup(self):
         print("Model: %s" % self.getModelEquation())
@@ -513,7 +609,27 @@ class PDLogistic4(PDGenericModel):
     def getDescription(self):
         return "Logistic4 (%s)" % self.__class__.__name__
 
-    # def prepare(self):
+    def prepare(self):
+        if self.bounds == None:
+
+            a = 1 / np.max(self.y)
+
+            if np.min(self.y) == 0:
+                y = np.min(self.y) + 0.1
+
+            else:
+                y = np.min(self.y)
+
+            b = (1 / y) - a
+            g = 3 / np.max(self.x)
+
+            print("First estimate of Logistic 4 term: ")
+            print("Y = 1 / ((%f)+ (%f)*exp(-(%f)*X))" % (a, b, g))
+
+            self.bounds = []
+            self.bounds.append((0.01 * a, 10 * a))
+            self.bounds.append((0.1 * b, 10 * b))
+            self.bounds.append((0.1 * g, 10 * g))
 
     def printSetup(self):
         print("Model: %s" % self.getModelEquation())
@@ -523,7 +639,7 @@ class PDLogistic4(PDGenericModel):
         return "Y = 1/(a+b*exp(-g*X))"
 
     def getEquation(self):
-        toPrint = "Y = 1/(%f)+(%f)*exp(-(%f)*X))" % (self.parameters[0], self.parameters[1], self.parameters[2])
+        toPrint = "Y = 1/((%f)+(%f)*exp(-(%f)*X))" % (self.parameters[0], self.parameters[1], self.parameters[2])
         return toPrint
 
     def getParameterNames(self):
