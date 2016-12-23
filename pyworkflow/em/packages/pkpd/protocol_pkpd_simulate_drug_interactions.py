@@ -201,7 +201,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
 
         if self.doReversibleGut:
             D = np.arange(self.D0Gut.get(), self.DFGut.get(), (self.DFGut.get()-self.D0Gut.get())/100)
-            I = D/(250*self.MWGut.get()*1e-3) # I [uM]
+            I = D/(250*self.MWGut.get())*1e6 # I [uM]
             KiList = self.parseList(self.KiReversibleGut.get())
             for Ki in KiList:
                 legend="Gut Rev. Inh. Ki=%f [uM]"%Ki
@@ -227,7 +227,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
 
         if self.doTimeDependentGut:
             D = np.arange(self.D0Gut.get(), self.DFGut.get(), (self.DFGut.get()-self.D0Gut.get())/100)
-            I = D/(250*self.MWGut.get()) # I [uM]
+            I = D/(250*self.MWGut.get())*1e6 # I [uM]
             KiList = self.parseList(self.KiReversibleGut.get())
             kdegList = self.parseList(self.kdegGut.get())
             kinactList = self.parseList(self.kinactGut.get())
@@ -257,7 +257,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
 
         if self.doInductionGut:
             D = np.arange(self.D0Gut.get(), self.DFGut.get(), (self.DFGut.get()-self.D0Gut.get())/100)
-            I = D/(250*self.MWGut.get()) # I [uM]
+            I = D/(250*self.MWGut.get())*1e6 # I [uM]
             EC50List = self.parseList(self.EC50Gut.get())
             EmaxList = self.parseList(self.EmaxGut.get())
             dList = self.parseList(self.dGut.get())
@@ -330,7 +330,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
 
         if self.doTransporterGut:
             D = np.arange(self.D0TransporterGut.get(), self.DFTransporterGut.get(), (self.DFTransporterGut.get()-self.D0TransporterGut.get())/100)
-            I = D/(250*self.MWTransporterGut.get()*1e-3) # I [uM]
+            I = D/(250*self.MWTransporterGut.get())*1e6 # I [uM]
             KiList = self.parseList(self.KiTransporterGut.get())
             for Ki in KiList:
                 legend="Gut Transporter Ki=%f [uM]"%Ki
