@@ -30,7 +30,7 @@ import os
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
-from pyworkflow.em.data import PKPDODEModel, createDeltaDose
+from pyworkflow.em.data import PKPDODEModel
 import biopharmaceutics
 
 class PKPDLiver(PKPDODEModel):
@@ -84,7 +84,7 @@ class PKPDLiverEV1():
         self.model.tF = tF*60
 
     def setDose(self,doseAmount):
-        self.drugSource.setDoses([createDeltaDose(doseAmount)],self.model.t0,self.model.tF)
+        self.drugSource.setDoses([createDeltaDose(doseAmount,"mg","ev1")],self.model.t0,self.model.tF)
 
     def simulate(self,params,t):
         self.drugSource.evProfile.setParameters(params[0:self.NparametersSource])

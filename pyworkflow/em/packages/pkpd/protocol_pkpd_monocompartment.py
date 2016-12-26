@@ -26,21 +26,18 @@
 
 import pyworkflow.protocol.params as params
 from protocol_pkpd_ode_base import ProtPKPDODEBase
-from pk_models import PK_Twocompartments
+from pk_models import PK_Monocompartment
 import biopharmaceutics
 
 
-class ProtPKPDEV1TwoCompartments(ProtPKPDODEBase):
-    """ Fit a two-compartmentx model with intravenous absorption to a set of measurements (any arbitrary dosing regimen is allowed)\n
-        The central compartment is referred to as C, while the peripheral compartment as Cp.
-        The differential equation is D(t)=Amax*(1-exp(-Ka*t)), V dC/dt = -(Cl+Clp) * C + Clp * Cp + dD/dt, Vp dCp/dt = Clp * C - Clp * Cp\n
-        where Ka is the absorption rate, C is the concentration of the central compartment, Cl the clearance, V and
-        Vp the distribution volume of the central and peripheral compartment,
-        Clp is the distribution rate between the central and the peripheral compartments, and D the input dosing regime.
-        Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
-        are independent, which are not. Use Bootstrap estimates instead.\n
+class ProtPKPDMonoCompartment(ProtPKPDODEBase):
+    """ Fit a monocompartmental model to a set of measurements obtained by oral doses (any arbitrary dosing regimen is allowed)\n
+        The differential equation is dC/dt = -Cl * C/V + 1/V * dD/dt\n
+        where C is the concentration, Cl the clearance, V the distribution volume, and D the input dosing regime.
+Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
+are independent, which are not. Use Bootstrap estimates instead.\n
         Protocol created by http://www.kinestatpharma.com\n"""
-    _label = 'ev1 two-compartments'
+    _label = 'pk monocompartment'
 
     def __init__(self,**kwargs):
         ProtPKPDODEBase.__init__(self,**kwargs)
@@ -49,14 +46,10 @@ class ProtPKPDEV1TwoCompartments(ProtPKPDODEBase):
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):
         self._defineParams1(form, True, "t", "Cp")
-        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Ka, Cl, V, Clp, Vp)", default="",
-                      help="Bounds for time delay, 1st order input rate, central clearance and volume and peripheral clearance and volume. "\
+        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], sourceParameters, Cl, V)", default="",
+                      help="Bounds for the tlag (if it must be estimated), parameters for the source, clearance and volume. Example: (0.01,0.04);(0.2,0.4);(10,20). "\
                       'Make sure that the bounds are expressed in the expected units (estimated from the sample itself).'\
                       'Be careful that Cl bounds must be given here. If you have an estimate of the elimination rate, this is Ke=Cl/V. Consequently, Cl=Ke*V ')
 
-    def configureSource(self, drugSource):
-        drugSource.type = biopharmaceutics.DrugSource.EV
-        drugSource.evProfile = biopharmaceutics.BiopharmaceuticsModelOrder1()
-
     def createModel(self):
-        return PK_Twocompartments()
+        return PK_Monocompartment()

@@ -146,40 +146,12 @@ Protocols = [{
 	"icon": "bookmark.png",
 	"children": [{
 		"tag": "protocol",
-		"value": "ProtPKPDIVMonoCompartment",
-		"text": "iv monocompartment"
+		"value": "ProtPKPDMonoCompartment",
+		"text": "monocompartment"
 	},{
 		"tag": "protocol",
 		"value": "ProtPKPDIVMonoCompartmentUrine",
-		"text": "iv monocompartment (urine)"
-	},{
-		"tag": "protocol",
-		"value": "ProtPKPDIVTwoCompartments",
-		"text": "iv two-compartments"
-	},{
-		"tag": "protocol",
-		"value": "ProtPKPDEV0MonoCompartment",
-		"text": "ev0 monocompartment"
-	},{
-		"tag": "protocol",
-		"value": "ProtPKPDEV0TwoCompartments",
-		"text": "ev0 two-compartments"
-	},{
-		"tag": "protocol",
-		"value": "ProtPKPDEV01MonoCompartment",
-		"text": "ev0&1 monocompartment"
-	},{
-		"tag": "protocol",
-		"value": "ProtPKPDEV1MonoCompartment",
-		"text": "ev1 monocompartment"
-	},{
-		"tag": "protocol",
-		"value": "ProtPKPDEV1MonoCompartmentUrine",
-		"text": "ev1 monocompartment (urine)"
-	},{
-		"tag": "protocol",
-		"value": "ProtPKPDEV1TwoCompartments",
-		"text": "ev1 two-compartments"
+		"text": "monocompartment (urine)"
 	},{
 		"tag": "protocol",
 		"value": "ProtPKPDODERefine",

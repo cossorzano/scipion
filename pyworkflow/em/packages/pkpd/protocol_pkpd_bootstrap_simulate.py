@@ -224,7 +224,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         # Read the doses
         for line in self.doses.get().replace('\n',';;').split(';;'):
             tokens = line.split(';')
-            if len(tokens)!=4:
+            if len(tokens)<5:
                 print("Skipping dose: ",line)
                 continue
             dosename = tokens[0].strip()

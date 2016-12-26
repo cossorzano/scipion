@@ -32,7 +32,7 @@ import numpy as np
 from pyworkflow.em.pkpd_units import PKPDUnit, convertUnits
 from pyworkflow.object import *
 from pyworkflow.utils.path import writeMD5, verifyMD5
-
+from pyworkflow.em.biopharmaceutics import PKPDDose
 
 class EMObject(OrderedObject):
     """Base object for all EM classes"""
@@ -185,145 +185,6 @@ class PKPDVariable:
         return "%s [%s]" % (self.varName, self.getUnitsString())
 
 
-class PKPDDose:
-    TYPE_BOLUS = 1
-    TYPE_REPEATED_BOLUS = 2
-    TYPE_INFUSION = 3
-
-    def __init__(self):
-        self.varName = None
-        self.doseType = None
-        self.doseAmount = None
-        self.t0 = None
-        self.tF = None
-        self.every = None
-        self.tunits = None
-        self.dunits = None
-
-    def parseTokens(self,tokens):
-        # Dose1; bolus t=0 d=60*$(weight)/1000; min; mg
-        # Dose1; repeated_bolus t=0:8:48 d=60*$(weight)/1000; h; mg
-        # Dose1; infusion t=0:59 d=1; min; mg
-
-        # Get name
-        self.varName = tokens[0].strip()
-
-        # Get type
-        doseString = tokens[1].strip()
-        doseTokens = doseString.split(' ')
-        if len(doseTokens)!=3:
-            raise Exception("Unrecognized dose type %s"%doseString)
-        doseTypeString = doseTokens[0].strip().lower()
-        timeString = doseTokens[1].strip().lower().split("=")[1]
-        if doseTypeString=="bolus":
-            self.doseType = PKPDDose.TYPE_BOLUS
-            self.t0 = float(timeString)
-        elif doseTypeString=="repeated_bolus":
-            self.doseType = PKPDDose.TYPE_REPEATED_BOLUS
-            timeTokens = timeString.split(":")
-            self.t0 = float(timeTokens[0].strip())
-            self.every = float(timeTokens[1].strip())
-            self.tF = float(timeTokens[2].strip())
-        elif doseTypeString=="infusion":
-            self.doseType = PKPDDose.TYPE_INFUSION
-            timeTokens = timeString.split(":")
-            self.t0 = float(timeTokens[0].strip())
-            self.tF = float(timeTokens[1].strip())
-        else:
-            raise Exception("Unrecognized dose type %s"%doseTypeString)
-        self.doseAmount = doseTokens[2].strip().lower().split("=")[1]
-
-        # Get time units
-        unitString = tokens[2].strip()
-        self.tunits = PKPDUnit(unitString)
-        if not self.tunits.unit:
-            raise Exception("Unrecognized unit: %s"%unitString)
-        if not self.tunits.isTime():
-            raise Exception("Time unit is not valid")
-
-        # Get dose units
-        unitString = tokens[3].strip()
-        self.dunits = PKPDUnit(unitString)
-        if not self.dunits.unit:
-            raise Exception("Unrecognized unit: %s"%unitString)
-        if not self.dunits.isWeight():
-            raise Exception("After normalization, the dose must be a weight")
-
-    def _printToStream(self,fh):
-        fh.write("%s ; %s d=%s; %s; %s\n" % (self.varName,
-                                              self.getDoseString(),
-                                              self.doseAmount,
-                                              self.tunits._toString(),
-                                              self.dunits._toString()))
-
-    def getDoseString(self):
-        if self.doseType == PKPDDose.TYPE_BOLUS:
-            doseString = "bolus t=%f" % self.t0
-        elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
-            doseString = "repeated_bolus t=%f:%f:%f" % (self.t0, self.every, self.tF)
-        elif self.doseType == PKPDDose.TYPE_INFUSION:
-            doseString = "infusion t=%f:%f" % (self.t0, self.tF)
-        else:
-            doseString = ""
-        return doseString
-
-    def changeTimeUnitsToMinutes(self):
-        if self.doseType == PKPDDose.TYPE_BOLUS:
-            self.t0 *= 60
-        elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
-            self.t0 *= 60
-            self.tF *= 60
-            self.every *= 60
-        elif self.doseType == PKPDDose.TYPE_INFUSION:
-            self.t0 *= 60
-            self.tF *= 60
-
-    def getDoseAt(self,t0,dt=0.5):
-        """Dose between t0<=t<t0+dt, t0 is in minutes"""
-        t1=t0+dt
-        if self.doseType == PKPDDose.TYPE_BOLUS:
-            if t0<=self.t0 and self.t0<t1:
-                return self.doseAmount
-            else:
-                return 0.0
-        elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
-            doseAmount=0
-            for t in np.arange(self.t0,self.tF,self.every):
-                if t0<=t and t<t1:
-                    doseAmount+=self.doseAmount
-            return doseAmount
-        elif self.doseType == PKPDDose.TYPE_INFUSION:
-            if t0>self.tF or t1<self.t0:
-                return 0.0
-            else:
-                tLeft=max(t0,self.t0)
-                tRight=min(t1,self.tF)
-                return self.doseAmount*(tRight-tLeft)
-
-    def isDoseABolus(self):
-        if self.doseType != PKPDDose.TYPE_BOLUS:
-            return False
-        if self.t0 != 0:
-            return False
-        return True
-
-    def getTUnitsString(self):
-        return self.tunits._toString()
-
-    def getDUnitsString(self):
-        return self.dunits._toString()
-
-
-def createDeltaDose(doseAmount,t=0,dunits="mg"):
-    dose = PKPDDose()
-    dose.varName = "Bolus"
-    dose.doseType = PKPDDose.TYPE_BOLUS
-    dose.doseAmount = doseAmount
-    dose.t0 = t
-    dose.tunits = PKPDUnit("min")
-    dose.dunits = PKPDUnit(dunits)
-    return dose
-
 class PKPDSample:
     def __init__(self):
         self.varName = ""
@@ -377,6 +238,7 @@ class PKPDSample:
             dose = copy.copy(self.doseDictPtr[doseName])
             dose.doseAmount = self.evaluateExpression(dose.doseAmount)
             dose.changeTimeUnitsToMinutes()
+            dose.prepare()
             if firstUnit==None:
                 firstUnit = dose.dunits.unit
             else:
@@ -620,7 +482,7 @@ class PKPDExperiment(EMObject):
 
             elif state==PKPDExperiment.READING_DOSES:
                 tokens = line.split(';')
-                if len(tokens)!=4:
+                if len(tokens)<5:
                     print("Skipping dose: ",line)
                     continue
                 dosename = tokens[0].strip()
@@ -987,7 +849,7 @@ class PKPDODEModel(PKPDModelBase2):
             k4 = self.F(t+self.deltaT,yt+k3*self.deltaT)
 
             # External driving: Drug component
-            dD = self.drugSource.getAmountReleasedBetween(t,t+self.deltaT)
+            dD = self.drugSource.getAmountReleasedAt(t,self.deltaT)
             dyD = self.G(t, dD)
 
             # Update state

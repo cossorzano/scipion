@@ -33,9 +33,7 @@ import ttk
 import pyworkflow.object as pwobj
 from pyworkflow.wizard import Wizard
 import pyworkflow.gui.dialog as dialog
-from pyworkflow.gui.widgets import LabelSlider
-from pyworkflow.gui import configureWeigths
-from pyworkflow.gui.tree import BoundTree, TreeProvider
+from pyworkflow.gui.tree import TreeProvider
 
 from protocol_pkpd_regression_labels import ProtPKPDRegressionLabel
 from protocol_pkpd_drop_measurements import ProtPKPDDropMeasurements
@@ -44,14 +42,7 @@ from protocol_pkpd_scale_to_common_dose import ProtPKPDScaleToCommonDose
 from protocol_pkpd_stats_oneExperiment_twoSubgroups_mean import ProtPKPDStatsExp1Subgroups2Mean
 from protocol_pkpd_exponential_fit import ProtPKPDExponentialFit
 from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
-from protocol_pkpd_ev0_monocompartment import ProtPKPDEV0MonoCompartment
-from protocol_pkpd_ev01_monocompartment import ProtPKPDEV01MonoCompartment
-from protocol_pkpd_ev_monocompartment import ProtPKPDEV1MonoCompartment
-from protocol_pkpd_iv_monocompartment import ProtPKPDIVMonoCompartment
-from protocol_pkpd_iv_monocompartment_urine import ProtPKPDIVMonoCompartmentUrine
-from protocol_pkpd_iv_two_compartments import ProtPKPDIVTwoCompartments
-from protocol_pkpd_ev0_two_compartments import ProtPKPDEV0TwoCompartments
-from protocol_pkpd_ev1_two_compartments import ProtPKPDEV1TwoCompartments
+from protocol_pkpd_monocompartment import ProtPKPDMonoCompartment
 from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
 from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsExp2Subgroups2Mean
 from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile, getVarNamesFromCSVfile
@@ -100,21 +91,11 @@ class PKPDChooseVariableWizard(Wizard):
                 (ProtPKPDExponentialFit, ['predicted']),
                 (ProtPKPDEliminationRate, ['predictor']),
                 (ProtPKPDEliminationRate, ['predicted']),
-                (ProtPKPDEV0MonoCompartment, ['predictor']),
-                (ProtPKPDEV0MonoCompartment, ['predicted']),
-                (ProtPKPDEV1MonoCompartment, ['predictor']),
-                (ProtPKPDEV1MonoCompartment, ['predicted']),
-                (ProtPKPDIVMonoCompartment, ['predictor']),
-                (ProtPKPDIVMonoCompartment, ['predicted']),
-                (ProtPKPDIVTwoCompartments, ['predictor']),
-                (ProtPKPDIVTwoCompartments, ['predicted']),
-                (ProtPKPDEV0TwoCompartments, ['predictor']),
-                (ProtPKPDEV0TwoCompartments, ['predicted']),
-                (ProtPKPDEV1TwoCompartments, ['predictor']),
-                (ProtPKPDEV1TwoCompartments, ['predicted']),
-                (ProtPKPDEV1MonoCompartmentUrine, ['predictor']),
-                (ProtPKPDEV1MonoCompartmentUrine, ['predicted']),
-                (ProtPKPDEV1MonoCompartmentUrine, ['Au']),
+                (ProtPKPDMonoCompartment, ['predictor']),
+                (ProtPKPDMonoCompartment, ['predicted']),
+                # (ProtPKPDEV1MonoCompartmentUrine, ['predictor']),
+                # (ProtPKPDEV1MonoCompartmentUrine, ['predicted']),
+                # (ProtPKPDEV1MonoCompartmentUrine, ['Au']),
                 (ProtPKPDSimulateGenericPD, ['predictor']),
                 (ProtPKPDStatsExp2Subgroups2Mean, ['label1', 'inputExperiment1']),
                 (ProtPKPDStatsExp2Subgroups2Mean, ['label2', 'inputExperiment2'])
@@ -217,9 +198,9 @@ class PKPDDoseTemplateWizard(Wizard):
         label = params[0]
         protocol = form.protocol
         currentValue = protocol.getAttributeValue(label, "")
-        template = "\nInfusion0 ; infusion t=0.5...0.75 d=60*weight/1000; h; mg\n"\
-                   "Bolus1 ; bolus t=2 d=100; h; mg\n"\
-                   "Treatment ; repeated_bolus t=0:8:48 d=100; h; mg"
+        template = "\nInfusion0 ; iv; infusion t=0.5...0.75 d=60*weight/1000; h; mg\n"\
+                   "Bolus1 ; ev0; bolus t=2 d=100; h; mg\n"\
+                   "Treatment ; ev1; repeated_bolus t=0:8:48 d=100; h; mg"
         form.setVar(label, currentValue+template)
 
 
@@ -272,16 +253,8 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
 
 
 class PKPDODEWizard(Wizard):
-    _targets = [(ProtPKPDEV0MonoCompartment, ['bounds']),
-                (ProtPKPDEV01MonoCompartment, ['bounds']),
-                (ProtPKPDEV1MonoCompartment, ['bounds']),
-                (ProtPKPDIVMonoCompartment, ['bounds']),
-                (ProtPKPDIVMonoCompartmentUrine, ['bounds']),
-                (ProtPKPDIVTwoCompartments, ['bounds']),
-                (ProtPKPDEV0TwoCompartments, ['bounds']),
-                (ProtPKPDEV1TwoCompartments, ['bounds']),
-                (ProtPKPDEV1MonoCompartmentUrine, ['bounds']),
-                (ProtPKPDEV1MonoCompartmentUrine, ['bounds']),
+    _targets = [(ProtPKPDMonoCompartment, ['bounds']),
+                # (ProtPKPDIVMonoCompartmentUrine, ['bounds']),
                 (ProtPKPDGenericFit, ['bounds']),
                 ]
 

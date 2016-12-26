@@ -371,7 +371,6 @@ class PDGompertz(PDGenericModel):
         return True
 
 
-
 class PDLogistic1(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
@@ -445,7 +444,6 @@ class PDLogistic1(PDGenericModel):
         return True
 
 
-
 class PDLogistic2(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
@@ -516,7 +514,6 @@ class PDLogistic2(PDGenericModel):
 
     def areParametersValid(self, p):
         return True
-
 
 
 class PDLogistic3(PDGenericModel):
@@ -663,7 +660,6 @@ class PDLogistic4(PDGenericModel):
         return True
 
 
-
 class PDRichards(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
@@ -718,7 +714,6 @@ class PDRichards(PDGenericModel):
         return True
 
 
-
 class PDMorgan(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
@@ -771,7 +766,6 @@ class PDMorgan(PDGenericModel):
 
     def areParametersValid(self, p):
         return True
-
 
 
 class PDWeibull(PDGenericModel):
