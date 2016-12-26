@@ -29,7 +29,7 @@ import numpy as np
 import pyworkflow.protocol.params as params
 from pyworkflow.em.data import PKPDFitting, PKPDSampleFitBootstrap, PKPDLSOptimizer
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
-from biopharmaceutics import DrugSource
+from pyworkflow.em.biopharmaceutics import DrugSource
 from protocol_pkpd_ode_base import ProtPKPDODEBase
 
 class ProtPKPDODEBootstrap(ProtPKPDODEBase):

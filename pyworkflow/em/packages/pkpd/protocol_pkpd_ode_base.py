@@ -34,7 +34,7 @@ from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, PKPDSampleFit, PKPDModelBase, PKPDModelBase2
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from utils import parseRange
-from biopharmaceutics import DrugSource
+from pyworkflow.em.biopharmaceutics import DrugSource
 from pyworkflow.em.pkpd_units import PKPDUnit
 
 
@@ -206,18 +206,10 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def setParameters(self, parameters):
         self.parameters = parameters
-        self.setParametersSource()
-        self.setParametersPK()
 
-    def setParametersSource(self):
-        idx = 0
-        if self.findtlag:
-            self.drugSource.tlag = self.parameters[idx]
-            idx+=1
-        if self.drugSource.evProfile:
-            self.drugSource.evProfile.setParameters(self.parameters[idx:idx+self.NparametersSource])
+        if self.NparametersSource>0:
+            self.drugSource.setParameters(self.parameters[0:self.NparametersSource])
 
-    def setParametersPK(self):
         self.parametersPK = self.parameters[-self.NparametersModel:]
         self.model.setParameters(self.parametersPK)
 

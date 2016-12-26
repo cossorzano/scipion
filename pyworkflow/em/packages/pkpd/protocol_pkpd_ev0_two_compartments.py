@@ -27,7 +27,7 @@
 import pyworkflow.protocol.params as params
 from protocol_pkpd_ode_base import ProtPKPDODEBase
 from pk_models import PK_Twocompartments
-import biopharmaceutics
+import pyworkflow.em.biopharmaceutics
 
 
 class ProtPKPDEV0TwoCompartments(ProtPKPDODEBase):

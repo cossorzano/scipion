@@ -30,7 +30,7 @@ from itertools import izip
 import pyworkflow.protocol.params as params
 from pyworkflow.em.data import PKPDFitting, PKPDSampleFit, PKPDLSOptimizer
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
-from biopharmaceutics import DrugSource
+from pyworkflow.em.biopharmaceutics import DrugSource
 from protocol_pkpd_ode_base import ProtPKPDODEBase
 
 class ProtPKPDODERefine(ProtPKPDODEBase):

@@ -31,7 +31,7 @@ import random
 import pyworkflow.protocol.params as params
 from pyworkflow.em.data import PKPDExperiment, PKPDDose, PKPDSample, PKPDVariable
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
-from biopharmaceutics import DrugSource
+from pyworkflow.em.biopharmaceutics import DrugSource
 from protocol_pkpd_ode_base import ProtPKPDODEBase
 from pyworkflow.em.pkpd_units import createUnit, multiplyUnits, strUnit
 from utils import find_nearest

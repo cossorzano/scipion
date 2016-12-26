@@ -31,7 +31,7 @@ import os
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDODEModel
-import biopharmaceutics
+import pyworkflow.em.biopharmaceutics
 
 class PKPDLiver(PKPDODEModel):
     def F(self, t, y):

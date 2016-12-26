@@ -476,6 +476,18 @@ class PKPDDose:
         else:
             return retval and self.viaProfile.areParametersSignificant(p[currentIdx:])
 
+    def setParameters(self, p):
+        if self.paramsToOptimize:
+            currentIdx=0
+            for paramName in self.paramsToOptimize:
+                if paramName=="tlag":
+                    self.tlag=p[currentIdx]
+                elif paramName=="bioavailability":
+                    self.bioavailability=p[currentIdx]
+                currentIdx+=1
+        if self.via != "iv":
+            self.viaProfile.setParameters(p[currentIdx:])
+
 
 def createDeltaDose(doseAmount,t=0,dunits="mg",via="iv"):
     dose = PKPDDose()
@@ -552,9 +564,8 @@ class DrugSource:
 
     def calculateParameterUnits(self,sample):
         retval = []
-        print("Aqui")
         for dose in self.parsedDoseList:
-            retval+=dose.calculateParameterUnits()
+            retval+=dose.calculateParameterUnits(sample)
         return retval
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -572,3 +583,10 @@ class DrugSource:
         for dose in self.parsedDoseList:
             retval=retval and dose.areParametersValid(p[currentToken:])
             currentToken+=dose.getNumberOfParameters()
+
+    def setParameters(self, p):
+        currentToken=0
+        for dose in self.parsedDoseList:
+            Ndose=dose.getNumberOfParameters()
+            dose.setParameters(p[currentToken:currentToken+Ndose])
+            currentToken+=Ndose
