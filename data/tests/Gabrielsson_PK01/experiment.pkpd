@@ -4,10 +4,10 @@ title = My experiment
 
 [VARIABLES] ============================
 Cp ; ug/L ; numeric[%f] ; measurement ; Plasma concentration
-t ; h ; numeric[%f] ; time ; 
+t ; min ; numeric[%f] ; time ; 
 
 [DOSES] ================================
-Dose1 ; bolus t=0.000000 d=10; min; mg
+Dose1; iv; bolus t=0.000000 d=10; min; mg; tlag=0.000000; bioavailability=1.000000
 
 [SAMPLES] ================================
 Individual1; dose=Dose1 

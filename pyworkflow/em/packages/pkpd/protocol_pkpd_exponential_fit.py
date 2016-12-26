@@ -36,6 +36,8 @@ from pk_models import PKPDExponentialModel
 from protocol_pkpd_fit_base import ProtPKPDFitBase
 
 
+# TESTED in GabrielssonPK01
+
 class ProtPKPDExponentialFit(ProtPKPDFitBase):
     """ Fit a set of exponentials. The observed measurement is modelled as Y=sum_{i=1}^N c_i exp(-lambda_i * X).\n
 Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters

@@ -30,6 +30,8 @@ from sa_models import NCAObsIVModel
 from pyworkflow.em.pkpd_units import PKPDUnit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
+# TESTED in GabrielssonPK01
+
 class ProtPKPDNCAIVObs(ProtPKPDSABase):
     """ Non-compartmental analysis based on observations.\n
         Protocol created by http://www.kinestatpharma.com\n"""

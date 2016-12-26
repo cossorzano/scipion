@@ -29,6 +29,7 @@ from protocol_pkpd_ode_base import ProtPKPDODEBase
 from pk_models import PK_Monocompartment
 import pyworkflow.em.biopharmaceutics
 
+# TESTED in GabrielssonPK01
 
 class ProtPKPDMonoCompartment(ProtPKPDODEBase):
     """ Fit a monocompartmental model to a set of measurements obtained by oral doses (any arbitrary dosing regimen is allowed)\n
