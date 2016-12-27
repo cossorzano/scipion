@@ -7,7 +7,7 @@ Cp ; ug/L ; numeric[%f] ; measurement ; Plasma concentration
 t ; min ; numeric[%f] ; time ; 
 
 [DOSES] ================================
-Bolus1 ; bolus t=0.000000 d=100; h; ug
+Bolus1; ev1; bolus t=0.000000 d=100; h; ug; tlag; bioavailability=1.000000
 
 [SAMPLES] ================================
 Individual1; dose=Bolus1 

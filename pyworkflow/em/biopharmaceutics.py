@@ -391,7 +391,7 @@ class PKPDDose:
         else:
             if self.doseType!=PKPDDose.TYPE_INFUSION:
                 self.viaProfile.Amax = self.bioavailability*self.doseAmount
-                doseAmount += self.viaProfile.getAg(t0-self.t0-self.tlag)-self.evProfile.getAg(t0-self.t0-self.tlag+dt)
+                doseAmount += self.viaProfile.getAg(t0-self.t0-self.tlag)-self.viaProfile.getAg(t0-self.t0-self.tlag+dt)
             else:
                 raise Exception("getAmountReleasedAt not implemented for non-iv infusion")
         if doseAmount<0:
@@ -431,7 +431,7 @@ class PKPDDose:
             return self.viaProfile.getDescription()
 
     def getParameterNames(self):
-        names=self.paramsToOptimize
+        names=copy.copy(self.paramsToOptimize)
         if self.via != "iv":
             names+=self.viaProfile.getParameterNames()
         return [self.doseName+"_"+name for name in names]
@@ -452,14 +452,14 @@ class PKPDDose:
             currentIdx=0
             for paramName in self.paramsToOptimize:
                 if paramName=="tlag":
-                    retval+=lowerBound[currentIdx]>0
+                    retval+=[lowerBound[currentIdx]>0]
                 elif paramName=="bioavailability":
-                    retval+=upperBound[currentIdx]<1
+                    retval+=[upperBound[currentIdx]<1]
                 currentIdx+=1
         if self.via == "iv":
             return retval
         else:
-            return retval+self.viaProfile.areParametersSignificant(lowerBound[currentIdx:], upperBound[currentIdx:])
+            return np.concatenate((np.asarray(retval),self.viaProfile.areParametersSignificant(lowerBound[currentIdx:], upperBound[currentIdx:])))
 
     def areParametersValid(self, p):
         retval=True
@@ -474,7 +474,7 @@ class PKPDDose:
         if self.via == "iv":
             return retval
         else:
-            return retval and self.viaProfile.areParametersSignificant(p[currentIdx:])
+            return retval and self.viaProfile.areParametersValid(p[currentIdx:])
 
     def setParameters(self, p):
         if self.paramsToOptimize:
@@ -571,7 +571,7 @@ class DrugSource:
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
         for dose in self.parsedDoseList:
-            retval+=dose.areParametersSignificant()
+            retval+=dose.areParametersSignificant(lowerBound, upperBound)
         if retval:
             return retval
         else:

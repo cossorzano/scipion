@@ -87,14 +87,21 @@ class PKPDFittingViewer(Viewer):
 
     def visualize(self, obj, **kwargs):
         fitting = obj
-        fitting.load()
-        experiment = fitting.loadExperiment()
-
-        self.fittingWindow = self.tkWindow(ExperimentWindow,
-                                           title='Fitting Viewer',
-                                           experiment=experiment,
-                                           fitting=fitting)
-        self.fittingWindow.show()
+        if fitting.isPopulation():
+            fitting.sampleFittingClass="PKPDSampleFitBootstrap"
+            fitting.load()
+            self.populationWindow = self.tkWindow(PopulationWindow,
+                                                  title='Population Viewer',
+                                                  population=fitting)
+            self.populationWindow.show()
+        else:
+            fitting.load()
+            experiment = fitting.loadExperiment()
+            self.fittingWindow = self.tkWindow(ExperimentWindow,
+                                               title='Fitting Viewer',
+                                               experiment=experiment,
+                                               fitting=fitting)
+            self.fittingWindow.show()
 
 
 class PKPDCSVViewer(Viewer):

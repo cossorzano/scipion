@@ -32,6 +32,8 @@ from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from pyworkflow.em.biopharmaceutics import DrugSource
 from protocol_pkpd_ode_base import ProtPKPDODEBase
 
+# TESTED in GabrielssonPK02
+
 class ProtPKPDODEBootstrap(ProtPKPDODEBase):
     """ Bootstrap of an ODE protocol"""
 
@@ -41,7 +43,8 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
     def _defineParams(self, form):
         form.addSection('Input')
         form.addParam('inputODE', params.PointerParam, label="Input ODE model",
-                      pointerClass='ProtPKPDIVMonoCompartment, ProtPKPDIVMonoCompartmentUrine, ProtPKPDEV0MonoCompartment, ProtPKPDEV01MonoCompartment, ProtPKPDEV1MonoCompartment',
+                      pointerClass='ProtPKPDMonoCompartment',
+                      # pointerClass='ProtPKPDMonoCompartment, ProtPKPDIVMonoCompartmentUrine, ProtPKPDEV0MonoCompartment, ProtPKPDEV01MonoCompartment, ProtPKPDEV1MonoCompartment',
                       help='Select a run of an ODE model')
         form.addParam('Nbootstrap', params.IntParam, label="Bootstrap samples", default=200, expertLevel=LEVEL_ADVANCED,
                       help='Number of bootstrap realizations for each sample')
@@ -73,8 +76,6 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
         Nbounds = len(self.boundsList)
         Nsource = self.drugSource.getNumberOfParameters()
         Nmodel = self.model.getNumberOfParameters()
-        if self.findtlag:
-            Nsource+=1
         if Nbounds!=Nsource+Nmodel:
             raise "The number of parameters (%d) and bounds (%d) are different"%(Nsource+Nmodel,Nbounds)
         self.boundsSource = self.boundsList[0:Nsource]
@@ -86,7 +87,6 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
 
     def runFit(self, objId, Nbootstrap, confidenceInterval):
         self.protODE = self.inputODE.get()
-        self.findtlag = self.protODE.findtlag
         self.experiment = self.readExperiment(self.protODE.outputExperiment.fnPKPD)
         self.fitting = self.readFitting(self.protODE.outputFitting.fnFitting)
 

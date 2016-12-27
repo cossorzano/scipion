@@ -189,7 +189,6 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
 
     def runSimulate(self, objId, Nsimulations, confidenceInterval, doses):
         self.protODE = self.inputODE.get()
-        self.findtlag = self.protODE.findtlag
         self.experiment = self.readExperiment(self.protODE.outputExperiment.fnPKPD)
         self.fitting = self.readFitting(self.inputPopulation.get().fnFitting,cls="PKPDSampleFitBootstrap")
         self.varNameX = self.fitting.predictor.varName

@@ -44,7 +44,6 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
     def __init__(self,**kwargs):
         ProtPKPD.__init__(self,**kwargs)
         self.boundsList = None
-        self.compulsoryBounds = False
 
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams1(self, form, addXY=False, defaultPredictor="", defaultPredicted=""):
@@ -73,15 +72,13 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                       help='Confidence interval for the fitted parameters')
         form.addParam('reportX', params.StringParam, label="Evaluate at X", default="", expertLevel=LEVEL_ADVANCED,
                       help='Evaluate the model at these X values\nExample 1: [0,5,10,20,40,100]\nExample 2: 0:0.55:10, from 0 to 10 in steps of 0.5')
-        form.addParam('findtlag', params.BooleanParam, label="Find delay (tlag)", default=False,
-                      help='Confidence interval for the fitted parameters')
         form.addParam('globalSearch', params.BooleanParam, label="Global search", default=True, expertLevel=LEVEL_ADVANCED,
                       help='Global search looks for the best parameters within bounds. If it is not performed, the '
                            'middle of the bounding box is used as initial parameter for a local optimization')
 
     #--------------------------- INSERT steps functions --------------------------------------------
     def getListOfFormDependencies(self):
-        retval = [self.fitType.get(), self.confidenceInterval.get(), self.reportX.get(), self.findtlag.get()]
+        retval = [self.fitType.get(), self.confidenceInterval.get(), self.reportX.get()]
         if hasattr(self,"predictor"):
             retval.append(self.predictor.get())
             retval.append(self.predicted.get())
@@ -176,8 +173,6 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         Nbounds = len(self.boundsList)
         Nsource = self.drugSource.getNumberOfParameters()
         Nmodel = self.model.getNumberOfParameters()
-        if self.findtlag:
-            Nsource+=1
         if Nbounds!=Nsource+Nmodel:
             raise Exception("The number of parameters (%d) and bounds (%d) are different"%(Nsource+Nmodel,Nbounds))
         self.boundsSource = self.boundsList[0:Nsource]
@@ -238,8 +233,6 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def getParameterNames(self):
         retval = []
-        if self.findtlag:
-            retval.append('tlag')
         parametersSource = self.drugSource.getParameterNames()
         self.NparametersSource = len(parametersSource)
         retval += parametersSource
@@ -250,8 +243,6 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def calculateParameterUnits(self,sample):
         retval = []
-        if self.findtlag:
-            retval.append(PKPDUnit.UNIT_TIME_MIN)
         retval += self.drugSource.calculateParameterUnits(sample)
         retval += self.model.calculateParameterUnits(sample)
         self.parameterUnits = retval
@@ -259,9 +250,6 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
         idx=0
-        if self.findtlag:
-            idx=1
-            retval=['True']
         if len(self.boundsSource)>0:
             retval+=self.drugSource.areParametersSignificant(lowerBound[idx:len(self.boundsSource)],
                                                              upperBound[idx:len(self.boundsSource)])
@@ -270,8 +258,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         return retval
 
     def areParametersValid(self, p):
-        idx = 1 if self.findtlag else 0
-        return self.drugSource.areParametersValid(p[idx:len(self.boundsSource)]) and \
+        return self.drugSource.areParametersValid(p[0:len(self.boundsSource)]) and \
                self.model.areParametersValid(p[len(self.boundsSource):])
 
     def createDrugSource(self):
@@ -432,9 +419,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
             else:
                 if not self.varNameY in experiment.variables:
                     errors.append("Cannot find %s as variable"%self.varNameY)
-        if self.findtlag and self.bounds.get()=="":
-            errors.append("Empty bound for tlag")
-        if self.compulsoryBounds and self.bounds.get()=="":
+        if self.bounds.get()=="":
             errors.append("Bounds are required")
         return errors
 

@@ -43,7 +43,6 @@ class ProtPKPDIVTwoCompartments(ProtPKPDODEBase):
 
     def __init__(self,**kwargs):
         ProtPKPDODEBase.__init__(self,**kwargs)
-        self.compulsoryBounds = True
 
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):

@@ -39,7 +39,7 @@ except ImportError:
 
 
 __version__ = 'v17.01'
-__nickname__ = 'chlorine'
+__nickname__ = 'chlorine28'
 __releasedate__ = '2017-01'
 
 

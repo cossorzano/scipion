@@ -34,6 +34,9 @@ from os.path import exists, basename
 import sys
 from pyworkflow.utils.path import copyFile
 
+# TESTED in GabrielssonPK01
+# TESTED in GabrielssonPK02
+
 class ProtImportExperiment(ProtImportFiles):
     """ Protocol to import an PKPD experiment\n
         Protocol created by http://www.kinestatpharma.com\n"""

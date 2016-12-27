@@ -33,6 +33,7 @@ from pyworkflow.object import Integer
 import math
 import numpy as np
 
+# TESTED in GabrielssonPK02
 
 class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
     """ Estimation of the absorption rate for a non-intravenous route. The estimation is performed after estimating

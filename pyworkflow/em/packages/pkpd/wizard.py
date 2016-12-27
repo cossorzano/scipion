@@ -276,10 +276,13 @@ class PKPDODEWizard(Wizard):
                 if not type(protocol) in PKPDODEWizard._nonODE:
                     protocol.model.drugSource = protocol.drugSource
 
+
                 i = 0
                 for sampleName, sample in protocol.experiment.samples.iteritems():
                     sample.interpretDose()
                     if i==0:
+                        if not type(protocol) in PKPDODEWizard._nonODE:
+                            protocol.model.drugSource.setDoses(sample.parsedDoseList,0,1) # Needed to correctly identify the parameters of the source
                         protocol.setSample(sample)
                         protocol.calculateParameterUnits(sample)
                     i+=1

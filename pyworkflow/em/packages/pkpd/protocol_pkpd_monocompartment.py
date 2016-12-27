@@ -30,6 +30,7 @@ from pk_models import PK_Monocompartment
 import pyworkflow.em.biopharmaceutics
 
 # TESTED in GabrielssonPK01
+# TESTED in GabrielssonPK02
 
 class ProtPKPDMonoCompartment(ProtPKPDODEBase):
     """ Fit a monocompartmental model to a set of measurements obtained by oral doses (any arbitrary dosing regimen is allowed)\n
@@ -42,7 +43,6 @@ are independent, which are not. Use Bootstrap estimates instead.\n
 
     def __init__(self,**kwargs):
         ProtPKPDODEBase.__init__(self,**kwargs)
-        self.compulsoryBounds = True
 
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):

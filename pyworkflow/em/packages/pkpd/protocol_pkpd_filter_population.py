@@ -30,6 +30,7 @@ from pyworkflow.em.data import PKPDFitting, PKPDSampleFitBootstrap
 import numpy as np
 import copy
 
+# TESTED in GabrielssonPK02
 
 class ProtPKPDFilterPopulation(ProtPKPD):
     """ Filter a population by some criterion\n

@@ -70,8 +70,6 @@ class ProtPKPDODERefine(ProtPKPDODEBase):
         Nbounds = len(self.boundsList)
         Nsource = self.drugSource.getNumberOfParameters()
         Nmodel = self.model.getNumberOfParameters()
-        if self.findtlag:
-            Nsource+=1
         if Nbounds!=Nsource+Nmodel:
             raise "The number of parameters (%d) and bounds (%d) are different"%(Nsource+Nmodel,Nbounds)
         self.boundsSource = self.boundsList[0:Nsource]
@@ -83,7 +81,6 @@ class ProtPKPDODERefine(ProtPKPDODEBase):
 
     def runFit(self, objId, deltaT):
         self.protODE = self.inputODE.get()
-        self.findtlag = self.protODE.findtlag
         self.experiment = self.readExperiment(self.protODE.outputExperiment.fnPKPD)
         self.fitting = self.readFitting(self.protODE.outputFitting.fnFitting)
 

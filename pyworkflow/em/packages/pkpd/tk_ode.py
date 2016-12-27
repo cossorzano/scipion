@@ -236,10 +236,12 @@ class PKPDResponsiveDialog(dialog.Dialog):
 
     def computeFit(self):
         currentParams = []
+        print("self.targetProtocol.getParameterNames()",self.targetProtocol.getParameterNames())
         for paramName in self.targetProtocol.getParameterNames():
             currentParams.append(self.sliders[paramName].getValue())
 
         self.targetProtocol.setParameters(currentParams)
+        print("currentParams",currentParams)
         self.ypValues = self.targetProtocol.forwardModel(currentParams, self.xpValues)
         if type(self.ypValues[0])==list or type(self.ypValues[0])==np.ndarray:
             self.ypValues = self.ypValues[0]
