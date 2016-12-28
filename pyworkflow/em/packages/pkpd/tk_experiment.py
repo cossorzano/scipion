@@ -69,7 +69,7 @@ class DosesTreeProvider(TreeProvider):
 
     def getColumns(self):
         return [('Name', 60), ('Via',40), ('Dose', 60), ('Amount', 60),
-                ('Time Units', 60), ('Dose Units', 60)]
+                ('Time Units', 60), ('Dose Units', 60), ('Tlag', 60), ('Bioavailability',60)]
 
     def getObjects(self):
         sortedDoses = []
@@ -79,12 +79,22 @@ class DosesTreeProvider(TreeProvider):
 
     def getObjectInfo(self, obj):
         key = obj.doseName
+        if 'tlag' in obj.paramsToOptimize:
+            tlagStr="To be optimized"
+        else:
+            tlagStr=str(obj.tlag)
+        if 'bioavailability' in obj.paramsToOptimize:
+            bioavailabilityStr="To be optimized"
+        else:
+            bioavailabilityStr=str(obj.bioavailability)
         return {'key': key, 'text': key,
                 'values': (obj.via,
                            obj.getDoseString(),
                            obj.doseAmount,
                            obj.getTUnitsString(),
-                           obj.getDUnitsString()
+                           obj.getDUnitsString(),
+                           tlagStr,
+                           bioavailabilityStr
                           )
                 }
 

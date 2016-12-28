@@ -62,6 +62,10 @@ Protocols = [{
 		"text": "change units"
 	},{
 		"tag": "protocol",
+		"value": "ProtPKPDChangeVia",
+		"text": "change via"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDScaleToCommonDose",
 		"text": "scale dose"
 	},{

@@ -49,6 +49,7 @@ from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNames
 from protocol_pkpd_bootstrap_simulate import ProtPKPDODESimulate
 from protocol_pkpd_ev_monocompartment_urine import ProtPKPDEV1MonoCompartmentUrine
 from protocol_pkpd_pdgeneric_fit import ProtPKPDGenericFit
+from protocol_pkpd_change_via import ProtPKPDChangeVia
 
 from tk_ode import PKPDODEDialog, PKPDFitDialog
 
@@ -128,6 +129,51 @@ class PKPDChooseVariableWizard(Wizard):
 
     def setFormValues(self, form, label, values):
         form.setVar(label, values[0].varName)
+
+    def getSelectMode(self):
+        return "browse"
+
+
+class DoseTreeProvider(TreeProvider):
+    def __init__(self, experiment):
+        self.experiment = experiment
+
+    def getColumns(self):
+        return [('Name', 100)]
+
+    def getObjects(self):
+        sortedDoses = []
+        for key in sorted(self.experiment.doses.keys()):
+            d = self.experiment.doses[key]
+            sortedDoses.append(d)
+        return sortedDoses
+
+    def getObjectInfo(self, obj):
+        key = obj.doseName
+        return {'key': key, 'text': key}
+
+class PKPDChooseDoseWizard(Wizard):
+    _targets = [(ProtPKPDChangeVia, ['doseName','doseVia']),
+                ]
+
+    def show(self, form, *params):
+        protocol = form.protocol
+        label = params[0]
+
+        experiment = protocol.getAttributeValue('inputExperiment', None)
+
+        if experiment is None:
+            form.showError("Select input experiment first.")
+        else:
+            experiment.load()
+            dlg = dialog.ListDialog(form.root, "Choose dose name", DoseTreeProvider(experiment),
+                             selectmode=self.getSelectMode())
+            if dlg.resultYes():
+                self.setFormValues(form, label, dlg.values)
+
+    def setFormValues(self, form, label, values):
+        form.setVar('doseName', values[0].doseName)
+        form.setVar('doseVia', values[0].via)
 
     def getSelectMode(self):
         return "browse"
