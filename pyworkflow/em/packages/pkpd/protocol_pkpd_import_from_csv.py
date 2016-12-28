@@ -28,7 +28,7 @@ import os
 import sys
 
 import pyworkflow.protocol.params as params
-from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
+from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD, addDoseToForm
 from pyworkflow.em.data import PKPDExperiment, PKPDVariable, PKPDDose, PKPDSample
 from pyworkflow.utils import copyFile
 
@@ -61,20 +61,7 @@ class ProtPKPDImportFromText(ProtPKPD):
                            "Cp ; ug/mL ; numeric ; measurement ; plasma concentration\n"\
                            "weight ; g ; numeric; label ; weight of the animal\n"\
                            "sex ; none ; text ; label ; sex of the animal\n")
-        form.addParam('doses', params.TextParam, height=5, width=70, label="Doses", default="",
-                      help="Structure: [Dose Name] ; [Via] ; [Description] ; [Units] ; [Optional]\n"\
-                           "The dose name should have no space or special character\n"\
-                           "Valid vias are: iv (intravenous), ev0 (extra-vascular order 0), ev1 (extra-vascular order 1), \n"\
-                           "     ev01 (extra-vascular first order 0 and then order 1), evFractional (extra-vascular fractional order)\n"\
-                           "Valid units are: h, mg, ug, ug/mL, ...\n"\
-                           "Optional parameters are tlag (e.g. tlag=0)\n"\
-                           "   and bioavailability (e.g. bioavailability=0.8)\n"\
-                           "The description is either a bolus or an infusion as shown in the examples\n"\
-                           "\nIt is important that there are two semicolons.\n"\
-                           "Examples:\n"\
-                           "Infusion0 ; infusion t=0.500000...0.750000 d=60*weight/1000; h; mg\n"\
-                           "Bolus1 ; bolus t=2.000000 d=100; h; mg\n"\
-                           "Treatment ; repeated_bolus t=0:8:48 d=100; h; mg")
+        addDoseToForm(form)
         form.addParam('dosesToSamples', params.TextParam, height=5, width=70, label="Assign doses to samples", default="",
                       help="Structure: [Sample Name] ; [DoseName1,DoseName2,...] \n"\
                            "The sample name should have no space or special character\n"\
