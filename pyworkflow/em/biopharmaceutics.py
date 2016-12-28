@@ -307,13 +307,7 @@ class PKPDDose:
             currentToken+=1
 
     def _printToStream(self,fh):
-        outStr="%s; %s; %s d=%s; %s; %s" % (self.doseName,
-                                            self.via,
-                                            self.getDoseString(),
-                                            self.doseAmount,
-                                            self.tunits._toString(),
-                                            self.dunits._toString())
-        outStr+="; tlag"
+        outStr=self.doseName+"; "+self.getDoseString2()+"; tlag"
         if not "tlag" in self.paramsToOptimize:
             outStr+="=%f"%self.tlag
         outStr+="; bioavailability"
@@ -331,6 +325,14 @@ class PKPDDose:
         else:
             doseString = ""
         return doseString
+
+    def getDoseString2(self):
+        outStr="%s; %s d=%s; %s; %s" % (self.via,
+                                        self.getDoseString(),
+                                        self.doseAmount,
+                                        self.tunits._toString(),
+                                        self.dunits._toString())
+        return outStr
 
     def prepare(self):
         if self.via=="iv":
