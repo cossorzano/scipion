@@ -355,5 +355,5 @@ class PKPDODEWizard(Wizard):
                     if boundStr!="":
                         form.setVar(label, boundStr)
             except Exception as e:
-                pass
-                # form.showError("Error: %s" % str(e))
+                # pass
+                form.showError("Error: %s" % str(e))
