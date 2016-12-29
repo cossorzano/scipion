@@ -71,13 +71,12 @@ class TestGabrielssonPK05Workflow(TestWorkflow):
         self.assertIsNotNone(protIVMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
         self.assertIsNotNone(protIVMonoCompartment.outputFitting.fnFitting, "There was a problem with the monocompartmental model ")
         self.validateFiles('protIVMonoCompartment', protIVMonoCompartment)
-
         experiment = PKPDExperiment()
         experiment.load(protIVMonoCompartment.outputExperiment.fnPKPD)
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
-        self.assertAlmostEqual(Cl,0.0204,3)
-        self.assertAlmostEqual(V,10.7141,3)
+        self.assertAlmostEqual(Cl,0.0204,3) # Gabrielsson, p 542 Cl=1.229 1/h=0.204 1/min ------------ mine=0.204
+        self.assertAlmostEqual(V,10.7141,3) # Gabrielsson, p 542 Vd=10.71 ------------ mine=10.71
         fitting = PKPDFitting()
         fitting.load(protIVMonoCompartment.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.99)
@@ -98,9 +97,9 @@ class TestGabrielssonPK05Workflow(TestWorkflow):
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
         fe = float(experiment.samples['Individual'].descriptors['fe'])
-        self.assertTrue(Cl>0.02 and Cl<0.03)
-        self.assertTrue(V>10 and V<11)
-        self.assertTrue(fe>0.3 and fe<0.4)
+        self.assertTrue(Cl>0.02 and Cl<0.03) # Gabrielsson, p 542 Cl=1.229 1/h=0.204 1/min ------------ mine=0.204
+        self.assertTrue(V>10 and V<11) # Gabrielsson, p 542 Vd=10.71 ------------ mine=10.72
+        self.assertTrue(fe>0.3 and fe<0.4) # Gabrielsson, p 542 Fe=0.41553 ------------ mine=0.352
         fitting = PKPDFitting()
         fitting.load(protIVMonoCompartmentUrine.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.98)
