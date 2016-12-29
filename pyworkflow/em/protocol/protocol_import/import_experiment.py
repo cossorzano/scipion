@@ -34,10 +34,10 @@ from os.path import exists, basename
 import sys
 from pyworkflow.utils.path import copyFile
 
-# TESTED in GabrielssonPK01
-# TESTED in GabrielssonPK02
-# TESTED in GabrielssonPK03
-# TESTED in GabrielssonPK04
+# TESTED in test_workflow_gabrielsson_pk01.py
+# TESTED in test_workflow_gabrielsson_pk02.py
+# TESTED in test_workflow_gabrielsson_pk03.py
+# TESTED in test_workflow_gabrielsson_pk04.py
 
 class ProtImportExperiment(ProtImportFiles):
     """ Protocol to import an PKPD experiment\n

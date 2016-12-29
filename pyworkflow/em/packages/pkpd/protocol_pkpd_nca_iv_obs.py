@@ -30,7 +30,7 @@ from sa_models import NCAObsIVModel
 from pyworkflow.em.pkpd_units import PKPDUnit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
-# TESTED in GabrielssonPK01
+# TESTED in test_workflow_gabrielsson_pk01.py
 
 class ProtPKPDNCAIVObs(ProtPKPDSABase):
     """ Non-compartmental analysis based on observations.\n

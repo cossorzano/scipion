@@ -29,9 +29,9 @@ from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDExperiment, PKPDVariable
 from pyworkflow.em.pkpd_units import  unitFromString, convertUnits, strUnit, PKPDUnit
 
-# TESTED in GabrielssonPK01
-# TESTED in GabrielssonPK03
-# TESTED in GabrielssonPK04
+# TESTED in test_workflow_gabrielsson_pk01.py
+# TESTED in test_workflow_gabrielsson_pk03.py
+# TESTED in test_workflow_gabrielsson_pk04.py
 
 class ProtPKPDChangeUnits(ProtPKPD):
     """ Change units of a given variable.\n

@@ -32,7 +32,7 @@ from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from pyworkflow.em.biopharmaceutics import DrugSource
 from protocol_pkpd_ode_base import ProtPKPDODEBase
 
-# TESTED in GabrielssonPK02
+# TESTED in test_workflow_gabrielsson_pk02.py
 
 class ProtPKPDODEBootstrap(ProtPKPDODEBase):
     """ Bootstrap of an ODE protocol"""

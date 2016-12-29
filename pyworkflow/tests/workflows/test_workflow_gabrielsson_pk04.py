@@ -42,7 +42,6 @@ class TestGabrielssonPK04Workflow(TestWorkflow):
     
     def testGabrielssonPK04Workflow(self):
         #First, import an experiment
-
         print "Import Experiment"
         protImport = self.newProtocol(ProtImportExperiment,
                                       objLabel='pkpd - import experiment',
