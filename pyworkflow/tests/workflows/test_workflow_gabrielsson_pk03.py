@@ -86,7 +86,7 @@ class TestGabrielssonPK03Workflow(TestWorkflow):
         Rin = float(experiment.samples['Individual'].descriptors['Bolus_Rin'])
         tlag = float(experiment.samples['Individual'].descriptors['Bolus_tlag'])
         self.assertTrue(Cl>0.72 and Cl<0.73)
-        self.assertTrue(V>95 and V<97)
+        self.assertTrue(V>95 and V<98)  # Gabrielsson, p 522, VF=96.2
         self.assertTrue(Rin>0.080 and Rin<0.085)
         self.assertTrue(tlag>15 and tlag<20)
         fitting = PKPDFitting()
@@ -121,9 +121,9 @@ class TestGabrielssonPK03Workflow(TestWorkflow):
         Ka = float(experiment.samples['Individual'].descriptors['Bolus_Ka'])
         tlag = float(experiment.samples['Individual'].descriptors['Bolus_tlag'])
         self.assertTrue(Cl>0.75 and Cl<0.8)
-        self.assertTrue(V>95 and V<97)
-        self.assertTrue(Ka>0.0075 and Ka<0.0085)
-        self.assertTrue(tlag>20 and tlag<30)
+        self.assertTrue(V>95 and V<98) # Gabrielsson p 521, Solution I: FV=98.7 L
+        self.assertTrue(Ka>0.0075 and Ka<0.0085) # Gabrielsson p 521, Solution I: ka=0.418 1/h=0.007 1/min
+        self.assertTrue(tlag>20 and tlag<30) # Gabrielsson p 521, Solution I: tlag=0.39h=23.4 min
         fitting = PKPDFitting()
         fitting.load(protEV1MonoCompartment.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.92)

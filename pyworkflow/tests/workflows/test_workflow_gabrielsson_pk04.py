@@ -112,10 +112,10 @@ class TestGabrielssonPK04Workflow(TestWorkflow):
         Ka = float(experiment.samples['Individual'].descriptors['Treatment_Ka'])
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
-        self.assertTrue(tlag>35 and tlag<50)
-        self.assertTrue(Ka>0.002 and Ka<0.004)
+        self.assertTrue(tlag>35 and tlag<50) # Gabrielsson p 531 tlag=0.697h=41min ------- Mine: 40.66
+        self.assertTrue(Ka>0.002 and Ka<0.004) # Gabrielsson p 531 k01=0.1964 1/h=0.0033 1/min ------- Mine: 0.0032
         self.assertTrue(Cl>0.13 and Cl<0.14)
-        self.assertTrue(V>30 and V<70)
+        self.assertTrue(V>30 and V<70) # Gabrielsson p 531 Volume/F=94.946 ------- Mine: 63.73
         fitting = PKPDFitting()
         fitting.load(protEV1MonoCompartment.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.98)

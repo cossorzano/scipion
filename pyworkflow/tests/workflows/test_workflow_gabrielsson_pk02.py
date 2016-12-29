@@ -86,7 +86,7 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
         c1 = float(experiment.samples['Individual1'].descriptors['c1'])
         lambda1 = float(experiment.samples['Individual1'].descriptors['lambda1'])
         self.assertAlmostEqual(c1,4.14,2)
-        self.assertAlmostEqual(lambda1,0.00888,3)
+        self.assertAlmostEqual(lambda1,0.00888,3) # Gabrielsson p 509: K=0.01
 
         fitting = PKPDFitting()
         fitting.load(protEliminationRate.outputFitting.fnFitting)
@@ -113,6 +113,7 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
         tlag = float(experiment.samples['Individual1'].descriptors['tlag'])
         tmax = float(experiment.samples['Individual1'].descriptors['tmax'])
         self.assertTrue(Cmax>1.8)
+        self.assertTrue(Ka>0.03 and Ka<0.04) # Gabrielsson p 514, Solution II: K01: 0.0428
         self.assertTrue(Ke<0.01)
         self.assertTrue(Vd>20)
         self.assertTrue(tlag>10 and tlag<20)
@@ -140,10 +141,10 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
         V = float(experiment.samples['Individual1'].descriptors['V'])
         Ka = float(experiment.samples['Individual1'].descriptors['Ka'])
         tlag = float(experiment.samples['Individual1'].descriptors['tlag'])
-        self.assertAlmostEqual(Cl,0.2912,2)
-        self.assertTrue(V>10 and V<40)
-        self.assertTrue(Ka>0.025 and Ka<0.04)
-        self.assertTrue(tlag>10 and tlag<20)
+        self.assertAlmostEqual(Cl,0.2912,2) # Gabrielsson p 515, Solution II: CL/F=0.2819
+        self.assertTrue(V>10 and V<40) # Gabrielsson p 515, Solution II: V/F=32.05 -------------- Mine: 27.5
+        self.assertTrue(Ka>0.025 and Ka<0.04) # Gabrielsson p 511, Solution II: Ka=0.043 -------- Mine: 0.0264
+        self.assertTrue(tlag>10 and tlag<20) # Gabrielsson p 511, Solution II: tlag=16
 
         fitting = PKPDFitting()
         fitting.load(protEV1MonoCompartment.outputFitting.fnFitting)
