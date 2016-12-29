@@ -125,7 +125,7 @@ class TestGabrielssonPK03Workflow(TestWorkflow):
         self.assertTrue(Ka>0.0075 and Ka<0.0085)
         self.assertTrue(tlag>20 and tlag<30)
         fitting = PKPDFitting()
-        fitting.load(protEV0MonoCompartment.outputFitting.fnFitting)
+        fitting.load(protEV1MonoCompartment.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.92)
         self.assertTrue(fitting.sampleFits[0].AIC<-15)
 
