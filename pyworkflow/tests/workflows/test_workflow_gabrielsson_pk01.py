@@ -111,11 +111,11 @@ class TestGabrielssonPK01Workflow(TestWorkflow):
         self.assertAlmostEqual(AUMC_0t,4305.2328,3)
         self.assertAlmostEqual(CL_0inf,0.1156,3)
         self.assertAlmostEqual(CL_0t,0.1485,3)
-        self.assertAlmostEqual(MRT,104.2516,3)
+        self.assertAlmostEqual(MRT,104.2516,3) # Gabrielsson p 495: 97.5
         self.assertAlmostEqual(Vd_0inf,11.078,3)
         self.assertAlmostEqual(Vd_0t,14.2311,3)
         self.assertAlmostEqual(Vss,12.0584,3)
-        self.assertAlmostEqual(thalf,66.387,3)
+        self.assertAlmostEqual(thalf,66.387,3) # Gabrielsson p 495: 67.6
 
         # Fit a monocompartmental model
         print "Fitting monocompartmental model..."
