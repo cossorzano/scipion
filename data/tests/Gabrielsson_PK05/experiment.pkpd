@@ -8,7 +8,7 @@ Au ; mg ; numeric[%f] ; measurement ; Cumulative amount in urine
 t ; h ; numeric[%f] ; time ; Time variable
 
 [DOSES] ================================
-Treatment ; bolus t=0 d=250; h; mg
+Treatment ; iv; bolus t=0 d=250; h; mg
 
 [SAMPLES] ================================
 Individual; dose=Treatment 

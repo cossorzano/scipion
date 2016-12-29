@@ -27,39 +27,31 @@
 import pyworkflow.protocol.params as params
 from protocol_pkpd_ode_base import ProtPKPDODEBase
 from pk_models import PK_MonocompartmentUrine
-import pyworkflow.em.biopharmaceutics
 
 
-class ProtPKPDEV1MonoCompartmentUrine(ProtPKPDODEBase):
-    """ Fit a monocompartmental model to a set of measurements obtained by intravenous doses (any arbitrary dosing regimen is allowed)\n
-        and urine measurements of cumulated amount of drug
+class ProtPKPDMonoCompartmentUrine(ProtPKPDODEBase):
+    """ Fit a monocompartmental model to a set of plasma and urine (cumulated) measurements ((any arbitrary dosing regimen is allowed)\n
         The differential equation is dC/dt = -Cl * C/V + 1/V * dD/dt and dA/dt = fe * Cl * C\n
         where C is the concentration, Cl the clearance, V the distribution volume, D the input dosing regime and fe the fraction excreted.
 Confidence intervals calculated by this fitting may be pessimistic because it assumes that all model parameters
 are independent, which are not. Use Bootstrap estimates instead.\n
         Protocol created by http://www.kinestatpharma.com\n"""
-    _label = 'ev1 monocompartment urine'
-
-    def __init__(self, **kwargs):
-        ProtPKPDODEBase.__init__(self, **kwargs)
-        self.ncaProt = None
+    _label = 'monocompartment urine'
 
     #--------------------------- DEFINE param functions --------------------------------------------
     def _defineParams(self, form):
-        self._defineParams1(form, True, "t", "Cp")
+        self._defineParams1(form)
+        form.addParam('predictor', params.StringParam, label="Time variable", default="t")
+        form.addParam('predicted', params.StringParam, label="Plasma concentration", default="Cp")
         form.addParam('Au', params.StringParam, label="Cumulated amount in urine", default="Au")
-        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Ka, Cl, V, fe)", default="",
-                      help="Bounds for the tlag (if it must be estimated), 1st order input rate, clearance, volume and fraction excreted."\
+        form.addParam('bounds', params.StringParam, label="Parameter bounds ([tlag], Cl, V, fe)", default="",
+                      help="Bounds for the tlag (if it must be estimated), clearance, volume and fraction excreted."\
                       'Make sure that the bounds are expressed in the expected units (estimated from the sample itself).'\
                       'If tlag must be estimated, its bounds must always be specified')
 
     def getXYvars(self):
         self.varNameX=self.predictor.get()
         self.varNameY=[self.predicted.get(),self.Au.get()]
-
-    def configureSource(self, drugSource):
-        drugSource.type = biopharmaceutics.DrugSource.EV
-        drugSource.evProfile = biopharmaceutics.BiopharmaceuticsModelOrder1()
 
     def createModel(self):
         return PK_MonocompartmentUrine()

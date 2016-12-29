@@ -43,8 +43,7 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
     def _defineParams(self, form):
         form.addSection('Input')
         form.addParam('inputODE', params.PointerParam, label="Input ODE model",
-                      pointerClass='ProtPKPDMonoCompartment',
-                      # pointerClass='ProtPKPDMonoCompartment, ProtPKPDIVMonoCompartmentUrine, ProtPKPDEV0MonoCompartment, ProtPKPDEV01MonoCompartment, ProtPKPDEV1MonoCompartment',
+                      pointerClass='ProtPKPDMonoCompartment, ProtPKPDMonoCompartmentUrine',
                       help='Select a run of an ODE model')
         form.addParam('Nbootstrap', params.IntParam, label="Bootstrap samples", default=200, expertLevel=LEVEL_ADVANCED,
                       help='Number of bootstrap realizations for each sample')

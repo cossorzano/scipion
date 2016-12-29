@@ -154,7 +154,7 @@ Protocols = [{
 		"text": "monocompartment"
 	},{
 		"tag": "protocol",
-		"value": "ProtPKPDIVMonoCompartmentUrine",
+		"value": "ProtPKPDMonoCompartmentUrine",
 		"text": "monocompartment (urine)"
 	},{
 		"tag": "protocol",

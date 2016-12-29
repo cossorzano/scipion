@@ -47,7 +47,7 @@ from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
 from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsExp2Subgroups2Mean
 from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile, getVarNamesFromCSVfile
 from protocol_pkpd_bootstrap_simulate import ProtPKPDODESimulate
-from protocol_pkpd_ev_monocompartment_urine import ProtPKPDEV1MonoCompartmentUrine
+from protocol_pkpd_monocompartment_urine import ProtPKPDMonoCompartmentUrine
 from protocol_pkpd_pdgeneric_fit import ProtPKPDGenericFit
 from protocol_pkpd_change_via import ProtPKPDChangeVia
 
@@ -94,9 +94,9 @@ class PKPDChooseVariableWizard(Wizard):
                 (ProtPKPDEliminationRate, ['predicted']),
                 (ProtPKPDMonoCompartment, ['predictor']),
                 (ProtPKPDMonoCompartment, ['predicted']),
-                # (ProtPKPDEV1MonoCompartmentUrine, ['predictor']),
-                # (ProtPKPDEV1MonoCompartmentUrine, ['predicted']),
-                # (ProtPKPDEV1MonoCompartmentUrine, ['Au']),
+                (ProtPKPDMonoCompartmentUrine, ['predictor']),
+                (ProtPKPDMonoCompartmentUrine, ['predicted']),
+                (ProtPKPDMonoCompartmentUrine, ['Au']),
                 (ProtPKPDSimulateGenericPD, ['predictor']),
                 (ProtPKPDStatsExp2Subgroups2Mean, ['label1', 'inputExperiment1']),
                 (ProtPKPDStatsExp2Subgroups2Mean, ['label2', 'inputExperiment2'])
@@ -300,7 +300,7 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
 
 class PKPDODEWizard(Wizard):
     _targets = [(ProtPKPDMonoCompartment, ['bounds']),
-                # (ProtPKPDIVMonoCompartmentUrine, ['bounds']),
+                (ProtPKPDMonoCompartmentUrine, ['bounds']),
                 (ProtPKPDGenericFit, ['bounds']),
                 ]
 
