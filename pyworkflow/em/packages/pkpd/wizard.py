@@ -314,7 +314,7 @@ class PKPDODEWizard(Wizard):
         if experiment is None:
             form.showError("Select the input experiment first.")
         else:
-            # try:
+            try:
                 protocol.setInputExperiment() # this load the experiment
                 if not type(protocol) in PKPDODEWizard._nonODE:
                     protocol.configureSource(protocol.createDrugSource())
@@ -354,5 +354,6 @@ class PKPDODEWizard(Wizard):
                         i += 1
                     if boundStr!="":
                         form.setVar(label, boundStr)
-            # except Exception as e:
-            #     form.showError("Error: %s" % str(e))
+            except Exception as e:
+                pass
+                # form.showError("Error: %s" % str(e))
