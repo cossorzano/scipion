@@ -81,7 +81,7 @@ class TestGabrielssonPK01Workflow(TestWorkflow):
         self.assertTrue(fitting.sampleFits[0].R2>0.988)
         self.assertTrue(fitting.sampleFits[0].AIC<-45.8)
 
-        # # Non-compartmental analysis
+        # Non-compartmental analysis
         print "Performing Non-compartmental analysis..."
         protNCAIVObs = self.newProtocol(ProtPKPDNCAIVObs,
                                         objLabel='pkpd - nca iv observations')
