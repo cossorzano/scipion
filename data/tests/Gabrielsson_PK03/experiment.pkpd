@@ -1,5 +1,5 @@
 [EXPERIMENT] ===========================
-comment = Decide between 1st order and 0th order absorption
+comment = 
 title = My experiment
 
 [VARIABLES] ============================
@@ -7,7 +7,7 @@ Cp ; ug/L ; numeric[%f] ; measurement ; Plasma concentration
 t ; h ; numeric[%f] ; time ; 
 
 [DOSES] ================================
-Bolus ; bolus t=0.000000 d=20; h; mg
+Bolus; ev0; bolus t=0.000000 d=20; h; mg; tlag; bioavailability=1.000000
 
 [SAMPLES] ================================
 Individual; dose=Bolus 

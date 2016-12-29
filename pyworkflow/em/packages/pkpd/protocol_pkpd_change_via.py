@@ -28,6 +28,8 @@ import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.pkpd_units import PKPDUnit
 
+# TESTED in GabrielssonPK03
+
 class ProtPKPDChangeVia(ProtPKPD):
     """ Change via of administration\n
         This protocol may also be used to change the bioavailability or the tlag
