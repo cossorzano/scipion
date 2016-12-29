@@ -28,6 +28,7 @@ from pyworkflow.em.packages.pkpd.protocol_pkpd_exponential_fit import ProtPKPDEx
 
 # TESTED in test_workflow_gabrielsson_pk01.py
 # TESTED in test_workflow_gabrielsson_pk02.py
+# TESTED in test_workflow_gabrielsson_pk06.py
 
 class ProtPKPDEliminationRate(ProtPKPDExponentialFit):
     """ Fit a single exponential to the input data.\n

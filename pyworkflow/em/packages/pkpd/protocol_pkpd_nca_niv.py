@@ -30,6 +30,8 @@ from sa_models import NCAEVModel
 from pyworkflow.em.pkpd_units import PKPDUnit, strUnit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
+# TESTED in test_workflow_gabrielsson_pk06.py
+
 class ProtPKPDNCAEV(ProtPKPDSABase):
     """ Non-compartmental analysis of a non-intravenous bolus.\n
         Protocol created by http://www.kinestatpharma.com\n"""

@@ -152,5 +152,117 @@ class TestGabrielssonPK06Workflow(TestWorkflow):
         self.assertTrue(fitting.sampleFits[0].R2>0.965)
         self.assertTrue(fitting.sampleFits[0].AIC<-7)
 
+        # Elimination rate of IV
+        print "Elimination rate IV ..."
+        protEliminationRate = self.newProtocol(ProtPKPDEliminationRate,
+                                               objLabel='pkpd - elimination rate',
+                                               predictor='t', predicted='Cp')
+        protEliminationRate.inputExperiment.set(protChangeTimeUnit.outputExperiment)
+        self.launchProtocol(protEliminationRate)
+        self.assertIsNotNone(protEliminationRate.outputExperiment.fnPKPD, "There was a problem with the exponential fitting")
+        self.assertIsNotNone(protEliminationRate.outputFitting.fnFitting, "There was a problem with the exponential fitting")
+        self.validateFiles('protEliminationRate', protEliminationRate)
+        experiment = PKPDExperiment()
+        experiment.load(protEliminationRate.outputExperiment.fnPKPD)
+        c1 = float(experiment.samples['Individual'].descriptors['c1'])
+        lambda1 = float(experiment.samples['Individual'].descriptors['lambda1'])
+        self.assertAlmostEqual(c1,0.0455,2)
+        self.assertAlmostEqual(lambda1,0.000351,3)
+
+        fitting = PKPDFitting()
+        fitting.load(protEliminationRate.outputFitting.fnFitting)
+        self.assertTrue(fitting.sampleFits[0].R2>0.99)
+        self.assertTrue(fitting.sampleFits[0].AIC<-45)
+
+        # Non-compartmental analysis IV
+        print "Performing Non-compartmental analysis of IV ..."
+        protNCAIVObs = self.newProtocol(ProtPKPDNCAIVObs,
+                                        objLabel='pkpd - nca iv observations')
+        protNCAIVObs.inputExperiment.set(protChangeTimeUnit.outputExperiment)
+        protNCAIVObs.protElimination.set(protEliminationRate)
+        self.launchProtocol(protNCAIVObs)
+        self.assertIsNotNone(protNCAIVObs.outputExperiment.fnPKPD, "There was a problem with the Non-compartmental analysis ")
+        self.assertIsNotNone(protNCAIVObs.outputAnalysis.fnAnalysis, "There was a problem with the Non-compartmental analysis ")
+        self.validateFiles('protNCAIVObs', protNCAIVObs)
+
+        experiment = PKPDExperiment()
+        experiment.load(protNCAIVObs.outputExperiment.fnPKPD)
+        AUC_0inf = float(experiment.samples['Individual'].descriptors['AUC_0inf'])
+        self.assertTrue(AUC_0inf>120 and AUC_0inf<125)
+
+        # Filter time variable in PO
+        print "Filter time in PO"
+        protFilterTime = self.newProtocol(ProtPKPDFilterMeasurements,
+                                                  objLabel='pkpd - filter measurements t>800',
+                                                  filterType=1, condition='$(t)>800')
+        protFilterTime.inputExperiment.set(protChangeTimeUnit2.outputExperiment)
+        self.launchProtocol(protFilterTime)
+        self.assertIsNotNone(protFilterTime.outputExperiment.fnPKPD, "There was a problem with the filter")
+        self.validateFiles('protFilterTime', protFilterTime)
+
+        # Elimination rate of PO
+        print "Elimination rate PO ..."
+        protEliminationRate = self.newProtocol(ProtPKPDEliminationRate,
+                                               objLabel='pkpd - elimination rate',
+                                               predictor='t', predicted='Cp')
+        protEliminationRate.inputExperiment.set(protFilterTime.outputExperiment)
+        self.launchProtocol(protEliminationRate)
+        self.assertIsNotNone(protEliminationRate.outputExperiment.fnPKPD, "There was a problem with the exponential fitting")
+        self.assertIsNotNone(protEliminationRate.outputFitting.fnFitting, "There was a problem with the exponential fitting")
+        self.validateFiles('protEliminationRate', protEliminationRate)
+        experiment = PKPDExperiment()
+        experiment.load(protEliminationRate.outputExperiment.fnPKPD)
+        c1 = float(experiment.samples['Individual'].descriptors['c1'])
+        lambda1 = float(experiment.samples['Individual'].descriptors['lambda1'])
+        self.assertAlmostEqual(c1,0.0780,2)
+        self.assertAlmostEqual(lambda1,0.000284,3)
+
+        fitting = PKPDFitting()
+        fitting.load(protEliminationRate.outputFitting.fnFitting)
+        self.assertTrue(fitting.sampleFits[0].R2>0.99)
+        self.assertTrue(fitting.sampleFits[0].AIC<-25)
+
+        # Estimate absorption rate
+        print "Estimation of the absorption rate..."
+        protAbsorptionRate = self.newProtocol(ProtPKPDAbsorptionRate,
+                                              objLabel='pkpd - absorption rate')
+        protAbsorptionRate.inputExperiment.set(protChangeTimeUnit2.outputExperiment)
+        protAbsorptionRate.protElimination.set(protEliminationRate)
+        self.launchProtocol(protAbsorptionRate)
+        self.assertIsNotNone(protAbsorptionRate.outputExperiment.fnPKPD, "There was a problem with the absorption rate estimation ")
+        self.assertIsNotNone(protAbsorptionRate.outputFitting.fnFitting, "There was a problem with the absorption rate estimation ")
+        self.validateFiles('protAbsorptionRate', protAbsorptionRate)
+
+        experiment = PKPDExperiment()
+        experiment.load(protAbsorptionRate.outputExperiment.fnPKPD)
+        Ka = float(experiment.samples['Individual'].descriptors['Ka'])
+        Ke = float(experiment.samples['Individual'].descriptors['Ke'])
+        Vd = float(experiment.samples['Individual'].descriptors['Vd'])
+        tlag = float(experiment.samples['Individual'].descriptors['tlag'])
+        self.assertAlmostEqual(Ka,0.00936,3)
+        self.assertAlmostEqual(Ke,0.00028,3)
+        self.assertTrue(Vd>310 and Vd<315)
+        self.assertTrue(tlag>15 and tlag<20)
+
+        fitting = PKPDFitting()
+        fitting.load(protAbsorptionRate.outputFitting.fnFitting)
+        self.assertTrue(fitting.sampleFits[0].R2>0.99)
+        self.assertTrue(fitting.sampleFits[0].AIC<-30)
+
+        # Non-compartmental analysis EV
+        print "Performing Non-compartmental analysis of PO ..."
+        protNCAEVObs = self.newProtocol(ProtPKPDNCAEV,
+                                        objLabel='pkpd - nca ev')
+        protNCAEVObs.protAbsorption.set(protAbsorptionRate)
+        self.launchProtocol(protNCAEVObs)
+        self.assertIsNotNone(protNCAEVObs.outputExperiment.fnPKPD, "There was a problem with the Non-compartmental analysis ")
+        self.assertIsNotNone(protNCAEVObs.outputAnalysis.fnAnalysis, "There was a problem with the Non-compartmental analysis ")
+        self.validateFiles('protNCAEVObs', protNCAEVObs)
+
+        experiment = PKPDExperiment()
+        experiment.load(protNCAEVObs.outputExperiment.fnPKPD)
+        AUC_0inf = float(experiment.samples['Individual'].descriptors['AUC_0inf'])
+        self.assertTrue(AUC_0inf>270 and AUC_0inf<273)
+
 if __name__ == "__main__":
     unittest.main()
