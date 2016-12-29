@@ -264,5 +264,20 @@ class TestGabrielssonPK06Workflow(TestWorkflow):
         AUC_0inf = float(experiment.samples['Individual'].descriptors['AUC_0inf'])
         self.assertTrue(AUC_0inf>270 and AUC_0inf<273)
 
+        # Non-compartmental analysis EV
+        print "Estimating bioavailability ..."
+        protBioavail = self.newProtocol(ProtPKPDNCAEstimateBioavailability,
+                                        objLabel='pkpd - bioavailability nca')
+        protBioavail.protNCAEV.set(protNCAEVObs)
+        protBioavail.protNCAIV.set(protNCAIVObs)
+        self.launchProtocol(protBioavail)
+        self.assertIsNotNone(protBioavail.outputExperiment.fnPKPD, "There was a problem with the Non-compartmental analysis ")
+        self.validateFiles('protBioavail', protBioavail)
+
+        experiment = PKPDExperiment()
+        experiment.load(protBioavail.outputExperiment.fnPKPD)
+        bioavailability = float(experiment.samples['Individual'].descriptors['bioavailability'])
+        self.assertTrue(bioavailability>1.09 and bioavailability<1.11)
+
 if __name__ == "__main__":
     unittest.main()

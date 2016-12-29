@@ -50,6 +50,15 @@ _bibtexStr = """
   Url                      = {http://dmd.aspetjournals.org/content/37/8/1658}
 }
 
+@Article{Gabrielsson2010,
+  Title                    = {Pharmacokinetic and pharmacodynamic data analysis},
+  Author                   = {J. Gabrielsson and D. Weiner},
+  Journal                  = {Swedish Pharmaceutical Press},
+  Year                     = {2010},
+  Doi                      = {http://books.apotekarsocieteten.se/sv/pharmacokinetic-pharmacodynamic-data-analysis-concepts-and-applications-ed-5-2},
+  Url                      = {http://books.apotekarsocieteten.se/sv/pharmacokinetic-pharmacodynamic-data-analysis-concepts-and-applications-ed-5-2}
+}
+
 @Article{Kanamitsu2000,
   Title                    = {Quantitative prediction of in vivo drug-drug interactions from in vitro data based on physiological pharmacokinetics: use of maximum unbound concentration of inhibitor at the inlet to the liver},
   Author                   = {Kanamitsu, S. and Ito, K. and Sugiyama, Y.},

@@ -142,6 +142,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDNCAEV",
 		"text": "NCA ev bolus"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDNCAEstimateBioavailability",
+		"text": "estimate bioavailability"
 	}]
     },
     {
