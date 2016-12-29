@@ -442,7 +442,6 @@ class PKPDDose:
         return len(self.getParameterNames())
 
     def calculateParameterUnits(self,sample):
-        print("Dose calculate")
         if self.via == "iv":
             return self.paramsUnitsToOptimize
         else:
@@ -507,6 +506,7 @@ class DrugSource:
         self.parsedDoseList = []
 
     def setDoses(self, parsedDoseList, t0, tF):
+        self.originalDoseList = parsedDoseList
         self.parsedDoseList = []
         for dose in parsedDoseList:
             if dose.doseType != PKPDDose.TYPE_REPEATED_BOLUS:
@@ -539,25 +539,25 @@ class DrugSource:
 
     def getEquation(self):
         retval = ""
-        for dose in self.parsedDoseList:
+        for dose in self.originalDoseList:
             retval+=dose.getEquation()+" "
         return retval.strip()
 
     def getModelEquation(self):
         retval = ""
-        for dose in self.parsedDoseList:
+        for dose in self.originalDoseList:
             retval+=dose.getModelEquation()+" "
         return retval.strip()
 
     def getDescription(self):
         retval = ""
-        for dose in self.parsedDoseList:
+        for dose in self.originalDoseList:
             retval+=dose.getDescription()+" "
         return retval.strip()
 
     def getParameterNames(self):
         retval = []
-        for dose in self.parsedDoseList:
+        for dose in self.originalDoseList:
             retval+=dose.getParameterNames()
         return retval
 
@@ -566,13 +566,13 @@ class DrugSource:
 
     def calculateParameterUnits(self,sample):
         retval = []
-        for dose in self.parsedDoseList:
+        for dose in self.originalDoseList:
             retval+=dose.calculateParameterUnits(sample)
         return retval
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
-        for dose in self.parsedDoseList:
+        for dose in self.originalDoseList:
             retval+=dose.areParametersSignificant(lowerBound, upperBound)
         if retval:
             return retval
@@ -582,13 +582,15 @@ class DrugSource:
     def areParametersValid(self, p):
         retval = True
         currentToken=0
-        for dose in self.parsedDoseList:
+        for dose in self.originalDoseList:
             retval=retval and dose.areParametersValid(p[currentToken:])
             currentToken+=dose.getNumberOfParameters()
 
     def setParameters(self, p):
         currentToken=0
-        for dose in self.parsedDoseList:
-            Ndose=dose.getNumberOfParameters()
-            dose.setParameters(p[currentToken:currentToken+Ndose])
+        for doseOrig in self.originalDoseList:
+            Ndose=doseOrig.getNumberOfParameters()
+            for dose in self.parsedDoseList:
+                if dose.doseName==doseOrig.doseName:
+                    dose.setParameters(p[currentToken:currentToken+Ndose])
             currentToken+=Ndose
