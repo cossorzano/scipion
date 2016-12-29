@@ -105,7 +105,7 @@ class TestGabrielssonPK01Workflow(TestWorkflow):
         Vd_0t = float(experiment.samples['Individual1'].descriptors['Vd_0t'])
         Vss = float(experiment.samples['Individual1'].descriptors['Vss'])
         thalf = float(experiment.samples['Individual1'].descriptors['thalf'])
-        self.assertAlmostEqual(AUC_0inf,86.4555,3)
+        self.assertAlmostEqual(AUC_0inf,86.4555,3) # Gabrielsson p 495: 97.7
         self.assertAlmostEqual(AUC_0t,67.3003,3)
         self.assertAlmostEqual(AUMC_0inf,9013.1394,3)
         self.assertAlmostEqual(AUMC_0t,4305.2328,3)
@@ -130,8 +130,8 @@ class TestGabrielssonPK01Workflow(TestWorkflow):
 
         experiment = PKPDExperiment()
         experiment.load(protIVMonoCompartment.outputExperiment.fnPKPD)
-        self.assertAlmostEqual(float(experiment.samples['Individual1'].descriptors['Cl']),0.1032,3)
-        self.assertAlmostEqual(float(experiment.samples['Individual1'].descriptors['V']),9.889,3)
+        self.assertAlmostEqual(float(experiment.samples['Individual1'].descriptors['Cl']),0.1032,3) # Gabrielsson, p 495: 0.10
+        self.assertAlmostEqual(float(experiment.samples['Individual1'].descriptors['V']),9.889,3) # Gabrielsson p 495: 9.98
         fitting = PKPDFitting()
         fitting.load(protIVMonoCompartment.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.9887)
