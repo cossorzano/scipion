@@ -63,34 +63,27 @@ class TestGabrielssonPK06Workflow(TestWorkflow):
 
         # Fit a monocompartmental model to a set of measurements obtained by intravenous doses
         print "Fitting a monocompartmental model (intravenous)..."
-        protIVMonoCompartment = self.newProtocol(ProtPKPDIVMonoCompartment,
+        protIVMonoCompartment = self.newProtocol(ProtPKPDMonoCompartment,
                                                   objLabel='pkpd - iv monocompartment',
-                                                  predictor='t', predicted='Cp',
-                                                  initType=1, bounds='(0.0, 0.1); (0.0, 300.0)')
+                                                  bounds='(0.0, 0.1); (0.0, 300.0)')
         protIVMonoCompartment.inputExperiment.set(protChangeTimeUnit.outputExperiment)
         self.launchProtocol(protIVMonoCompartment)
         self.assertIsNotNone(protIVMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
         self.validateFiles('protIVMonoCompartment', protIVMonoCompartment)
-
-        # Compare model parameter values with Gold standard values
         experiment = PKPDExperiment()
         experiment.load(protIVMonoCompartment.outputExperiment.fnPKPD)
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
-        self.assertAlmostEqual(Cl,0.09653,5)
-        self.assertAlmostEqual(V,274.62859,1)
-        # Compare fitting parameter values with Gold standard values
+        self.assertAlmostEqual(Cl,0.09653,5) # Gabrielsson, p 548, Cle=6.0257 1/h=0.1004 1/min
+        self.assertAlmostEqual(V,274.62859,1) # Gabrielsson, p 548, Vd=290.34
         fitting = PKPDFitting()
         fitting.load(protIVMonoCompartment.outputFitting.fnFitting)
-        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.99456,5)
-        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.994097,5)
-        self.assertAlmostEqual(fitting.sampleFits[0].AIC,-47.64876,5)
-        self.assertAlmostEqual(fitting.sampleFits[0].AICc,-46.64876,5)
-        self.assertAlmostEqual(fitting.sampleFits[0].BIC,-46.518865,5)
+        self.assertTrue(fitting.sampleFits[0].R2>0.99)
+        self.assertTrue(fitting.sampleFits[0].AIC<-45)
 
         # Fit a monocompartmental model to a set of measurements obtained by intravenous doses and urine
-        print "Fitting a monocompartmental model (intravenous doses and urine )..."
-        protIVMonoCompartmentUrine = self.newProtocol(ProtPKPDIVMonoCompartmentUrine,
+        print "Fitting a monocompartmental model (intravenous doses and urine) ..."
+        protIVMonoCompartmentUrine = self.newProtocol(ProtPKPDMonoCompartmentUrine,
                                                       objLabel='pkpd - iv monocompartment urine',
                                                       globalSearch=False,
                                                       bounds='(0.0,0.2);(150, 400.0);(0.0,1.0)')
@@ -99,25 +92,18 @@ class TestGabrielssonPK06Workflow(TestWorkflow):
         self.assertIsNotNone(protIVMonoCompartmentUrine.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
         self.assertIsNotNone(protIVMonoCompartmentUrine.outputFitting.fnFitting, "There was a problem with the monocompartmental model ")
         self.validateFiles('protIVMonoCompartmentUrine', protIVMonoCompartmentUrine)
-
-        # Compare model parameter values with Gold standard values
         experiment = PKPDExperiment()
         experiment.load(protIVMonoCompartmentUrine.outputExperiment.fnPKPD)
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
         fe = float(experiment.samples['Individual'].descriptors['fe'])
-        self.assertAlmostEqual(Cl,0.096526,5)
-        self.assertAlmostEqual(V,274.63698,1)
+        self.assertAlmostEqual(Cl,0.096526,5) # Gabrielsson, p 548, Cle=6.0257 1/h=0.1004 1/min
+        self.assertAlmostEqual(V,274.63698,1) # Gabrielsson, p 548, Vd=290.34
         self.assertAlmostEqual(fe,0.0688,5)
-
-        # Compare fitting parameter values with Gold standard values
         fitting = PKPDFitting()
         fitting.load(protIVMonoCompartmentUrine.outputFitting.fnFitting)
-        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.99739,2)
-        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.996972,2)
-        self.assertAlmostEqual(fitting.sampleFits[0].AIC,-55.73286,2)
-        self.assertAlmostEqual(fitting.sampleFits[0].AICc,-53.73286,2)
-        self.assertAlmostEqual(fitting.sampleFits[0].BIC,-53.608718,2)
+        self.assertTrue(fitting.sampleFits[0].R2>0.99)
+        self.assertTrue(fitting.sampleFits[0].AIC<-55)
 
         # Import an experiment (extravascular)
         print "Import Experiment (extravascular)"
@@ -140,36 +126,31 @@ class TestGabrielssonPK06Workflow(TestWorkflow):
 
         # Fit a monocompartmental model to a set of measurements obtained by extravascular doses and urine
         print "Fitting a monocompartmental model (extravascular and urine)..."
-        protEV1MonoCompartmentUrine = self.newProtocol(ProtPKPDEV1MonoCompartmentUrine,
+        protEV1MonoCompartmentUrine = self.newProtocol(ProtPKPDMonoCompartmentUrine,
                                                        objLabel='pkpd - ev1 monocompartment urine',
                                                        globalSearch=False,
-                                                       bounds='(0.0, 0.2); (0.0, 10.0); (170.0, 370.0); (0.0, 0.15)')
+                                                       bounds='(0.0, 30.0); (0.0, 0.05); (0.0, 0.2); (250.0, 350.0); (0.0, 1.0)')
         protEV1MonoCompartmentUrine.inputExperiment.set(protChangeTimeUnit2.outputExperiment)
         self.launchProtocol(protEV1MonoCompartmentUrine)
         self.assertIsNotNone(protEV1MonoCompartmentUrine.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
         self.assertIsNotNone(protEV1MonoCompartmentUrine.outputFitting.fnFitting, "There was a problem with the monocompartmental model ")
         self.validateFiles('protEV1MonoCompartmentUrine', protEV1MonoCompartmentUrine)
-
-        # Compare model parameter values with Gold standard values
         experiment = PKPDExperiment()
         experiment.load(protEV1MonoCompartmentUrine.outputExperiment.fnPKPD)
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
         fe = float(experiment.samples['Individual'].descriptors['fe'])
-        Ka = float(experiment.samples['Individual'].descriptors['Ka'])
-        self.assertAlmostEqual(Cl,0.0851,3)
-        self.assertAlmostEqual(V,256.1935,1)
-        self.assertAlmostEqual(fe,0.0883,3)
-        self.assertAlmostEqual(Ka,0.003,3)
-
-        # Compare fitting parameter values with Gold standard values
+        Ka = float(experiment.samples['Individual'].descriptors['Treatment_Ka'])
+        tlag = float(experiment.samples['Individual'].descriptors['Treatment_tlag'])
+        self.assertTrue(Cl>0.084 and Cl<0.087) # Gabrielsson, p 548, Cle=6.0257 1/h=0.1004 1/min
+        self.assertTrue(V>250 and V<275) # Gabrielsson, p 548, Vd=290.34
+        self.assertTrue(fe>0.08 and fe<0.09) # Gabrielsson, p 548, fe=0.0698
+        self.assertTrue(Ka>0.004 and Ka<0.006) # Gabrielsson, p 548, Ka=0.4207 1/h=0.00701 1/min
+        self.assertTrue(tlag>13 and tlag<17) # Gabrielsson, p 548, tlag=0.3129 h=18.77 min
         fitting = PKPDFitting()
         fitting.load(protEV1MonoCompartmentUrine.outputFitting.fnFitting)
-        self.assertAlmostEqual(fitting.sampleFits[0].R2,0.89445,3)
-        self.assertAlmostEqual(fitting.sampleFits[0].R2adj,0.87984,3)
-        self.assertAlmostEqual(fitting.sampleFits[0].AIC,7.67788,3)
-        self.assertAlmostEqual(fitting.sampleFits[0].AICc,11.67788,3)
-        self.assertAlmostEqual(fitting.sampleFits[0].BIC,10.51008,3)
+        self.assertTrue(fitting.sampleFits[0].R2>0.965)
+        self.assertTrue(fitting.sampleFits[0].AIC<-7)
 
 if __name__ == "__main__":
     unittest.main()

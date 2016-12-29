@@ -29,6 +29,7 @@ from protocol_pkpd_ode_base import ProtPKPDODEBase
 from pk_models import PK_MonocompartmentUrine
 
 # TESTED in test_workflow_gabrielsson_pk05.py
+# TESTED in test_workflow_gabrielsson_pk06.py
 
 class ProtPKPDMonoCompartmentUrine(ProtPKPDODEBase):
     """ Fit a monocompartmental model to a set of plasma and urine (cumulated) measurements ((any arbitrary dosing regimen is allowed)\n
