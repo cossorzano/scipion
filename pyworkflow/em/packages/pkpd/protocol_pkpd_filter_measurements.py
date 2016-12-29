@@ -29,6 +29,7 @@ from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDExperiment, PKPDSample, PKPDVariable
 
 # TESTED in GabrielssonPK02
+# TESTED in GabrielssonPK04
 
 class ProtPKPDFilterMeasurements(ProtPKPD):
     """ Filter measurements.\n

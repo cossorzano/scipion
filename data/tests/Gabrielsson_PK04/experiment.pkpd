@@ -1,13 +1,13 @@
 [EXPERIMENT] ===========================
 comment = 
-title = Single dose
+title = My experiment
 
 [VARIABLES] ============================
 Cp ; ug/L ; numeric[%f] ; measurement ; Plasma concentration
 t ; h ; numeric[%f] ; time ; Time variable
 
 [DOSES] ================================
-Treatment ; repeated_bolus t=0.000000:24.000000:240.000000 d=352.3; h; ug
+Treatment; ev1; repeated_bolus t=0.000000:24.000000:240.000000 d=352.3; h; ug; tlag; bioavailability=1.000000
 
 [SAMPLES] ================================
 Individual; dose=Treatment 
