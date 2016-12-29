@@ -277,7 +277,7 @@ class TestGabrielssonPK06Workflow(TestWorkflow):
         experiment = PKPDExperiment()
         experiment.load(protBioavail.outputExperiment.fnPKPD)
         bioavailability = float(experiment.samples['Individual'].descriptors['bioavailability'])
-        self.assertTrue(bioavailability>1.09 and bioavailability<1.11)
+        self.assertTrue(bioavailability>1.09 and bioavailability<1.11) # Gabrielsson, p 546: F=110%
 
 if __name__ == "__main__":
     unittest.main()
