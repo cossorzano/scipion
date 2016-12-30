@@ -7,7 +7,7 @@ Cp ; ug/L ; numeric[%f] ; measurement ; Plasma concentration
 t ; h ; numeric[%f] ; time ; Time variable
 
 [DOSES] ================================
-Bolus ; bolus t=0.000000 d=100; h; mg
+Bolus ; iv; bolus t=0.000000 d=100; min; ug
 
 [SAMPLES] ================================
 Individual; dose=Bolus 

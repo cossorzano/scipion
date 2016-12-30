@@ -32,6 +32,7 @@ from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
 # TESTED in test_workflow_gabrielsson_pk01.py
 # TESTED in test_workflow_gabrielsson_pk06.py
+# TESTED in test_workflow_gabrielsson_pk07.py
 
 class ProtPKPDNCAIVObs(ProtPKPDSABase):
     """ Non-compartmental analysis based on observations.\n

@@ -29,6 +29,7 @@ from protocol_pkpd_sa_base import ProtPKPDSABase
 from sa_models import NCAExpIVModel
 from pyworkflow.em.pkpd_units import PKPDUnit
 
+# TESTED in test_workflow_gabrielsson_pk07.py
 
 class ProtPKPDNCAIVExp(ProtPKPDSABase):
     """ Non-compartmental analysis based on an exponential fitting.\n

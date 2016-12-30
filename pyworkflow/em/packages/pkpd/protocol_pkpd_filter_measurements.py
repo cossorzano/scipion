@@ -31,6 +31,7 @@ from pyworkflow.em.data import PKPDExperiment, PKPDSample, PKPDVariable
 # TESTED in test_workflow_gabrielsson_pk02.py
 # TESTED in test_workflow_gabrielsson_pk04.py
 # TESTED in test_workflow_gabrielsson_pk06.py
+# TESTED in test_workflow_gabrielsson_pk07.py
 
 class ProtPKPDFilterMeasurements(ProtPKPD):
     """ Filter measurements.\n

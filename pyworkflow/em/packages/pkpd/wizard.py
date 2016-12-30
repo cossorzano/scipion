@@ -43,6 +43,7 @@ from protocol_pkpd_stats_oneExperiment_twoSubgroups_mean import ProtPKPDStatsExp
 from protocol_pkpd_exponential_fit import ProtPKPDExponentialFit
 from protocol_pkpd_elimination_rate import ProtPKPDEliminationRate
 from protocol_pkpd_monocompartment import ProtPKPDMonoCompartment
+from protocol_pkpd_two_compartments import ProtPKPDTwoCompartments
 from protocol_pkpd_simulate_generic_pd import ProtPKPDSimulateGenericPD
 from protocol_pkpd_stats_twoExperiments_twoSubgroups_mean import ProtPKPDStatsExp2Subgroups2Mean
 from protocol_pkpd_import_from_csv import ProtPKPDImportFromText, getSampleNamesFromCSVfile, getVarNamesFromCSVfile
@@ -301,6 +302,7 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
 class PKPDODEWizard(Wizard):
     _targets = [(ProtPKPDMonoCompartment, ['bounds']),
                 (ProtPKPDMonoCompartmentUrine, ['bounds']),
+                (ProtPKPDTwoCompartments, ['bounds']),
                 (ProtPKPDGenericFit, ['bounds']),
                 ]
 

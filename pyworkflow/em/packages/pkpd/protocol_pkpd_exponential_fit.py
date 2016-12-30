@@ -38,6 +38,7 @@ from protocol_pkpd_fit_base import ProtPKPDFitBase
 
 # TESTED in test_workflow_gabrielsson_pk01.py
 # TESTED in test_workflow_gabrielsson_pk02.py
+# TESTED in test_workflow_gabrielsson_pk07.py
 
 class ProtPKPDExponentialFit(ProtPKPDFitBase):
     """ Fit a set of exponentials. The observed measurement is modelled as Y=sum_{i=1}^N c_i exp(-lambda_i * X).\n

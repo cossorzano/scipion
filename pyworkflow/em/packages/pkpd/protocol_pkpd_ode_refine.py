@@ -43,7 +43,7 @@ class ProtPKPDODERefine(ProtPKPDODEBase):
     def _defineParams(self, form):
         form.addSection('Input')
         form.addParam('inputODE', params.PointerParam, label="Input ODE model",
-                      pointerClass='ProtPKPDIVMonoCompartment, ProtPKPDEV1MonoCompartment', help='Select a run of an ODE model')
+                      pointerClass='ProtPKPDMonoCompartment, ProtPKPDMonoCompartmentUrine, ProtPKPDTwoCompartments', help='Select a run of an ODE model')
         form.addParam('deltaT', params.FloatParam, default=0.5, label='Step (min)', expertLevel=LEVEL_ADVANCED)
 
     #--------------------------- INSERT steps functions --------------------------------------------
@@ -168,6 +168,12 @@ class ProtPKPDODERefine(ProtPKPDODEBase):
             sampleFit.modelEquation = self.getEquation()
             sampleFit.copyFromOptimizer(optimizer2)
             self.fitting.sampleFits.append(sampleFit)
+            if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yp[0])==list or type(sampleFit.yp[0])==np.ndarray):
+                sampleFit.yp=sampleFit.yp[0]
+            if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yl[0])==list or type(sampleFit.yl[0])==np.ndarray):
+                sampleFit.yl=sampleFit.yl[0]
+            if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yu[0])==list or type(sampleFit.yu[0])==np.ndarray):
+                sampleFit.yu=sampleFit.yu[0]
 
             # Add the parameters to the sample and experiment
             for varName, varUnits, description, varValue in izip(self.getParameterNames(), self.parameterUnits, self.getParameterDescriptions(), self.parameters):
