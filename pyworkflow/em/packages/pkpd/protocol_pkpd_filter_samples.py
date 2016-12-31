@@ -47,7 +47,8 @@ class ProtPKPDFilterSamples(ProtPKPD):
                       help='Exclude or keep samples meeting the following condition\n'\
                            "NA values are excluded in keep filters, and kept in exclude filters")
         form.addParam('condition', params.StringParam, label="Condition", condition="filterType!=2",
-                      help='Example: $(weight)<200 and $(sex)=="female"')
+                      help='Example: $(weight)<200 and $(sex)=="female"\n'
+                           'You may use any of the variables of the experiment or the variable $(sampleName)')
 
     #--------------------------- INSERT steps functions --------------------------------------------
 
@@ -86,6 +87,7 @@ class ProtPKPDFilterSamples(ProtPKPD):
                     conditionPython = "True"
                 else:
                     conditionPython = copy.copy(condition)
+                conditionPython = conditionPython.replace('$(sampleName)','"%s"'%sample.varName)
                 for key, variable in experiment.variables.iteritems():
                     if key in sample.descriptors:
                         value = sample.descriptors[key]
