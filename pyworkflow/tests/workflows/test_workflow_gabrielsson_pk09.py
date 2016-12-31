@@ -31,7 +31,7 @@ from pyworkflow.tests import *
 from pyworkflow.em.packages.pkpd import *
 from test_workflow import TestWorkflow
 
-class TestGabrielssonPK08Workflow(TestWorkflow):
+class TestGabrielssonPK09Workflow(TestWorkflow):
 
     @classmethod
     def setUpClass(cls):
