@@ -39,7 +39,7 @@ class TestGabrielssonPK08Workflow(TestWorkflow):
         cls.dataset = DataSet.getDataSet('Gabrielsson_PK09')
         cls.exptFn = cls.dataset.getFile('experiment')
     
-    def testGabrielssonPK08Workflow(self):
+    def testGabrielssonPK09Workflow(self):
         # Import an experiment
 
         print "Import Experiment"
