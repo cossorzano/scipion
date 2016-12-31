@@ -41,6 +41,7 @@ from pyworkflow.utils.path import copyFile
 # TESTED in test_workflow_gabrielsson_pk05.py
 # TESTED in test_workflow_gabrielsson_pk06.py
 # TESTED in test_workflow_gabrielsson_pk07.py
+# TESTED in test_workflow_gabrielsson_pk08.py
 
 class ProtImportExperiment(ProtImportFiles):
     """ Protocol to import an PKPD experiment\n
