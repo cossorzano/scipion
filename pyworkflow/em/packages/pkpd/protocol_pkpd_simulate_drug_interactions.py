@@ -70,9 +70,9 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
                       help="EC50 is the concentration causing half maximal effect. Several constants can be given separated by space, e.g., 5 6")
 
         form.addSection('Basic models Gut')
-        fromToGut = form.addLine('Oral dose')
-        fromToGut.addParam('D0Gut', params.FloatParam, default=0, label='Min (mg)')
-        fromToGut.addParam('DFGut', params.FloatParam, default=10, label='Max (mg)')
+        fromToGut1 = form.addLine('Basic model Gut Oral dose')
+        fromToGut1.addParam('D0Gut', params.FloatParam, default=0, label='Min (mg)')
+        fromToGut1.addParam('DFGut', params.FloatParam, default=11, label='Max (mg)')
         form.addParam("MWGut", params.FloatParam, default=1, label="Molecular weight (g/mol)")
 
         form.addParam("doReversibleGut", params.BooleanParam, default=False, label="Reversible inhibition",
@@ -113,66 +113,66 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
                       help="Scaling factor determined with linear regression of the control data set")
         form.addParam("MWStatic", params.FloatParam, default=1, label="Molecular weight (g/mol)", condition="doStatic")
 
-        group = form.addGroup("Physiological", condition="doStatic")
-        group.addParam("doPhysiological", params.BooleanParam, default=False, label="Physiological model",
+        group1 = form.addGroup("Physiological", condition="doStatic")
+        group1.addParam("doPhysiological", params.BooleanParam, default=False, label="Physiological model",
                       help="The physiological model estimates the concentration at liver and gut from "
                       "the input dose, the fraction available, the absorption rate, and the liver and gut blood flow."
                       "The alternative to the physiological model needs a direct estimation of the gut and liver concentration of the inhibitor")
-        fromToGut = group.addLine('Oral dose', condition="doPhysiological and doStatic")
-        fromToGut.addParam('D0Phys', params.FloatParam, default=0, label='Min (mg)', condition="doPhysiological and doStatic")
-        fromToGut.addParam('DFPhys', params.FloatParam, default=10, label='Max (mg)', condition="doPhysiological and doStatic")
-        group.addParam("Fa", params.FloatParam, default=1, label="Fraction absorbed", condition="doPhysiological and doStatic",
+        fromToGut2 = group1.addLine('Static model Oral dose', condition="doPhysiological and doStatic")
+        fromToGut2.addParam('D0Phys', params.FloatParam, default=0, label='Min (mg)', condition="doPhysiological and doStatic")
+        fromToGut2.addParam('DFPhys', params.FloatParam, default=10, label='Max (mg)', condition="doPhysiological and doStatic")
+        group1.addParam("Fa", params.FloatParam, default=1, label="Fraction absorbed", condition="doPhysiological and doStatic",
                        help="Fa is the fraction absorbed after oral administration (a value of 1 can be used if data are not available)")
-        group.addParam("ka", params.FloatParam, default=0.1, label="1st order absorption rate", condition="doPhysiological and doStatic",
+        group1.addParam("ka", params.FloatParam, default=0.1, label="1st order absorption rate", condition="doPhysiological and doStatic",
                        help="ka is the first order absorption rate constant in vivo and a value of 0.1 min^-1 can be used if data are not available.")
-        group.addParam("Qen", params.FloatParam, default=18, label="Blood flow at enterocytes [L/h/70kg", condition="doPhysiological and doStatic",
+        group1.addParam("Qen", params.FloatParam, default=18, label="Blood flow at enterocytes [L/h/70kg", condition="doPhysiological and doStatic",
                        help="Qen is blood flow through the enterocytes (e.g., 18L/hr/70kg taken from Yang2007a)")
-        group.addParam("fub", params.FloatParam, default=1, label="Fraction unbound in plasma", condition="doPhysiological and doStatic")
-        group.addParam("Imaxb", params.FloatParam, default=1, label="Maximal total [I] conc.", condition="doPhysiological and doStatic",
+        group1.addParam("fub", params.FloatParam, default=1, label="Fraction unbound in plasma", condition="doPhysiological and doStatic")
+        group1.addParam("Imaxb", params.FloatParam, default=1, label="Maximal total [I] conc.", condition="doPhysiological and doStatic",
                        help="[I]max,b is the maximal total (free and bound) inhibitor concentration in the blood at steady state")
-        group.addParam("Qh", params.FloatParam, default=97, label="Blood flow at hepatocytes [L/h/70kg", condition="doPhysiological and doStatic",
+        group1.addParam("Qh", params.FloatParam, default=97, label="Blood flow at hepatocytes [L/h/70kg", condition="doPhysiological and doStatic",
                        help="Qh is hepatic blood flow (e.g., 97L/hr/70kg taken from Yang et al., 2007b)")
 
-        group = form.addGroup("Liver", condition="doStatic")
-        group.addParam("doStaticLiver", params.BooleanParam, default=False, label="Liver")
-        group.addParam("fm",params.FloatParam, default=0.1, label='fm', condition="doStaticLiver",
+        group2 = form.addGroup("Liver", condition="doStatic")
+        group2.addParam("doStaticLiver", params.BooleanParam, default=False, label="Liver")
+        group2.addParam("fm",params.FloatParam, default=0.1, label='fm', condition="doStaticLiver",
                       help="fm is the fraction of systemic clearance of the substrate mediated by the enzyme that is subject to inhibition/induction")
-        fromToH = group.addLine('Inhibitor range Liver [Ih]', condition="doStaticLiver and not doPhysiological", help='[Ih] is [I]liver = Molar Dose/250mL.')
+        fromToH = group2.addLine('Inhibitor range Liver [Ih]', condition="doStaticLiver and not doPhysiological", help='[Ih] is [I]liver = Molar Dose/250mL.')
         fromToH.addParam('Ih0', params.FloatParam, default=0, condition="doStaticLiver and not doPhysiological", label='Min (uM)')
         fromToH.addParam('IhF', params.FloatParam, default=10, condition="doStaticLiver and not doPhysiological", label='Max (uM)')
-        group.addParam("kdeghStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Liver (kdeg [min^-1])', condition="doStaticLiver",
+        group2.addParam("kdeghStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Liver (kdeg [min^-1])', condition="doStaticLiver",
                       help="kdeg,h is the apparent first order degradation rate constant of the affected enzyme at the liver. Several constants can be given separated by space, e.g., 0.01 0.005")
 
-        group = form.addGroup("Gut", condition="doStatic")
-        group.addParam("doStaticGut", params.BooleanParam, default=False, label="Gut")
-        group.addParam("fg",params.FloatParam, default=0.1, label='fg', condition="doStaticGut",
+        group3 = form.addGroup("Gut", condition="doStatic")
+        group3.addParam("doStaticGut", params.BooleanParam, default=False, label="Gut")
+        group3.addParam("fg",params.FloatParam, default=0.1, label='fg', condition="doStaticGut",
                       help="fg is the fraction available after intestinal metabolism")
-        fromToG = group.addLine('Inhibitor range Gut [Ig]', condition="doStaticGut and not doPhysiological", help='[Ig] is [I]gut = Molar Dose/250mL.')
+        fromToG = group3.addLine('Inhibitor range Gut [Ig]', condition="doStaticGut and not doPhysiological", help='[Ig] is [I]gut = Molar Dose/250mL.')
         fromToG.addParam('Ig0', params.FloatParam, default=0, condition="doStaticGut and not doPhysiological", label='Min (uM)')
         fromToG.addParam('IgF', params.FloatParam, default=10, condition="doStaticGut and not doPhysiological", label='Max (uM)')
-        group.addParam("kdeggStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Gut (kdeg [min^-1])', condition="doStaticGut",
+        group3.addParam("kdeggStatic",params.StringParam, default="0.008", label='Apparent first order degradation rate Gut (kdeg [min^-1])', condition="doStaticGut",
                       help="kdeg,g is the apparent first order degradation rate constant of the affected enzyme at the gut. Several constants can be given separated by space, e.g., 0.01 0.005")
 
         form.addSection('Transporters')
         form.addParam("doTransporterGut", params.BooleanParam, default=False, label="Gut transporter")
-        fromToGut = form.addLine('Oral dose', condition="doTransporterGut")
-        fromToGut.addParam('D0TransporterGut', params.FloatParam, default=0, label='Min (mg)')
-        fromToGut.addParam('DFTransporterGut', params.FloatParam, default=10, label='Max (mg)')
+        fromToGut3 = form.addLine('Transporters Oral dose', condition="doTransporterGut")
+        fromToGut3.addParam('D0TransporterGut', params.FloatParam, default=0, label='Min (mg)')
+        fromToGut3.addParam('DFTransporterGut', params.FloatParam, default=10, label='Max (mg)')
         form.addParam("MWTransporterGut", params.FloatParam, default=1, label="Molecular weight (g/mol)", condition="doTransporterGut")
         form.addParam('KiTransporterGut', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doTransporterGut",
                       help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
 
         form.addParam("doTransporterLiver", params.BooleanParam, default=False, label="Liver transporter")
-        fromToGut = form.addLine('Unbound hepatic inlet [I]', condition="doTransporterLiver")
-        fromToGut.addParam('I0TransporterLiver', params.FloatParam, default=0, label='Min (uM)')
-        fromToGut.addParam('IFTransporterLiver', params.FloatParam, default=10, label='Max (uM)')
+        fromToGut4 = form.addLine('Unbound hepatic inlet [I]', condition="doTransporterLiver")
+        fromToGut4.addParam('I0TransporterLiver', params.FloatParam, default=0, label='Min (uM)')
+        fromToGut4.addParam('IFTransporterLiver', params.FloatParam, default=10, label='Max (uM)')
         form.addParam('KiTransporterLiver', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doTransporterLiver",
                       help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
 
         form.addParam("doTransporterRenal", params.BooleanParam, default=False, label="Renal transporter")
-        fromToGut = form.addLine('Unbound [Imax]', condition="doTransporterRenal")
-        fromToGut.addParam('I0TransporterRenal', params.FloatParam, default=0, label='Min (uM)')
-        fromToGut.addParam('IFTransporterRenal', params.FloatParam, default=10, label='Max (uM)')
+        fromToGut5 = form.addLine('Unbound [Imax]', condition="doTransporterRenal")
+        fromToGut5.addParam('I0TransporterRenal', params.FloatParam, default=0, label='Min (uM)')
+        fromToGut5.addParam('IFTransporterRenal', params.FloatParam, default=10, label='Max (uM)')
         form.addParam('KiTransporterRenal', params.StringParam, default="5", label='Inhibition constant (Ki [uM])', condition="doTransporterRenal",
                       help="Ki is the in vitro unbound reversible inhibition constant. Several constants can be given separated by space, e.g., 5 10")
 
@@ -351,7 +351,7 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
 
         if self.doTransporterRenal:
             I = np.arange(self.I0TransporterRenal.get(), self.IFTransporterRenal.get(), (self.IFTransporterRenal.get()-self.I0TransporterRenal.get())/100)
-            KiList = self.parseList(self.KiTransporterLiver.get())
+            KiList = self.parseList(self.KiTransporterRenal.get())
             for Ki in KiList:
                 legend="Renal Transporter Ki=%f [uM]"%Ki
                 print("Simulating %s"%legend)
@@ -389,8 +389,8 @@ class ProtPKPDSimulateDrugInteractions(ProtPKPD):
 
     def _citations(self):
         retval = ['CHMPEWP56095','Fahmi2009']
-        if self.doPhysiological:
-            retval+=['Yang2007a','Yang2007b','Rostami2004']
+        # if self.doPhysiological:
+        #     retval+=['Yang2007a','Yang2007b','Rostami2004']
         return retval
 
     def _methods(self):

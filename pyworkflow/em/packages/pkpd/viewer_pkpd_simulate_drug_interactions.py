@@ -39,11 +39,7 @@ class PKPDSimulateDrugInteractionsViewer(Viewer):
     def addLimits(self,plotter,previousType,minX,maxX):
         if previousType=="ReversibleLiver":
             ax = plotter.getLastSubPlot()
-            ax.plot([minX, maxX],[1.02,1.02],'r--', label="EMA")
-            ax.legend()
-            plotter.draw()
-
-            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[1.02,1.02],'b--', label="EMA")
             ax.plot([minX, maxX],[1.1,1.1],'r-.', label="FDA")
             leg=ax.legend()
             if leg:
@@ -58,11 +54,7 @@ class PKPDSimulateDrugInteractionsViewer(Viewer):
             plotter.draw()
         elif previousType=="TimeDependentLiver":
             ax = plotter.getLastSubPlot()
-            ax.plot([minX, maxX],[1.25,1.25],'r--', label="EMA")
-            ax.legend()
-            plotter.draw()
-
-            ax = plotter.getLastSubPlot()
+            ax.plot([minX, maxX],[1.25,1.25],'b--', label="EMA")
             ax.plot([minX, maxX],[1.1,1.1],'r-.', label="FDA")
             leg=ax.legend()
             if leg:
@@ -77,21 +69,23 @@ class PKPDSimulateDrugInteractionsViewer(Viewer):
             plotter.draw()
         elif previousType=="TransporterGut":
             ax = plotter.getLastSubPlot()
-            ax.plot([minX, maxX],[1.1,1.1],'r--', label="EMA")
+            ax.plot([minX, maxX],[11,11],'r--', label="EMA/FDA")
             leg=ax.legend()
             if leg:
                 leg.draggable()
             plotter.draw()
         elif previousType=="TransporterLiver":
             ax = plotter.getLastSubPlot()
-            ax.plot([minX, maxX],[1.04,1.04],'r--', label="EMA")
+            ax.plot([minX, maxX],[1.04,1.04],'b--', label="EMA")
+            ax.plot([minX, maxX],[1.1,1.1],'r--', label="FDA")
             leg=ax.legend()
             if leg:
                 leg.draggable()
             plotter.draw()
         elif previousType=="TransporterRenal":
             ax = plotter.getLastSubPlot()
-            ax.plot([minX, maxX],[1.02,1.02],'r--', label="EMA")
+            ax.plot([minX, maxX],[1.02,1.02],'b--', label="EMA")
+            ax.plot([minX, maxX],[1.1,1.1],'r--', label="FDA")
             leg=ax.legend()
             if leg:
                 leg.draggable()
