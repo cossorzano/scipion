@@ -225,7 +225,8 @@ class TestGabrielssonPK06Workflow(TestWorkflow):
         # Estimate absorption rate
         print "Estimation of the absorption rate..."
         protAbsorptionRate = self.newProtocol(ProtPKPDAbsorptionRate,
-                                              objLabel='pkpd - absorption rate')
+                                              objLabel='pkpd - absorption rate',
+                                              bounds='(0,0.07);(200,500);(5,30)')
         protAbsorptionRate.inputExperiment.set(protChangeTimeUnit2.outputExperiment)
         protAbsorptionRate.protElimination.set(protEliminationRate)
         self.launchProtocol(protAbsorptionRate)
@@ -242,12 +243,12 @@ class TestGabrielssonPK06Workflow(TestWorkflow):
         self.assertTrue(Ka>0.007 and Ka<0.045)
         self.assertTrue(Ke>0.00025 and Ke<0.00031)
         self.assertTrue(Vd>310 and Vd<470)
-        self.assertTrue(tlag>15 and tlag<20)
+        self.assertTrue(tlag>15 and tlag<25)
 
         fitting = PKPDFitting()
         fitting.load(protAbsorptionRate.outputFitting.fnFitting)
-        self.assertTrue(fitting.sampleFits[0].R2>0.99)
-        self.assertTrue(fitting.sampleFits[0].AIC<-30)
+        self.assertTrue(fitting.sampleFits[0].R2>0.975)
+        self.assertTrue(fitting.sampleFits[0].AIC<-27)
 
         # Non-compartmental analysis EV
         print "Performing Non-compartmental analysis of PO ..."
