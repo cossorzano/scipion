@@ -96,7 +96,8 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
         # Estimate absorption rate
         print "Estimation of the absorption rate..."
         protAbsorptionRate = self.newProtocol(ProtPKPDAbsorptionRate,
-                                              objLabel='pkpd - absorption rate')
+                                              objLabel='pkpd - absorption rate',
+                                              bounds='(0,0.1);(10,60);(0,25)')
         protAbsorptionRate.inputExperiment.set(protFilterCp.outputExperiment)
         protAbsorptionRate.protElimination.set(protEliminationRate)
         self.launchProtocol(protAbsorptionRate)
@@ -112,17 +113,17 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
         Vd = float(experiment.samples['Individual1'].descriptors['Vd'])
         tlag = float(experiment.samples['Individual1'].descriptors['tlag'])
         tmax = float(experiment.samples['Individual1'].descriptors['tmax'])
-        self.assertTrue(Cmax>1.8)
-        self.assertTrue(Ka>0.03 and Ka<0.04) # Gabrielsson p 514, Solution II: K01: 0.0428
+        self.assertTrue(Cmax>1.7)
+        self.assertTrue(Ka>0.03 and Ka<0.06) # Gabrielsson p 514, Solution II: K01: 0.0428
         self.assertTrue(Ke<0.01)
         self.assertTrue(Vd>20)
-        self.assertTrue(tlag>10 and tlag<20)
+        self.assertTrue(tlag>10 and tlag<23)
         self.assertTrue(tmax>30 and tmax<70)
 
         fitting = PKPDFitting()
         fitting.load(protAbsorptionRate.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.96)
-        self.assertTrue(fitting.sampleFits[0].AIC<-24)
+        self.assertTrue(fitting.sampleFits[0].AIC<-17)
 
         # Fit a monocompartmental model with first order absorption
         print "Fitting monocompartmental model..."
@@ -141,15 +142,15 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
         V = float(experiment.samples['Individual1'].descriptors['V'])
         Ka = float(experiment.samples['Individual1'].descriptors['Ka'])
         tlag = float(experiment.samples['Individual1'].descriptors['tlag'])
-        self.assertAlmostEqual(Cl,0.2912,2) # Gabrielsson p 515, Solution II: CL/F=0.2819
+        self.assertTrue(Cl>0.27 and Cl<0.31) # Gabrielsson p 515, Solution II: CL/F=0.2819
         self.assertTrue(V>10 and V<40) # Gabrielsson p 515, Solution II: V/F=32.05 -------------- Mine: 27.5
-        self.assertTrue(Ka>0.025 and Ka<0.04) # Gabrielsson p 511, Solution II: Ka=0.043 -------- Mine: 0.0264
-        self.assertTrue(tlag>10 and tlag<20) # Gabrielsson p 511, Solution II: tlag=16
+        self.assertTrue(Ka>0.025 and Ka<0.06) # Gabrielsson p 511, Solution II: Ka=0.043 -------- Mine: 0.0264
+        self.assertTrue(tlag>10 and tlag<25) # Gabrielsson p 511, Solution II: tlag=16
 
         fitting = PKPDFitting()
         fitting.load(protEV1MonoCompartment.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.97)
-        self.assertTrue(fitting.sampleFits[0].AIC<-24)
+        self.assertTrue(fitting.sampleFits[0].AIC<-15)
 
         # Population bootstrap
         print "Bootstrapping model..."

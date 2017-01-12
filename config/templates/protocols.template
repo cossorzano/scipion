@@ -68,10 +68,6 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDScaleToCommonDose",
 		"text": "scale dose"
-	},{
-		"tag": "protocol",
-		"value": "ProtPKPDODESimulate",
-		"text": "simulate dose PK"
 	}]
     },
     {
@@ -168,6 +164,14 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDODERefine",
 		"text": "ode refinement"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDODETwoVias",
+		"text": "ode two vias"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDODESimulate",
+		"text": "simulate dose PK"
 	}]
     },
     {

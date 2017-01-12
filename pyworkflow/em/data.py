@@ -887,6 +887,7 @@ class PKPDODEModel(PKPDModelBase2):
 class PKPDOptimizer:
     def __init__(self,model,fitType,goalFunction="RMSE"):
         self.model = model
+        self.fitType = fitType
 
         if type(model.y[0])!=list and type(model.y[0])!=np.ndarray:
             self.yTarget = np.array(model.y, dtype=np.float32)
@@ -936,19 +937,15 @@ class PKPDOptimizer:
                 return allDiffs
             else:
                 return 1e38*np.ones(self.yTarget.shape)
-        yPredicted = self.model.forwardModel(parameters)
-        if type(yPredicted[0])!=list and type(yPredicted[0])!=np.ndarray:
-            yPredicted = [np.array(yPredicted,dtype=np.float32)]
-        else:
-            yPredicted = [np.array(yi,dtype=np.float32) for yi in yPredicted]
+        yPredicted = flattenArray(self.model.forwardModel(parameters))
 
         allDiffs = None
         for y, yTarget in izip(yPredicted,self.yTarget):
             if self.takeYLogs:
                 idx = np.array([np.isfinite(yi) and yi>=1e-20 for yi in y])
                 nonIdx = np.logical_not(idx)
-                y[idx] = np.log10(y[idx])
-                y[nonIdx] = -100
+                y = np.log10(y[idx])
+                yTarget = yTarget[idx]
             diff = yTarget - y
             if self.takeRelative:
                 diff = diff/yTarget
@@ -958,7 +955,10 @@ class PKPDOptimizer:
                 allDiffs = np.concatenate([allDiffs, diff])
             idx = np.logical_not(np.isfinite(allDiffs))
             allDiffs[idx]=1e38
-        return allDiffs[np.isfinite(allDiffs)]
+        e = allDiffs[np.isfinite(allDiffs)]
+        if e.size<=parameters.size:
+            e=1e38*np.ones(len(yPredicted))
+        return e
 
     def goalRMSE(self,parameters):
         e = self.getResiduals(parameters)
@@ -971,7 +971,11 @@ class PKPDOptimizer:
             self.e = None
             yToUse = None
             for yi, ypi in izip(y,yp):
-                diff = yi - ypi
+                diff = []
+                for yii, ypii in izip(yi,ypi):
+                    if np.isfinite(yii) and np.isfinite(ypii):
+                        diff.append(yii-ypii)
+                diff = np.asarray(diff)
                 if self.e==None:
                     self.e = diff
                     yToUse = np.asarray(yi)
@@ -1003,7 +1007,7 @@ class PKPDOptimizer:
         if type(y[0])!=list and type(y[0])!=np.ndarray and (type(yp[0])==list or type(yp[0])==np.ndarray):
             yp=yp[0]
         self._evaluateQuality(x, y, yp)
-        if not hasattr(self.model,"model") or self.model.model.getResponseDimension()==1:
+        if (not hasattr(self.model,"model") or self.model.model.getResponseDimension()==1) and type(x)==np.ndarray:
             for n in range(0,x.shape[0]):
                 print("%f %f %f %f"%(x[n],y[n],yp[n],y[n]-yp[n]))
         else:
@@ -1025,8 +1029,25 @@ class PKPDOptimizer:
         print("------------------------")
 
     def evaluateQuality(self):
-        yPredicted = np.array(self.model.forwardModel(self.model.parameters),dtype=np.float32)
-        self._evaluateQuality(self.model.x, self.model.y, yPredicted)
+        yPredicted=self.model.forwardModel(self.model.parameters)
+        x = copy.copy(self.model.x)
+        y = copy.copy(self.model.y)
+        if self.fitType=="linear" or self.fitType=="relative":
+            yp = yPredicted
+        elif self.fitType=="log":
+            if type(self.model.y[0])!=list and type(self.model.y[0])!=np.ndarray:
+                if type(yPredicted[0])==list or type(yPredicted[0])==np.ndarray:
+                    yPredicted=yPredicted[0]
+                ylog = smartLog(self.model.y)
+                yplog = smartLog(yPredicted)
+                idx = np.array(np.where(np.logical_and(np.isfinite(ylog),np.isfinite(yplog))))
+                x= self.model.x[idx].ravel()
+                y= ylog[idx].ravel()
+                yp=yplog[idx].ravel()
+            else:
+                y = [smartLog(yi) for yi in self.model.y]
+                yp = [smartLog(yi) for yi in yPredicted]
+        self._evaluateQuality(x,y,yp)
 
     def printFitting(self):
         yPredicted = self.model.forwardModel(self.model.parameters)
@@ -1040,13 +1061,13 @@ class PKPDOptimizer:
         if type(self.model.y[0])!=list and type(self.model.y[0])!=np.ndarray:
             if type(yPredicted[0])==list or type(yPredicted[0])==np.ndarray:
                 yPredicted=yPredicted[0]
-            ylog = np.array([math.log10(yi) if np.isfinite(yi) and yi>0 else float("inf") for yi in self.model.y])
-            yplog = np.array([math.log10(ypi) if np.isfinite(ypi) and ypi>0 else float("inf") for ypi in yPredicted])
+            ylog = smartLog(self.model.y)
+            yplog = smartLog(yPredicted)
             idx = np.array(np.where(np.logical_and(np.isfinite(ylog),np.isfinite(yplog))))
             self._printFitting(self.model.x[idx].ravel(), ylog[idx].ravel(), yplog[idx].ravel())
         else:
-            logY = [np.log10(np.asarray(y)) for y in self.model.y]
-            logYp = [np.log10(np.asarray(y)) for y in yPredicted]
+            logY = [smartLog(y) for y in self.model.y]
+            logYp = [smartLog(y) for y in yPredicted]
             self._printFitting(self.model.x, logY, logYp)
 
 class PKPDDEOptimizer(PKPDOptimizer):
@@ -1746,3 +1767,13 @@ class PKPDSignalAnalysis(EMObject):
             if sampleAnalysis.sampleName == sampleName:
                 return sampleAnalysis
         return None
+
+def flattenArray(y):
+    if type(y[0])!=list and type(y[0])!=np.ndarray:
+        y = [np.array(y,dtype=np.float32)]
+    else:
+        y = [np.array(yi,dtype=np.float32) for yi in y]
+    return y
+
+def smartLog(y):
+    return np.array([math.log10(yi) if np.isfinite(yi) and yi>0 else float("inf") for yi in y])

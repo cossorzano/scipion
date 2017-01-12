@@ -63,6 +63,7 @@ from protocol_pkpd_two_compartments import ProtPKPDTwoCompartments
 from protocol_pkpd_simulate_liver_flow import ProtPKPDSimulateLiverFlow
 from protocol_pkpd_change_via import ProtPKPDChangeVia
 from protocol_pkpd_estimate_bioavailability import ProtPKPDNCAEstimateBioavailability
+from protocol_pkpd_ode_two_vias import ProtPKPDODETwoVias
 
 from protocol_batch_create_experiment import BatchProtCreateExperiment
 

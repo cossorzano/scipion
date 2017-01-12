@@ -453,9 +453,9 @@ class PKPDDose:
             currentIdx=0
             for paramName in self.paramsToOptimize:
                 if paramName=="tlag":
-                    retval+=[lowerBound[currentIdx]>0]
+                    retval+=[str(lowerBound[currentIdx]>0)]
                 elif paramName=="bioavailability":
-                    retval+=[upperBound[currentIdx]<1]
+                    retval+=[str(upperBound[currentIdx]<1)]
                 currentIdx+=1
         if self.via == "iv":
             return retval

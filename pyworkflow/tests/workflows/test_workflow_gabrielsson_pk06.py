@@ -239,8 +239,8 @@ class TestGabrielssonPK06Workflow(TestWorkflow):
         Ke = float(experiment.samples['Individual'].descriptors['Ke'])
         Vd = float(experiment.samples['Individual'].descriptors['Vd'])
         tlag = float(experiment.samples['Individual'].descriptors['tlag'])
-        self.assertAlmostEqual(Ka,0.00936,3)
-        self.assertAlmostEqual(Ke,0.00028,3)
+        self.assertTrue(Ka>0.007 and Ka<0.045)
+        self.assertTrue(Ke>0.00025 and Ke<0.00031)
         self.assertTrue(Vd>310 and Vd<315)
         self.assertTrue(tlag>15 and tlag<20)
 

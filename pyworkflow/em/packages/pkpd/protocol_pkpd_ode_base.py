@@ -345,7 +345,8 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                 raise Exception("Error in the local optimizer\n"+msg)
             optimizer2.setConfidenceInterval(self.confidenceInterval.get())
             self.setParameters(optimizer2.optimum)
-            self.forwardModel(optimizer2.optimum) # To make sure that self.yPredicted is what it must
+            # self.forwardModel(optimizer2.optimum) # To make sure that self.yPredicted is what it must
+            optimizer2.evaluateQuality()
 
             # Keep this result
             sampleFit = PKPDSampleFit()
