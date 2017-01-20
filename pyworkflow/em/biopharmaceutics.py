@@ -478,8 +478,8 @@ class PKPDDose:
             return retval and self.viaProfile.areParametersValid(p[currentIdx:])
 
     def setParameters(self, p):
+        currentIdx=0
         if self.paramsToOptimize:
-            currentIdx=0
             for paramName in self.paramsToOptimize:
                 if paramName=="tlag":
                     self.tlag=p[currentIdx]
