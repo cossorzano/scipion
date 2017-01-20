@@ -32,7 +32,7 @@ import numpy as np
 from pyworkflow.em.pkpd_units import PKPDUnit, convertUnits
 from pyworkflow.object import *
 from pyworkflow.utils.path import writeMD5, verifyMD5
-from pyworkflow.em.biopharmaceutics import PKPDDose
+from pyworkflow.em.biopharmaceutics import PKPDDose, PKPDVia
 
 class EMObject(OrderedObject):
     """Base object for all EM classes"""
@@ -414,10 +414,11 @@ class PKPDSampleMeasurement():
 class PKPDExperiment(EMObject):
     READING_GENERAL = 1
     READING_VARIABLES = 2
-    READING_DOSES = 3
-    READING_SAMPLES = 4
-    READING_MEASUREMENTS = 5
-    READING_A_MEASUREMENT = 6
+    READING_VIAS = 3
+    READING_DOSES = 4
+    READING_SAMPLES = 5
+    READING_MEASUREMENTS = 6
+    READING_A_MEASUREMENT = 7
 
     def __init__(self, **args):
         EMObject.__init__(self, **args)
@@ -427,6 +428,7 @@ class PKPDExperiment(EMObject):
         self.variables = {}
         self.samples = {}
         self.doses = {}
+        self.vias = {}
 
     def __str__(self):
         if not self.infoStr.hasValue():
@@ -456,6 +458,8 @@ class PKPDExperiment(EMObject):
                     state=PKPDExperiment.READING_GENERAL
                 elif section=="[variables]":
                     state=PKPDExperiment.READING_VARIABLES
+                elif section=="[vias]":
+                    state=PKPDExperiment.READING_VIAS
                 elif section=="[doses]":
                     state=PKPDExperiment.READING_DOSES
                 elif section=="[samples]":
@@ -480,18 +484,27 @@ class PKPDExperiment(EMObject):
                 self.variables[varname] = PKPDVariable()
                 self.variables[varname].parseTokens(tokens)
 
+            elif state==PKPDExperiment.READING_VIAS:
+                tokens = line.split(';')
+                if len(tokens)<2:
+                    print("Skipping via: ",line)
+                    continue
+                vianame = tokens[0].strip()
+                self.vias[vianame] = PKPDVia()
+                self.vias[vianame].parseTokens(tokens)
+
             elif state==PKPDExperiment.READING_DOSES:
                 tokens = line.split(';')
-                if len(tokens)<5:
+                if len(tokens)!=5:
                     print("Skipping dose: ",line)
                     continue
                 dosename = tokens[0].strip()
                 self.doses[dosename] = PKPDDose()
-                self.doses[dosename].parseTokens(tokens)
+                self.doses[dosename].parseTokens(tokens,self.vias)
 
             elif state==PKPDExperiment.READING_SAMPLES:
                 tokens = line.split(';')
-                if len(tokens)<2:
+                if len(tokens)!=2:
                     print("Skipping sample: ",line)
                     continue
                 samplename = tokens[0].strip()
@@ -532,6 +545,11 @@ class PKPDExperiment(EMObject):
         fh.write("[VARIABLES] ============================\n")
         for key in sorted(self.variables.keys()):
             self.variables[key]._printToStream(fh)
+        fh.write("\n")
+
+        fh.write("[VIAS] ================================\n")
+        for key in sorted(self.vias.keys()):
+            self.vias[key]._printToStream(fh)
         fh.write("\n")
 
         fh.write("[DOSES] ================================\n")

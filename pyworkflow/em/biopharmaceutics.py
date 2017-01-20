@@ -206,87 +206,31 @@ class BiopharmaceuticsModelOrderFractional(BiopharmaceuticsModel):
     def areParametersValid(self, p):
         return np.sum(p<0)==0 and p[2]>0 and p[2]<1
 
-class PKPDDose:
-    TYPE_BOLUS = 1
-    TYPE_REPEATED_BOLUS = 2
-    TYPE_INFUSION = 3
-
+class PKPDVia:
     def __init__(self):
-        self.doseName = None
+        self.viaName = None
         self.via = None
         self.viaProfile = None
-        self.doseType = None
-        self.doseAmount = None
-        self.t0 = None
-        self.tF = None
-        self.every = None
-        self.tunits = None
-        self.dunits = None
         self.tlag = 0
+        self.tunits = None
         self.bioavailability = 1
         self.paramsToOptimize = []
         self.paramsUnitsToOptimize=[]
 
     def parseTokens(self,tokens):
-        # Dose1; iv; bolus t=0 d=60*$(weight)/1000; min; mg; [tlag=0]; [bioavailability=1]
-        # Dose1; ev0; repeated_bolus t=0:8:48 d=60*$(weight)/1000; h; mg
-        # Dose1; ev1; infusion t=0:59 d=1; min; mg
-
+        # Intravenous; iv; [tlag=0 min]; [bioavailability=1]
+        # Oral; ev1; tlag=0 min; bioavailability=1
         # Default values
         self.tlag = 0
         self.bioavailability = 1
 
         # Get name
         currentToken = 0
-        self.doseName = tokens[currentToken].strip()
+        self.viaName = tokens[currentToken].strip()
         currentToken+=1
 
         # Get via
         self.via = tokens[currentToken].strip()
-        currentToken+=1
-
-        # Get type
-        doseString = tokens[currentToken].strip()
-        doseTokens = doseString.split(' ')
-        if len(doseTokens)!=3:
-            raise Exception("Unrecognized dose type %s"%doseString)
-        doseTypeString = doseTokens[0].strip().lower()
-        timeString = doseTokens[1].strip().lower().split("=")[1]
-        if doseTypeString=="bolus":
-            self.doseType = PKPDDose.TYPE_BOLUS
-            self.t0 = float(timeString)
-        elif doseTypeString=="repeated_bolus":
-            self.doseType = PKPDDose.TYPE_REPEATED_BOLUS
-            timeTokens = timeString.split(":")
-            self.t0 = float(timeTokens[0].strip())
-            self.every = float(timeTokens[1].strip())
-            self.tF = float(timeTokens[2].strip())
-        elif doseTypeString=="infusion":
-            self.doseType = PKPDDose.TYPE_INFUSION
-            timeTokens = timeString.split(":")
-            self.t0 = float(timeTokens[0].strip())
-            self.tF = float(timeTokens[1].strip())
-        else:
-            raise Exception("Unrecognized dose type %s"%doseTypeString)
-        self.doseAmount = doseTokens[2].strip().lower().split("=")[1]
-        currentToken+=1
-
-        # Get time units
-        unitString = tokens[currentToken].strip()
-        self.tunits = PKPDUnit(unitString)
-        if not self.tunits.unit:
-            raise Exception("Unrecognized unit: %s"%unitString)
-        if not self.tunits.isTime():
-            raise Exception("Time unit is not valid")
-        currentToken+=1
-
-        # Get dose units
-        unitString = tokens[currentToken].strip()
-        self.dunits = PKPDUnit(unitString)
-        if not self.dunits.unit:
-            raise Exception("Unrecognized unit: %s"%unitString)
-        if not self.dunits.isWeight():
-            raise Exception("After normalization, the dose must be a weight")
         currentToken+=1
 
         while currentToken<len(tokens):
@@ -295,7 +239,14 @@ class PKPDDose:
                 optionalTokens=optionalTokens.split('=')
                 optionalVar=optionalTokens[0].strip()
                 if optionalVar=="tlag":
-                    self.tlag=float(optionalTokens[1].strip())
+                    optionalTokens=optionalTokens[1].split()
+                    self.tlag=float(optionalTokens[0].strip())
+                    unitString = optionalTokens[1].strip()
+                    self.tunits = PKPDUnit(unitString)
+                    if not self.tunits.unit:
+                        raise Exception("Unrecognized unit: %s"%unitString)
+                    if not self.tunits.isTime():
+                        raise Exception("Time unit is not valid")
                 elif optionalVar=="bioavailability":
                     self.bioavailability=float(optionalTokens[1].strip())
             else:
@@ -307,32 +258,16 @@ class PKPDDose:
             currentToken+=1
 
     def _printToStream(self,fh):
-        outStr=self.doseName+"; "+self.getDoseString2()+"; tlag"
-        if not "tlag" in self.paramsToOptimize:
-            outStr+="=%f"%self.tlag
-        outStr+="; bioavailability"
-        if not "bioavailability" in self.paramsToOptimize:
-            outStr+="=%f"%self.bioavailability
-        fh.write("%s\n"%outStr)
-
-    def getDoseString(self):
-        if self.doseType == PKPDDose.TYPE_BOLUS:
-            doseString = "bolus t=%f" % self.t0
-        elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
-            doseString = "repeated_bolus t=%f:%f:%f" % (self.t0, self.every, self.tF)
-        elif self.doseType == PKPDDose.TYPE_INFUSION:
-            doseString = "infusion t=%f:%f" % (self.t0, self.tF)
+        outStr="%s; %s; "%(self.viaName,self.via)
+        if "tlag" in self.paramsToOptimize:
+            outStr+=" tlag min; "
         else:
-            doseString = ""
-        return doseString
-
-    def getDoseString2(self):
-        outStr="%s; %s d=%s; %s; %s" % (self.via,
-                                        self.getDoseString(),
-                                        self.doseAmount,
-                                        self.tunits._toString(),
-                                        self.dunits._toString())
-        return outStr
+            outStr+="tlag=%f %s; "%(self.tlag,self.tunits._toString())
+        if "bioavailability" in self.paramsToOptimize:
+            outStr+=" bioavailability"
+        else:
+            outStr+="bioavailability=%f"%self.bioavailability
+        fh.write("%s\n"%outStr)
 
     def prepare(self):
         if self.via=="iv":
@@ -351,67 +286,8 @@ class PKPDDose:
             pass
         elif self.tunits.unit==PKPDUnit.UNIT_TIME_H:
             self.tlag *= 60
-            if self.doseType == PKPDDose.TYPE_BOLUS:
-                self.t0 *= 60
-            elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
-                self.t0 *= 60
-                self.tF *= 60
-                self.every *= 60
-            elif self.doseType == PKPDDose.TYPE_INFUSION:
-                self.t0 *= 60
-                self.tF *= 60
         else:
             raise Exception("Time for doses must be hours or minutes")
-
-    def getDoseAt(self,t0,dt=0.5):
-        """Dose between t0<=t<t0+dt, t0 is in minutes"""
-        t0-=self.tlag
-        t1=t0+dt-self.tlag
-        if self.doseType == PKPDDose.TYPE_BOLUS:
-            if t0<=self.t0 and self.t0<t1:
-                return self.doseAmount
-            else:
-                return 0.0
-        elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
-            doseAmount=0
-            for t in np.arange(self.t0,self.tF,self.every):
-                if t0<=t and t<t1:
-                    doseAmount+=self.doseAmount
-            return doseAmount
-        elif self.doseType == PKPDDose.TYPE_INFUSION:
-            if t0>self.tF or t1<self.t0:
-                return 0.0
-            else:
-                tLeft=max(t0,self.t0)
-                tRight=min(t1,self.tF)
-                return self.doseAmount*(tRight-tLeft)
-
-    def getAmountReleasedAt(self,t0,dt=0.5):
-        doseAmount = 0.0
-        if self.viaProfile == None:
-            doseAmount += self.bioavailability*self.getDoseAt(t0,dt)
-        else:
-            if self.doseType!=PKPDDose.TYPE_INFUSION:
-                self.viaProfile.Amax = self.bioavailability*self.doseAmount
-                doseAmount += self.viaProfile.getAg(t0-self.t0-self.tlag)-self.viaProfile.getAg(t0-self.t0-self.tlag+dt)
-            else:
-                raise Exception("getAmountReleasedAt not implemented for non-iv infusion")
-        if doseAmount<0:
-            doseAmount=0
-        return doseAmount
-
-    def isDoseABolus(self):
-        if self.doseType != PKPDDose.TYPE_BOLUS:
-            return False
-        if self.t0 != 0:
-            return False
-        return True
-
-    def getTUnitsString(self):
-        return self.tunits._toString()
-
-    def getDUnitsString(self):
-        return self.dunits._toString()
 
     def getEquation(self):
         if self.via == "iv":
@@ -436,7 +312,7 @@ class PKPDDose:
         names=copy.copy(self.paramsToOptimize)
         if self.via != "iv":
             names+=self.viaProfile.getParameterNames()
-        return [self.doseName+"_"+name for name in names]
+        return names
 
     def getNumberOfParameters(self):
         return len(self.getParameterNames())
@@ -490,6 +366,188 @@ class PKPDDose:
             self.viaProfile.setParameters(p[currentIdx:])
 
 
+class PKPDDose:
+    TYPE_BOLUS = 1
+    TYPE_REPEATED_BOLUS = 2
+    TYPE_INFUSION = 3
+
+    def __init__(self):
+        self.doseName = None
+        self.via = None
+        self.doseType = None
+        self.doseAmount = None
+        self.t0 = None
+        self.tF = None
+        self.every = None
+        self.tunits = None
+        self.dunits = None
+        self.paramsToOptimize = []
+        self.paramsUnitsToOptimize=[]
+
+    def parseTokens(self,tokens,vias):
+        # Dose1; via=Intravenous; bolus; t=0 min; d=60*$(weight)/1000 mg
+        # Dose1; via=Oral; repeated_bolus; t=0:8:48 h; d=60*$(weight)/1000 mg
+        # Dose1; via=Intravenous; infusion; t=0:59 min; d=1 mg
+
+        # Get name
+        currentToken = 0
+        self.doseName = tokens[currentToken].strip()
+        currentToken+=1
+
+        # Get via
+        viaName = tokens[currentToken].strip().split('=')[1]
+        if viaName in vias:
+            self.via=vias[viaName]
+        else:
+            raise Exception("Unrecognized via %s"%viaName)
+        currentToken+=1
+
+        # Get type
+        doseTypeString = tokens[currentToken].strip()
+        if doseTypeString=="bolus":
+            self.doseType = PKPDDose.TYPE_BOLUS
+        elif doseTypeString=="repeated_bolus":
+            self.doseType = PKPDDose.TYPE_REPEATED_BOLUS
+        elif doseTypeString=="infusion":
+            self.doseType = PKPDDose.TYPE_INFUSION
+        else:
+            raise Exception("Unrecognized dose type %s"%doseTypeString)
+        currentToken+=1
+
+        # Get time description
+        timeUnitsString = tokens[currentToken].strip().lower()
+        timeTokens=timeUnitsString.split()
+        if len(timeTokens)!=2:
+            raise Exception("Time description is badly formed %s"%timeUnitsString)
+        timeString = timeTokens[0].strip().split('=')[1]
+        if doseTypeString=="bolus":
+            self.t0 = float(timeString)
+        elif doseTypeString=="repeated_bolus":
+            timeTokens = timeString.split(":")
+            self.t0 = float(timeTokens[0].strip())
+            self.every = float(timeTokens[1].strip())
+            self.tF = float(timeTokens[2].strip())
+        elif doseTypeString=="infusion":
+            timeTokens = timeString.split(":")
+            self.t0 = float(timeTokens[0].strip())
+            self.tF = float(timeTokens[1].strip())
+        else:
+            raise Exception("Unrecognized dose type %s"%doseTypeString)
+
+        # Get time units
+        unitString = timeTokens[1].strip()
+        self.tunits = PKPDUnit(unitString)
+        if not self.tunits.unit:
+            raise Exception("Unrecognized unit: %s"%unitString)
+        if not self.tunits.isTime():
+            raise Exception("Time unit is not valid")
+        currentToken+=1
+
+        # Get dose units
+        doseUnitsString = tokens[currentToken].strip().lower()
+        doseTokens=doseUnitsString.split()
+        if len(doseTokens)!=2:
+            raise Exception("Dose description is badly formed %s"%doseUnitsString)
+
+        self.doseAmount = doseTokens[0].strip().lower().split("=")[1]
+        unitString = doseTokens[1].strip()
+        self.dunits = PKPDUnit(unitString)
+        if not self.dunits.unit:
+            raise Exception("Unrecognized unit: %s"%unitString)
+        if not self.dunits.isWeight():
+            raise Exception("After normalization, the dose must be a weight")
+        currentToken+=1
+
+    def _printToStream(self,fh):
+        outStr=self.doseName+"; "+self.getDoseString2()
+        fh.write("%s\n"%outStr)
+
+    def getDoseString(self):
+        if self.doseType == PKPDDose.TYPE_BOLUS:
+            doseString = "bolus; t=%f" % self.t0
+        elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
+            doseString = "repeated_bolus; t=%f:%f:%f" % (self.t0, self.every, self.tF)
+        elif self.doseType == PKPDDose.TYPE_INFUSION:
+            doseString = "infusion; t=%f:%f" % (self.t0, self.tF)
+        else:
+            doseString = ""
+        return doseString+" "+self.tunits._toString()
+
+    def getDoseString2(self):
+        outStr="via=%s; %s; d=%s %s" % (self.via.viaName,
+                                    self.getDoseString(),
+                                    self.doseAmount,
+                                    self.dunits._toString())
+        return outStr
+
+    def changeTimeUnitsToMinutes(self):
+        if self.tunits.unit==PKPDUnit.UNIT_TIME_MIN:
+            pass
+        elif self.tunits.unit==PKPDUnit.UNIT_TIME_H:
+            if self.doseType == PKPDDose.TYPE_BOLUS:
+                self.t0 *= 60
+            elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
+                self.t0 *= 60
+                self.tF *= 60
+                self.every *= 60
+            elif self.doseType == PKPDDose.TYPE_INFUSION:
+                self.t0 *= 60
+                self.tF *= 60
+        else:
+            raise Exception("Time for doses must be hours or minutes")
+
+    def getDoseAt(self,t0,dt=0.5):
+        """Dose between t0<=t<t0+dt, t0 is in minutes"""
+        t0-=self.via.tlag
+        t1=t0+dt-self.via.tlag
+        if self.doseType == PKPDDose.TYPE_BOLUS:
+            if t0<=self.t0 and self.t0<t1:
+                return self.doseAmount
+            else:
+                return 0.0
+        elif self.doseType == PKPDDose.TYPE_REPEATED_BOLUS:
+            doseAmount=0
+            for t in np.arange(self.t0,self.tF,self.every):
+                if t0<=t and t<t1:
+                    doseAmount+=self.doseAmount
+            return doseAmount
+        elif self.doseType == PKPDDose.TYPE_INFUSION:
+            if t0>self.tF or t1<self.t0:
+                return 0.0
+            else:
+                tLeft=max(t0,self.t0)
+                tRight=min(t1,self.tF)
+                return self.doseAmount*(tRight-tLeft)
+
+    def getAmountReleasedAt(self,t0,dt=0.5):
+        doseAmount = 0.0
+        if self.via.viaProfile == None:
+            doseAmount += self.via.bioavailability*self.getDoseAt(t0,dt)
+        else:
+            if self.doseType!=PKPDDose.TYPE_INFUSION:
+                self.via.viaProfile.Amax = self.via.bioavailability*self.doseAmount
+                doseAmount += self.viaProfile.getAg(t0-self.t0-self.via.tlag)-\
+                              self.viaProfile.getAg(t0-self.t0-self.via.tlag+dt)
+            else:
+                raise Exception("getAmountReleasedAt not implemented for non-iv infusion")
+        if doseAmount<0:
+            doseAmount=0
+        return doseAmount
+
+    def isDoseABolus(self):
+        if self.doseType != PKPDDose.TYPE_BOLUS:
+            return False
+        if self.t0 != 0:
+            return False
+        return True
+
+    def getTUnitsString(self):
+        return self.tunits._toString()
+
+    def getDUnitsString(self):
+        return self.dunits._toString()
+
+
 def createDeltaDose(doseAmount,t=0,dunits="mg",via="iv"):
     dose = PKPDDose()
     dose.doseName = "Bolus"
@@ -518,18 +576,6 @@ class DrugSource:
                         newDose.doseType = PKPDDose.TYPE_BOLUS
                         newDose.t0 = t
                         self.parsedDoseList.append(newDose)
-
-    # def getDoseAt(self,t0,dt=0.5):
-    #     doseAmount = 0.0
-    #     for dose in self.parsedDoseList:
-    #         doseAmount += dose.getDoseAt(t0,dt)
-    #     return doseAmount
-
-    # def getCumulatedDose(self,t0,tF):
-    #     return self.getDoseAt(t0,tF-t0)
-
-    # def getDoseUnits(self):
-    #     return self.parsedDoseList[0].dunits.unit
 
     def getAmountReleasedAt(self,t0,dt=0.5):
         doseAmount = 0.0
