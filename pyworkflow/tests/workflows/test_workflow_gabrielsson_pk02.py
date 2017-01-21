@@ -140,8 +140,8 @@ class TestGabrielssonPK02Workflow(TestWorkflow):
         experiment.load(protEV1MonoCompartment.outputExperiment.fnPKPD)
         Cl = float(experiment.samples['Individual1'].descriptors['Cl'])
         V = float(experiment.samples['Individual1'].descriptors['V'])
-        Ka = float(experiment.samples['Individual1'].descriptors['Ka'])
-        tlag = float(experiment.samples['Individual1'].descriptors['tlag'])
+        Ka = float(experiment.samples['Individual1'].descriptors['Oral_Ka'])
+        tlag = float(experiment.samples['Individual1'].descriptors['Oral_tlag'])
         self.assertTrue(Cl>0.27 and Cl<0.31) # Gabrielsson p 515, Solution II: CL/F=0.2819
         self.assertTrue(V>10 and V<40) # Gabrielsson p 515, Solution II: V/F=32.05 -------------- Mine: 27.5
         self.assertTrue(Ka>0.025 and Ka<0.06) # Gabrielsson p 511, Solution II: Ka=0.043 -------- Mine: 0.0264

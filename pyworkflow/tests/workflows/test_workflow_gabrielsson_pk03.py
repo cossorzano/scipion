@@ -83,8 +83,8 @@ class TestGabrielssonPK03Workflow(TestWorkflow):
         experiment.load(protEV0MonoCompartment.outputExperiment.fnPKPD)
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
-        Rin = float(experiment.samples['Individual'].descriptors['Bolus_Rin'])
-        tlag = float(experiment.samples['Individual'].descriptors['Bolus_tlag'])
+        Rin = float(experiment.samples['Individual'].descriptors['Oral_Rin'])
+        tlag = float(experiment.samples['Individual'].descriptors['Oral_tlag'])
         self.assertTrue(Cl>0.72 and Cl<0.73)
         self.assertTrue(V>95 and V<98)  # Gabrielsson, p 522, VF=96.2
         self.assertTrue(Rin>0.080 and Rin<0.085)
@@ -98,7 +98,7 @@ class TestGabrielssonPK03Workflow(TestWorkflow):
         print "Change via to ev1"
         protChangeVia1 = self.newProtocol(ProtPKPDChangeVia,
                                           objLabel='pkpd - change via ev1',
-                                          doseName='Bolus', doseVia="ev1", tlag="", bioavailability=1.0)
+                                          viaName='Oral', newViaType="ev1", tlag="", bioavailability=1.0)
         protChangeVia1.inputExperiment.set(protChangeCpUnit.outputExperiment)
         self.launchProtocol(protChangeVia1)
         self.assertIsNotNone(protChangeVia1.outputExperiment.fnPKPD, "There was a problem with changing via")
@@ -118,10 +118,10 @@ class TestGabrielssonPK03Workflow(TestWorkflow):
         experiment.load(protEV1MonoCompartment.outputExperiment.fnPKPD)
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
-        Ka = float(experiment.samples['Individual'].descriptors['Bolus_Ka'])
-        tlag = float(experiment.samples['Individual'].descriptors['Bolus_tlag'])
+        Ka = float(experiment.samples['Individual'].descriptors['Oral_Ka'])
+        tlag = float(experiment.samples['Individual'].descriptors['Oral_tlag'])
         self.assertTrue(Cl>0.75 and Cl<0.8)
-        self.assertTrue(V>95 and V<98) # Gabrielsson p 521, Solution I: FV=98.7 L
+        self.assertTrue(V>93 and V<98) # Gabrielsson p 521, Solution I: FV=98.7 L
         self.assertTrue(Ka>0.0075 and Ka<0.0085) # Gabrielsson p 521, Solution I: ka=0.418 1/h=0.007 1/min
         self.assertTrue(tlag>20 and tlag<30) # Gabrielsson p 521, Solution I: tlag=0.39h=23.4 min
         fitting = PKPDFitting()
@@ -133,7 +133,7 @@ class TestGabrielssonPK03Workflow(TestWorkflow):
         print "Change via to ev01"
         protChangeVia01 = self.newProtocol(ProtPKPDChangeVia,
                                            objLabel='pkpd - change via ev01',
-                                           doseName='Bolus', doseVia="ev01", tlag="", bioavailability=1.0)
+                                           viaName='Oral', newViaType="ev01", tlag="", bioavailability=1.0)
         protChangeVia01.inputExperiment.set(protChangeCpUnit.outputExperiment)
         self.launchProtocol(protChangeVia01)
         self.assertIsNotNone(protChangeVia01.outputExperiment.fnPKPD, "There was a problem with changing via")
@@ -153,10 +153,10 @@ class TestGabrielssonPK03Workflow(TestWorkflow):
         experiment.load(protEV01MonoCompartment.outputExperiment.fnPKPD)
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
-        Ka = float(experiment.samples['Individual'].descriptors['Bolus_Ka'])
-        tlag = float(experiment.samples['Individual'].descriptors['Bolus_tlag'])
-        Rin = float(experiment.samples['Individual'].descriptors['Bolus_Rin'])
-        t0 = float(experiment.samples['Individual'].descriptors['Bolus_t0'])
+        Ka = float(experiment.samples['Individual'].descriptors['Oral_Ka'])
+        tlag = float(experiment.samples['Individual'].descriptors['Oral_tlag'])
+        Rin = float(experiment.samples['Individual'].descriptors['Oral_Rin'])
+        t0 = float(experiment.samples['Individual'].descriptors['Oral_t0'])
         self.assertTrue(Cl>0.73 and Cl<0.76)
         self.assertTrue(V>32 and V<36)
         self.assertTrue(Ka>0.00045 and Ka<0.0055)

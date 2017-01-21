@@ -6,8 +6,11 @@ title = My experiment
 Cp ; ug/L ; numeric[%f] ; measurement ; Plasma concentration
 t ; h ; numeric[%f] ; time ; 
 
+[VIAS] ================================
+Oral; ev0; tlag h; bioavailability=1.000000
+
 [DOSES] ================================
-Bolus; ev0; bolus t=0.000000 d=20; h; mg; tlag; bioavailability=1.000000
+Bolus; via=Oral; bolus; t=0 h; d=20 mg
 
 [SAMPLES] ================================
 Individual; dose=Bolus 
