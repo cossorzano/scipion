@@ -224,6 +224,7 @@ class PKPDVia:
         # Default values
         self.tlag = 0
         self.bioavailability = 1
+        self.tunits = PKPDUnit("min")
 
         # Get name
         currentToken = 0
@@ -255,7 +256,6 @@ class PKPDVia:
                 self.paramsToOptimize.append(optionalTokens)
                 if optionalTokens=="tlag":
                     self.paramsUnitsToOptimize.append(PKPDUnit.UNIT_TIME_MIN)
-                    self.tunits = PKPDUnit("min")
                 elif optionalTokens=="bioavailability":
                     self.paramsUnitsToOptimize.append(PKPDUnit.UNIT_NONE)
             currentToken+=1
