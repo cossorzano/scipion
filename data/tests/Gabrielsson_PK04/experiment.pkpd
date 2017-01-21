@@ -6,8 +6,11 @@ title = My experiment
 Cp ; ug/L ; numeric[%f] ; measurement ; Plasma concentration
 t ; h ; numeric[%f] ; time ; Time variable
 
+[VIAS] ================================
+Oral; ev1; tlag min; bioavailability=1.000000
+
 [DOSES] ================================
-Treatment; ev1; repeated_bolus t=0.000000:24.000000:240.000000 d=352.3; h; ug; tlag; bioavailability=1.000000
+Treatment; via=Oral; repeated_bolus; t=0.000000:24.000000:240.000000 h; d=352.3 ug
 
 [SAMPLES] ================================
 Individual; dose=Treatment 
