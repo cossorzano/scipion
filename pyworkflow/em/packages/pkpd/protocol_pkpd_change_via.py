@@ -43,10 +43,10 @@ class ProtPKPDChangeVia(ProtPKPD):
         form.addParam('inputExperiment', params.PointerParam, label="Input experiment",
                       pointerClass='PKPDExperiment',
                       help='Select an experiment with samples')
-        form.addParam('doseName', params.StringParam, label="Dose name",
-                      help='Name of the dose whose via you want to change')
-        form.addParam('doseVia', params.StringParam, label="New via",
-                      help='New via of the dose, leave it empty to keep current via. Valid vias are iv, ev0, ev1, ev01, evFractional')
+        form.addParam('viaName', params.StringParam, label="Via name",
+                      help='Name of the via you want to change')
+        form.addParam('newViaType', params.StringParam, label="New via type",
+                      help='New via type, leave it empty to keep current via. Valid vias are iv, ev0, ev1, ev01, evFractional')
         form.addParam('tlag', params.StringParam, label="New tlag",
                       help='New tlag of the dose, leave it empty to let it free so that it can be optimized by an ODE model')
         form.addParam('bioavailability', params.StringParam, label="New bioavailability",
@@ -55,38 +55,38 @@ class ProtPKPDChangeVia(ProtPKPD):
     #--------------------------- INSERT steps functions --------------------------------------------
 
     def _insertAllSteps(self):
-        self._insertFunctionStep('runChange',self.inputExperiment.get().getObjId(),self.doseName.get(), self.doseVia.get(),
+        self._insertFunctionStep('runChange',self.inputExperiment.get().getObjId(),self.viaName.get(), self.newViaType.get(),
                                  self.tlag.get(),self.bioavailability.get())
         self._insertFunctionStep('createOutputStep')
 
     #--------------------------- STEPS functions --------------------------------------------
-    def runChange(self, objId, doseName, doseVia, tlag, bioavailability):
+    def runChange(self, objId, viaName, newViaType, tlag, bioavailability):
         self.experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
-        dose = self.experiment.doses[doseName]
-        if doseVia!="":
-            dose.via = doseVia
+        via = self.experiment.vias[viaName]
+        if newViaType!="":
+            via.via = newViaType
 
         if not tlag:
-            if not 'tlag' in dose.paramsToOptimize:
-                dose.paramsToOptimize.append("tlag")
-                dose.paramsUnitsToOptimize.append(PKPDUnit.UNIT_TIME_MIN)
+            if not 'tlag' in via.paramsToOptimize:
+                via.paramsToOptimize.append("tlag")
+                via.paramsUnitsToOptimize.append(PKPDUnit.UNIT_TIME_MIN)
         else:
-            if 'tlag' in dose.paramsToOptimize:
-                idx=dose.paramsToOptimize.index('tlag')
-                del dose.paramsToOptimize[idx]
-                del dose.paramsUnitsToOptimize[idx]
-            dose.tlag=float(tlag)
+            if 'tlag' in via.paramsToOptimize:
+                idx=via.paramsToOptimize.index('tlag')
+                del via.paramsToOptimize[idx]
+                del via.paramsUnitsToOptimize[idx]
+            via.tlag=float(tlag)
 
         if not bioavailability:
-            if not 'bioavailability' in dose.paramsToOptimize:
-                dose.paramsToOptimize.append("bioavailability")
-                dose.paramsUnitsToOptimize.append(PKPDUnit.UNIT_NONE)
+            if not 'bioavailability' in via.paramsToOptimize:
+                via.paramsToOptimize.append("bioavailability")
+                via.paramsUnitsToOptimize.append(PKPDUnit.UNIT_NONE)
         else:
-            if 'bioavailability' in dose.paramsToOptimize:
-                idx=dose.paramsToOptimize.index('bioavailability')
-                del dose.paramsToOptimize[idx]
-                del dose.paramsUnitsToOptimize[idx]
-            dose.bioavailability=float(bioavailability)
+            if 'bioavailability' in via.paramsToOptimize:
+                idx=via.paramsToOptimize.index('bioavailability')
+                del via.paramsToOptimize[idx]
+                del via.paramsUnitsToOptimize[idx]
+            via.bioavailability=float(bioavailability)
         self.experiment.write(self._getPath("experiment.pkpd"))
 
     def createOutputStep(self):
@@ -97,8 +97,8 @@ class ProtPKPDChangeVia(ProtPKPD):
     def _validate(self):
         errors = []
         experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
-        if not self.doseName.get() in experiment.doses:
-            errors.append("%s is not a dose of the experiment"%self.doseName.get())
+        if not self.viaName.get() in experiment.vias:
+            errors.append("%s is not a via of the experiment"%self.viaName.get())
         return errors
 
     def _summary(self):
