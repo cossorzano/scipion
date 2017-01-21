@@ -69,46 +69,86 @@ class TestGabrielssonPK11Workflow(TestWorkflow):
         self.assertIsNotNone(protFilterTime.outputExperiment.fnPKPD, "There was a problem with the filter")
         self.validateFiles('protFilterTime', protFilterTime)
 
-        # Fit a two-compartmentx model with intravenous absorption to a set of measurements
-        # print "Import Experiment PO"
-        # protImportPO = self.newProtocol(ProtImportExperiment,
-        #                               objLabel='pkpd - import experiment',
-        #                               inputFile=self.exptFnPO)
-        # self.launchProtocol(protImportPO)
-        # self.assertIsNotNone(protImportPO.outputExperiment.fnPKPD, "There was a problem with the import")
-        # self.validateFiles('protImport', protImportPO)
-        #
-        # # Fit a two-compartment model with oral absorption to a set of measurements
-        # print "Fitting a two-compartment model (oral)..."
-        # protPKPDPOTwoCompartments = self.newProtocol(ProtPKPDTwoCompartments,
-        #                                              objLabel='pkpd - ev1 two-compartments',
-        #                                              globalSearch=False,
-        #                                              bounds='(10.0, 20.0); (0.25, 0.45); (0.02, 0.06); (0.9, 1.15); (40.0, 70.0); (1.0, 3.0); (40.0, 70.0)')
-        # protPKPDPOTwoCompartments.inputExperiment.set(protImportPO.outputExperiment)
-        # self.launchProtocol(protPKPDPOTwoCompartments)
-        # self.assertIsNotNone(protPKPDPOTwoCompartments.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
-        # self.assertIsNotNone(protPKPDPOTwoCompartments.outputFitting.fnFitting, "There was a problem with the two-compartmental model ")
-        # self.validateFiles('protPKPDPOTwoCompartments', protPKPDPOTwoCompartments)
-        # experiment = PKPDExperiment()
-        # experiment.load(protPKPDPOTwoCompartments.outputExperiment.fnPKPD)
-        # Cl = float(experiment.samples['Individual'].descriptors['Cl'])
-        # Clp = float(experiment.samples['Individual'].descriptors['Clp'])
-        # V = float(experiment.samples['Individual'].descriptors['V'])
-        # Vp = float(experiment.samples['Individual'].descriptors['Vp'])
-        # Ka = float(experiment.samples['Individual'].descriptors['Bolus_Ka'])
-        # F = float(experiment.samples['Individual'].descriptors['Bolus_bioavailability'])
-        # tlag = float(experiment.samples['Individual'].descriptors['Bolus_tlag'])
-        # self.assertTrue(Cl>0.95 and Cl<1.06)
-        # self.assertTrue(Clp>1 and Clp<2.4)
-        # self.assertTrue(V>45)
-        # self.assertTrue(Vp>40 and Vp<70)
-        # self.assertTrue(Ka>0.018 and Ka<0.05)
-        # self.assertTrue(F>0.27 and F<0.38)
-        # self.assertTrue(tlag>9 and tlag<20)
-        # fitting = PKPDFitting()
-        # fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
-        # self.assertTrue(fitting.sampleFits[0].R2>0.6)
+        # Fit a two-compartment model with oral absorption to a set of measurements
+        print "Fitting a two-compartment model ..."
+        protPKPDPOTwoCompartments = self.newProtocol(ProtPKPDTwoCompartments,
+                                                     objLabel='pkpd - ev1 two-compartments',
+                                                     globalSearch=False,
+                                                     bounds='(0.0, 25.0); (0.0, 0.3); (0.0, 0.2); (0.0, 20.0); (0.0, 0.05); (0.0, 20.0)')
+        protPKPDPOTwoCompartments.inputExperiment.set(protFilterTime.outputExperiment)
+        self.launchProtocol(protPKPDPOTwoCompartments)
+        self.assertIsNotNone(protPKPDPOTwoCompartments.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
+        self.assertIsNotNone(protPKPDPOTwoCompartments.outputFitting.fnFitting, "There was a problem with the two-compartmental model ")
+        self.validateFiles('protPKPDPOTwoCompartments', protPKPDPOTwoCompartments)
+        experiment = PKPDExperiment()
+        experiment.load(protPKPDPOTwoCompartments.outputExperiment.fnPKPD)
+        Cl = float(experiment.samples['Individual'].descriptors['Cl'])
+        Clp = float(experiment.samples['Individual'].descriptors['Clp'])
+        V = float(experiment.samples['Individual'].descriptors['V'])
+        Vp = float(experiment.samples['Individual'].descriptors['Vp'])
+        Ka = float(experiment.samples['Individual'].descriptors['Oral_Ka'])
+        tlag = float(experiment.samples['Individual'].descriptors['Oral_tlag'])
+        self.assertTrue(Cl>0.085 and Cl<0.1)
+        self.assertTrue(Clp>0.024 and Clp<0.028)
+        self.assertTrue(V>8 and V<11)
+        self.assertTrue(Vp>10 and Vp<14)
+        self.assertTrue(Ka>0.008 and Ka<0.02)
+        self.assertTrue(tlag>10 and tlag<15)
+        fitting = PKPDFitting()
+        fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
+        self.assertTrue(fitting.sampleFits[0].R2>0.99)
 
+        # Fit a two-compartment model with oral absorption to a set of measurements
+        print "Fitting a two-compartment model ..."
+        protPKPDPOTwoCompartments = self.newProtocol(ProtPKPDTwoCompartments,
+                                                     objLabel='pkpd - ev1 two-compartments',
+                                                     globalSearch=False,
+                                                     bounds='(0.0, 25.0); (0.0, 0.3); (0.0, 0.2); (0.0, 20.0); (0.0, 0.05); (0.0, 20.0)')
+        protPKPDPOTwoCompartments.inputExperiment.set(protChangeTimeUnit.outputExperiment)
+        self.launchProtocol(protPKPDPOTwoCompartments)
+        self.assertIsNotNone(protPKPDPOTwoCompartments.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
+        self.assertIsNotNone(protPKPDPOTwoCompartments.outputFitting.fnFitting, "There was a problem with the two-compartmental model ")
+        self.validateFiles('protPKPDPOTwoCompartments', protPKPDPOTwoCompartments)
+        experiment = PKPDExperiment()
+        experiment.load(protPKPDPOTwoCompartments.outputExperiment.fnPKPD)
+        Cl = float(experiment.samples['Individual'].descriptors['Cl'])
+        Clp = float(experiment.samples['Individual'].descriptors['Clp'])
+        V = float(experiment.samples['Individual'].descriptors['V'])
+        Vp = float(experiment.samples['Individual'].descriptors['Vp'])
+        Ka = float(experiment.samples['Individual'].descriptors['Oral_Ka'])
+        tlag = float(experiment.samples['Individual'].descriptors['Oral_tlag'])
+        self.assertTrue(Cl>0.08 and Cl<0.09)
+        self.assertTrue(Clp>0.01 and Clp<0.03)
+        self.assertTrue(V>15 and V<20)
+        self.assertTrue(Vp>10 and Vp<15)
+        self.assertTrue(Ka>0.01 and Ka<0.03) # Gabrielsson p.590 K01=1.934 h^-1=0.032 min^-1
+        self.assertTrue(tlag>10 and tlag<15) # Gabrielsson p.590, tlag=0.327 h=19.6 min
+        fitting = PKPDFitting()
+        fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
+        self.assertTrue(fitting.sampleFits[0].R2>0.98)
+
+        # Fit a two-compartment model with oral absorption to a set of measurements
+        print "Fitting a PD model ..."
+        protFitPD = self.newProtocol(ProtPKPDGenericFit,
+                                     objLabel='pkpd - fit pd',
+                                     modelType=2,
+                                     bounds='(0.0, 20.0); (0.0, 100.0); (0.0, 10.0)')
+        protFitPD.inputExperiment.set(protChangeTimeUnit.outputExperiment)
+        self.launchProtocol(protFitPD)
+        self.assertIsNotNone(protFitPD.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
+        self.assertIsNotNone(protFitPD.outputFitting.fnFitting, "There was a problem with the two-compartmental model ")
+        self.validateFiles('protFitPD', protFitPD)
+        experiment = PKPDExperiment()
+        experiment.load(protFitPD.outputExperiment.fnPKPD)
+        e0 = float(experiment.samples['Individual'].descriptors['e0'])
+        ec50 = float(experiment.samples['Individual'].descriptors['ec50'])
+        emax = float(experiment.samples['Individual'].descriptors['emax'])
+        self.assertTrue(e0>10 and e0<11)
+        self.assertTrue(ec50>1.2 and ec50<1.4) # Gabrielsson p. 591: 0.78
+        self.assertTrue(emax>88 and emax<92) # Gabrielsson p. 591: 97.2
+        fitting = PKPDFitting()
+        fitting.load(protFitPD.outputFitting.fnFitting)
+        self.assertTrue(fitting.sampleFits[0].R2>0.9)
 
 if __name__ == "__main__":
     unittest.main()

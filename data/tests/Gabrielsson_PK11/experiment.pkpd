@@ -7,9 +7,12 @@ Cp ; mg/L ; numeric[%f] ; measurement ; Plasma concentration
 t ; h ; numeric[%f] ; time ; Time variable
 E ; none ; numeric[%f]; measurement ; Effect in percentage
 
+[VIAS] ================================
+Oral; ev1; tlag; bioavailability=1
+
 [DOSES] ================================
-D0; ev1; bolus t=0.000000 d=400; h; mg; tlag; bioavailability=1.000000
-D1; ev1; repeated_bolus t=120.000000:8.000000:216.000000 d=400; h; mg; tlag=0.000000; bioavailability=1.000000
+D0; via=Oral; bolus; t=0.000000 h; d=400 mg
+D1; via=Oral; repeated_bolus; t=120.000000:8.000000:200.000000 h; d=400 mg
 
 [SAMPLES] ================================
 Individual; dose=D0,D1 
