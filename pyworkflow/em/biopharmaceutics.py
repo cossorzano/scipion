@@ -425,6 +425,7 @@ class PKPDDose:
         if len(timeTokens)!=2:
             raise Exception("Time description is badly formed %s"%timeUnitsString)
         timeString = timeTokens[0].strip().split('=')[1]
+        unitString = timeTokens[1].strip()
         if doseTypeString=="bolus":
             self.t0 = float(timeString)
         elif doseTypeString=="repeated_bolus":
@@ -440,7 +441,6 @@ class PKPDDose:
             raise Exception("Unrecognized dose type %s"%doseTypeString)
 
         # Get time units
-        unitString = timeTokens[1].strip()
         self.tunits = PKPDUnit(unitString)
         if not self.tunits.unit:
             raise Exception("Unrecognized unit: %s"%unitString)
