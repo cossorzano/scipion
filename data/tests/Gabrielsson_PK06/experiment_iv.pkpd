@@ -7,8 +7,11 @@ Cp ; mg/L ; numeric[%f] ; measurement ; Plasma concentration
 Au ; mg ; numeric[%f] ; measurement ; Cumulative amount in urine
 t ; h ; numeric[%f] ; time ; Time variable
 
+[VIAS] ================================
+Intravenous; iv
+
 [DOSES] ================================
-Treatment ; iv; bolus t=0 d=12.5; h; mg
+Treatment; via=Intravenous; bolus; t=0 h; d=12.5 mg
 
 [SAMPLES] ================================
 Individual; dose=Treatment 

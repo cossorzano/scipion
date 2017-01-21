@@ -140,8 +140,8 @@ class TestGabrielssonPK06Workflow(TestWorkflow):
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
         fe = float(experiment.samples['Individual'].descriptors['fe'])
-        Ka = float(experiment.samples['Individual'].descriptors['Treatment_Ka'])
-        tlag = float(experiment.samples['Individual'].descriptors['Treatment_tlag'])
+        Ka = float(experiment.samples['Individual'].descriptors['Oral_Ka'])
+        tlag = float(experiment.samples['Individual'].descriptors['Oral_tlag'])
         self.assertTrue(Cl>0.084 and Cl<0.087) # Gabrielsson, p 548, Cle=6.0257 1/h=0.1004 1/min
         self.assertTrue(V>250 and V<275) # Gabrielsson, p 548, Vd=290.34
         self.assertTrue(fe>0.08 and fe<0.09) # Gabrielsson, p 548, fe=0.0698

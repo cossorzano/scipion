@@ -7,8 +7,11 @@ Cp ; mg/L ; numeric[%f] ; measurement ; Plasma concentration
 Au ; mg ; numeric[%f] ; measurement ; Cumulative amount in urine
 t ; h ; numeric[%f] ; time ; Time variable
 
+[VIAS] ================================
+Oral; ev1; tlag min
+
 [DOSES] ================================
-Treatment ; ev1; bolus t=0 d=25; h; mg; tlag
+Treatment ; via=Oral; bolus; t=0 h; d=25 mg
 
 [SAMPLES] ================================
 Individual; dose=Treatment 
