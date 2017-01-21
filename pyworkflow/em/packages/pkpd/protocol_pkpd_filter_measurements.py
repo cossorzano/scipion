@@ -84,6 +84,7 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
         filteredExperiment.variables = copy.copy(experiment.variables)
         filteredExperiment.samples = {}
         filteredExperiment.doses = {}
+        filteredExperiment.vias = {}
 
         usedDoses = []
         for sampleKey, sample in experiment.samples.iteritems():
@@ -167,6 +168,9 @@ class ProtPKPDFilterMeasurements(ProtPKPD):
         if len(usedDoses)>0:
             for doseName in usedDoses:
                 filteredExperiment.doses[doseName] = copy.copy(experiment.doses[doseName])
+                viaName=experiment.doses[doseName].via.viaName
+                if not viaName in filteredExperiment.vias:
+                    filteredExperiment.vias[viaName] = copy.copy(experiment.vias[viaName])
 
         self.writeExperiment(filteredExperiment,self._getPath("experiment.pkpd"))
         self.experiment = filteredExperiment
