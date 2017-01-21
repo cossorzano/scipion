@@ -6,8 +6,11 @@ title = Single dose
 Cp ; ug/L ; numeric[%f] ; measurement ; Plasma concentration
 t ; h ; numeric[%f] ; time ; Time variable
 
+[VIAS] ================================
+Intravenous; iv
+
 [DOSES] ================================
-Bolus ; iv; bolus t=0.000000 d=100; min; ug
+Bolus ; via=Intravenous; bolus; t=0.000000 min; d=100 ug
 
 [SAMPLES] ================================
 Individual; dose=Bolus 
