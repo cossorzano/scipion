@@ -68,8 +68,7 @@ class DosesTreeProvider(TreeProvider):
         self.experiment = experiment
 
     def getColumns(self):
-        return [('Name', 60), ('Via',40), ('Dose', 100), ('Amount', 80),
-                ('Tlag', 60), ('Bioavailability',60)]
+        return [('Name', 60), ('Via',40), ('Dose', 100), ('Amount', 80)]
 
     def getObjects(self):
         sortedDoses = []
@@ -79,23 +78,41 @@ class DosesTreeProvider(TreeProvider):
 
     def getObjectInfo(self, obj):
         key = obj.doseName
-        if 'tlag' in obj.via.paramsToOptimize:
-            tlagStr="To be optimized"
-        else:
-            tlagStr=str(obj.via.tlag)+" "+obj.via.tunits._toString()
-        if 'bioavailability' in obj.via.paramsToOptimize:
-            bioavailabilityStr="To be optimized"
-        else:
-            bioavailabilityStr=str(obj.via.bioavailability)
         return {'key': key, 'text': key,
-                'values': (obj.via.via,
+                'values': (obj.via.viaName,
                            obj.getDoseString(),
-                           obj.doseAmount+" "+obj.getDUnitsString(),
-                           tlagStr,
-                           bioavailabilityStr
+                           obj.doseAmount+" "+obj.getDUnitsString()
                           )
                 }
 
+class ViasTreeProvider(TreeProvider):
+    def __init__(self, experiment):
+        self.experiment = experiment
+
+    def getColumns(self):
+        return [('Name', 60), ('Tlag', 60), ('Bioavailability',60)]
+
+    def getObjects(self):
+        sortedVias = []
+        for key in sorted(self.experiment.vias.keys()):
+            sortedVias.append(self.experiment.vias[key])
+        return sortedVias
+
+    def getObjectInfo(self, obj):
+        key = obj.viaName
+        if 'tlag' in obj.paramsToOptimize:
+            tlagStr="To be optimized"
+        else:
+            tlagStr=str(obj.tlag)+" "+obj.tunits._toString()
+        if 'bioavailability' in obj.paramsToOptimize:
+            bioavailabilityStr="To be optimized"
+        else:
+            bioavailabilityStr=str(obj.bioavailability)
+        return {'key': key, 'text': key,
+                'values': (tlagStr,
+                           bioavailabilityStr
+                          )
+                }
 
 class SamplesTreeProvider(TreeProvider):
     FIT_COLUMNS = ['R2', 'R2adj', 'AIC', 'AICc', 'BIC']
@@ -281,6 +298,9 @@ class ExperimentWindow(gui.Window):
 
         lfVars = addTab('Variables')
         self.varsTree = self._addBoundTree(lfVars, VariablesTreeProvider, 5)
+
+        lfVias = addTab('Vias')
+        self.viasTree = self._addBoundTree(lfVias, ViasTreeProvider, 5)
 
         lfDoses = addTab('Doses')
         self.dosesTree = self._addBoundTree(lfDoses, DosesTreeProvider, 5)
