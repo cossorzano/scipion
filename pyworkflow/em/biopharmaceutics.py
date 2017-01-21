@@ -251,9 +251,11 @@ class PKPDVia:
                 elif optionalVar=="bioavailability":
                     self.bioavailability=float(optionalTokens[1].strip())
             else:
+                optionalTokens=optionalTokens.split()[0]
                 self.paramsToOptimize.append(optionalTokens)
                 if optionalTokens=="tlag":
                     self.paramsUnitsToOptimize.append(PKPDUnit.UNIT_TIME_MIN)
+                    self.tunits = PKPDUnit("min")
                 elif optionalTokens=="bioavailability":
                     self.paramsUnitsToOptimize.append(PKPDUnit.UNIT_NONE)
             currentToken+=1
@@ -532,8 +534,8 @@ class PKPDDose:
         else:
             if self.doseType!=PKPDDose.TYPE_INFUSION:
                 self.via.viaProfile.Amax = self.via.bioavailability*self.doseAmount
-                doseAmount += self.viaProfile.getAg(t0-self.t0-self.via.tlag)-\
-                              self.viaProfile.getAg(t0-self.t0-self.via.tlag+dt)
+                doseAmount += self.via.viaProfile.getAg(t0-self.t0-self.via.tlag)-\
+                              self.via.viaProfile.getAg(t0-self.t0-self.via.tlag+dt)
             else:
                 raise Exception("getAmountReleasedAt not implemented for non-iv infusion")
         if doseAmount<0:
@@ -629,10 +631,10 @@ class DrugSource:
         if len(self.parameterUnits)>0:
             return self.parameterUnits
         else:
-            prmSource = self.getParameterNames()
-            retval = [None]*len(prmSource)
+            retval = []
             for via,_ in self.vias:
                 retval+=via.calculateParameterUnits(sample)
+            self.parameterUnits=retval
             return retval
 
     def areParametersSignificant(self, lowerBound, upperBound):
