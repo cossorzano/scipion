@@ -129,6 +129,9 @@ class ProtPKPDFitBase(ProtPKPD):
     def getParameterNames(self):
         return self.model.getParameterNames()
 
+    def getNumberOfParameters(self):
+        return len(self.getParameterNames())
+
     def setParameters(self,prm):
         self.model.setParameters(prm)
 
