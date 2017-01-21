@@ -504,7 +504,7 @@ class PKPDExperiment(EMObject):
 
             elif state==PKPDExperiment.READING_SAMPLES:
                 tokens = line.split(';')
-                if len(tokens)!=2:
+                if len(tokens)<2:
                     print("Skipping sample: ",line)
                     continue
                 samplename = tokens[0].strip()

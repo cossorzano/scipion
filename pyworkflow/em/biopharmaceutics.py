@@ -27,6 +27,7 @@
 Biopharmaceutics: Drug sources and how they dissolve
 """
 import copy
+from itertools import izip
 import math
 import numpy as np
 from pyworkflow.em.pkpd_units import PKPDUnit
@@ -272,14 +273,16 @@ class PKPDVia:
     def prepare(self):
         if self.via=="iv":
             self.viaProfile=None
-        elif self.via=="ev0":
-            self.viaProfile=BiopharmaceuticsModelOrder0()
-        elif self.via=="ev01":
-            self.viaProfile=BiopharmaceuticsModelOrder01()
-        elif self.via=="ev1":
-            self.viaProfile=BiopharmaceuticsModelOrder1()
-        elif self.via=="evFractional":
-            self.viaProfile=BiopharmaceuticsModelOrderFractional()
+        else:
+            if self.viaProfile==None:
+                if self.via=="ev0":
+                    self.viaProfile=BiopharmaceuticsModelOrder0()
+                elif self.via=="ev01":
+                    self.viaProfile=BiopharmaceuticsModelOrder01()
+                elif self.via=="ev1":
+                    self.viaProfile=BiopharmaceuticsModelOrder1()
+                elif self.via=="evFractional":
+                    self.viaProfile=BiopharmaceuticsModelOrderFractional()
 
     def changeTimeUnitsToMinutes(self):
         if self.tunits.unit==PKPDUnit.UNIT_TIME_MIN:
@@ -312,7 +315,7 @@ class PKPDVia:
         names=copy.copy(self.paramsToOptimize)
         if self.via != "iv":
             names+=self.viaProfile.getParameterNames()
-        return names
+        return [self.viaName+"_"+x for x in names]
 
     def getNumberOfParameters(self):
         return len(self.getParameterNames())
@@ -496,6 +499,9 @@ class PKPDDose:
         else:
             raise Exception("Time for doses must be hours or minutes")
 
+    def prepare(self):
+        self.via.prepare()
+
     def getDoseAt(self,t0,dt=0.5):
         """Dose between t0<=t<t0+dt, t0 is in minutes"""
         t0-=self.via.tlag
@@ -562,10 +568,16 @@ def createDeltaDose(doseAmount,t=0,dunits="mg",via="iv"):
 class DrugSource:
     def __init__(self):
         self.parsedDoseList = []
+        self.parameterNames = []
+        self.parameterUnits = []
+        self.vias = []
 
     def setDoses(self, parsedDoseList, t0, tF):
         self.originalDoseList = parsedDoseList
         self.parsedDoseList = []
+        collectedVias = []
+        self.parameterNames = []
+        self.vias = []
         for dose in parsedDoseList:
             if dose.doseType != PKPDDose.TYPE_REPEATED_BOLUS:
                 self.parsedDoseList.append(dose)
@@ -577,6 +589,12 @@ class DrugSource:
                         newDose.t0 = t
                         self.parsedDoseList.append(newDose)
 
+            if not dose.via.viaName in collectedVias:
+                collectedVias.append(dose.via.viaName)
+                viaParameterNames = dose.via.getParameterNames()
+                self.parameterNames += viaParameterNames
+                self.vias.append((dose.via,len(viaParameterNames)))
+
     def getAmountReleasedAt(self,t0,dt=0.5):
         doseAmount = 0.0
         for dose in self.parsedDoseList:
@@ -585,41 +603,45 @@ class DrugSource:
 
     def getEquation(self):
         retval = ""
-        for dose in self.originalDoseList:
-            retval+=dose.getEquation()+" "
+        for via,_ in self.vias:
+            retval+=via.getEquation()+" "
         return retval.strip()
 
     def getModelEquation(self):
         retval = ""
-        for dose in self.originalDoseList:
-            retval+=dose.getModelEquation()+" "
+        for via,_ in self.vias:
+            retval+=via.getModelEquation()+" "
         return retval.strip()
 
     def getDescription(self):
         retval = ""
-        for dose in self.originalDoseList:
-            retval+=dose.getDescription()+" "
+        for via,_ in self.vias:
+            retval+=via.getDescription()+" "
         return retval.strip()
 
     def getParameterNames(self):
-        retval = []
-        for dose in self.originalDoseList:
-            retval+=dose.getParameterNames()
-        return retval
+        return self.parameterNames
 
     def getNumberOfParameters(self):
         return len(self.getParameterNames())
 
     def calculateParameterUnits(self,sample):
-        retval = []
-        for dose in self.originalDoseList:
-            retval+=dose.calculateParameterUnits(sample)
-        return retval
+        if len(self.parameterUnits)>0:
+            return self.parameterUnits
+        else:
+            prmSource = self.getParameterNames()
+            retval = [None]*len(prmSource)
+            for via,_ in self.vias:
+                retval+=via.calculateParameterUnits(sample)
+            return retval
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval = []
-        for dose in self.originalDoseList:
-            retval+=dose.areParametersSignificant(lowerBound, upperBound)
+        currentToken=0
+        for via, viaPrmNo in self.vias:
+            retval+=via.areParametersSignificant(lowerBound[currentToken:currentToken+viaPrmNo],
+                                                 upperBound[currentToken:currentToken+viaPrmNo])
+            currentToken+=viaPrmNo
         if retval:
             return retval
         else:
@@ -628,15 +650,12 @@ class DrugSource:
     def areParametersValid(self, p):
         retval = True
         currentToken=0
-        for dose in self.originalDoseList:
-            retval=retval and dose.areParametersValid(p[currentToken:])
-            currentToken+=dose.getNumberOfParameters()
+        for via,viaPrmNo in self.vias:
+            retval=retval and via.areParametersValid(p[currentToken:currentToken+viaPrmNo])
+            currentToken+=viaPrmNo
 
     def setParameters(self, p):
         currentToken=0
-        for doseOrig in self.originalDoseList:
-            Ndose=doseOrig.getNumberOfParameters()
-            for dose in self.parsedDoseList:
-                if dose.doseName==doseOrig.doseName:
-                    dose.setParameters(p[currentToken:currentToken+Ndose])
-            currentToken+=Ndose
+        for via,viaPrmNo in self.vias:
+            via.setParameters(p[currentToken:currentToken+viaPrmNo])
+            currentToken+=viaPrmNo
