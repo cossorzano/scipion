@@ -141,7 +141,7 @@ class TestGabrielssonPK11Workflow(TestWorkflow):
         experiment = PKPDExperiment()
         experiment.load(protFitPD.outputExperiment.fnPKPD)
         e0 = float(experiment.samples['Individual'].descriptors['e0'])
-        ec50 = float(experiment.samples['Individual'].descriptors['ec50'])
+        ec50 = float(experiment.samples['Individual'].descriptors['eC50'])
         emax = float(experiment.samples['Individual'].descriptors['emax'])
         self.assertTrue(e0>10 and e0<11)
         self.assertTrue(ec50>1.2 and ec50<1.4) # Gabrielsson p. 591: 0.78
