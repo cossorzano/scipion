@@ -31,6 +31,7 @@ from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from protocol_pkpd_fit_base import ProtPKPDFitBase
 from pd_models import *
 
+# TESTED in test_workflow_gabrielsson_pk11.py
 
 class ProtPKPDGenericFit(ProtPKPDFitBase):
     """ Fit a generic model. The observed measurement is modelled as Y=f(X).\n

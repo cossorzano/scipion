@@ -32,6 +32,7 @@ from pyworkflow.em.data import PKPDModelBase2, PKPDExperiment, PKPDFitting, PKPD
     flattenArray, PKPDSampleFit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
+# TESTED in test_workflow_gabrielsson_pk10.py
 
 class ProtPKPDODETwoVias(ProtPKPD,PKPDModelBase2):
     """ Simultaneous fit of data obtained by different vias, e.g. IV and PO, but it can be any two vias and any two
