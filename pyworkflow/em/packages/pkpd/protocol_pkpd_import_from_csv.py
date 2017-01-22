@@ -29,7 +29,7 @@ import sys
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD, addDoseToForm
-from pyworkflow.em.data import PKPDExperiment, PKPDVariable, PKPDDose, PKPDSample
+from pyworkflow.em.data import PKPDExperiment, PKPDVariable, PKPDDose, PKPDVia, PKPDSample
 from pyworkflow.utils import copyFile
 
 
@@ -61,6 +61,15 @@ class ProtPKPDImportFromText(ProtPKPD):
                            "Cp ; ug/mL ; numeric ; measurement ; plasma concentration\n"\
                            "weight ; g ; numeric; label ; weight of the animal\n"\
                            "sex ; none ; text ; label ; sex of the animal\n")
+        form.addParam('vias', params.TextParam, height=8, width=80, label="Vias",
+                      help="[ViaName]; [ViaType]; [tlag]; [bioavailability]"\
+                       "Valid ViaTypes are: iv (intravenous), ev0 (extra-vascular order 0), ev1 (extra-vascular order 1), \n"\
+                       "     ev01 (extra-vascular first order 0 and then order 1), evFractional (extra-vascular fractional order)\n"\
+                       "Optional parameters are tlag (e.g. tlag=0)\n"\
+                       "   and bioavailability (e.g. bioavailability=0.8)\n"\
+                       "Examples:\n"\
+                       "Intravenous; iv\n"\
+                       "Oral; ev1; tlag; bioavailability=1\n")
         addDoseToForm(form)
         form.addParam('dosesToSamples', params.TextParam, height=5, width=70, label="Assign doses to samples", default="",
                       help="Structure: [Sample Name] ; [DoseName1,DoseName2,...] \n"\
@@ -99,6 +108,16 @@ class ProtPKPDImportFromText(ProtPKPD):
             self.experiment.variables[varname] = PKPDVariable()
             self.experiment.variables[varname].parseTokens(tokens)
 
+        # Read vias
+        for line in self.vias.get().replace('\n',';;').split(';;'):
+            tokens = line.split(';')
+            if len(tokens)<2:
+                print("Skipping via: ",line)
+                continue
+            vianame = tokens[0].strip()
+            self.experiment.vias[vianame] = PKPDVia()
+            self.experiment.vias[vianame].parseTokens(tokens)
+
         # Read the doses
         for line in self.doses.get().replace('\n',';;').split(';;'):
             tokens = line.split(';')
@@ -107,7 +126,7 @@ class ProtPKPDImportFromText(ProtPKPD):
                 continue
             dosename = tokens[0].strip()
             self.experiment.doses[dosename] = PKPDDose()
-            self.experiment.doses[dosename].parseTokens(tokens)
+            self.experiment.doses[dosename].parseTokens(tokens,self.experiment.vias)
 
         # Read the sample doses
         for line in self.dosesToSamples.get().replace('\n',';;').split(';;'):
