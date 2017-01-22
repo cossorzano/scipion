@@ -90,16 +90,13 @@ class ProtPKPD(EMProtocol):
 
 def addDoseToForm(form):
     form.addParam('doses', params.TextParam, height=5, width=70, label="Doses", default="",
-                  help="Structure: [Dose Name] ; [Via] ; [Description] ; [Units] ; [Optional]\n"\
+                  help="Structure: [Dose Name] ; [via=ViaName] ; [doseType] ; [time description] ; [dose description]\n"\
                        "The dose name should have no space or special character\n"\
-                       "Valid vias are: iv (intravenous), ev0 (extra-vascular order 0), ev1 (extra-vascular order 1), \n"\
-                       "     ev01 (extra-vascular first order 0 and then order 1), evFractional (extra-vascular fractional order)\n"\
+                       "The viaName must have been declared in the vias section"
                        "Valid units are: h, mg, ug, ug/mL, ...\n"\
-                       "Optional parameters are tlag (e.g. tlag=0)\n"\
-                       "   and bioavailability (e.g. bioavailability=0.8)\n"\
                        "The description is either a bolus or an infusion as shown in the examples\n"\
-                       "\nIt is important that there are two semicolons.\n"\
+                       "For infusion the dose must be the amount per unit time, e.g., mg/min\n"\
                        "Examples:\n"\
-                       "Infusion0 ; infusion t=0.500000...0.750000 d=60*weight/1000; h; mg\n"\
-                       "Bolus1 ; bolus t=2.000000 d=100; h; mg\n"\
-                       "Treatment ; repeated_bolus t=0:8:48 d=100; h; mg")
+                       "Infusion0 ; via=Intravenous; infusion; t=0.500000:0.750000 h; d=60*weight/1000 mg\n"\
+                       "Bolus1 ; via=Oral; bolus; t=2.000000 h; d=100 mg\n"\
+                       "Treatment ; via=Oral; repeated_bolus; t=0:8:48 h; d=100 mg")
