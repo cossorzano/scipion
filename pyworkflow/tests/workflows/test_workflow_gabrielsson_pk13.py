@@ -31,15 +31,15 @@ from pyworkflow.tests import *
 from pyworkflow.em.packages.pkpd import *
 from test_workflow import TestWorkflow
 
-class TestGabrielssonPK12Workflow(TestWorkflow):
+class TestGabrielssonPK13Workflow(TestWorkflow):
 
     @classmethod
     def setUpClass(cls):
         tests.setupTestProject(cls)
-        cls.dataset = DataSet.getDataSet('Gabrielsson_PK12')
+        cls.dataset = DataSet.getDataSet('Gabrielsson_PK13')
         cls.exptFn = cls.dataset.getFile('experiment')
 
-    def testGabrielssonPK12Workflow(self):
+    def testGabrielssonPK13Workflow(self):
         # Import an experiment
         print "Import Experiment"
         protImport = self.newProtocol(ProtImportExperiment,
@@ -49,23 +49,13 @@ class TestGabrielssonPK12Workflow(TestWorkflow):
         self.assertIsNotNone(protImport.outputExperiment.fnPKPD, "There was a problem with the import")
         self.validateFiles('protImport', protImport)
 
-        # # Change the concentration to mg/L
-        print "Change Units"
-        protChangeConcUnit = self.newProtocol(ProtPKPDChangeUnits,
-                                              objLabel='pkpd - change units (Cp to mg/L)',
-                                              labelToChange='Cp', newUnitsCategory=4, newUnitsCategoryConc=1)
-        protChangeConcUnit.inputExperiment.set(protImport.outputExperiment)
-        self.launchProtocol(protChangeConcUnit)
-        self.assertIsNotNone(protChangeConcUnit.outputExperiment.fnPKPD, "There was a problem with changing units")
-        self.validateFiles('protChangeUnits', protChangeConcUnit)
-
         # Fit a two-compartment model with oral absorption to a set of measurements
         print "Fitting a two-compartment model ..."
         protPKPDPOTwoCompartments = self.newProtocol(ProtPKPDTwoCompartments,
-                                                     objLabel='pkpd - ev1 two-compartments',
+                                                     objLabel='pkpd - iv two-compartments',
                                                      globalSearch=False,
-                                                     bounds='(0.0, 5.0); (0.0, 0.15); (0.0, 0.2); (0.0, 0.02); (0.0, 1.0); (0.0, 0.02); (0.0, 1.0)')
-        protPKPDPOTwoCompartments.inputExperiment.set(protChangeConcUnit.outputExperiment)
+                                                     bounds='(0.0, 1.0); (1, 5); (0.0, 0.5); (0, 4)')
+        protPKPDPOTwoCompartments.inputExperiment.set(protImport.outputExperiment)
         self.launchProtocol(protPKPDPOTwoCompartments)
         self.assertIsNotNone(protPKPDPOTwoCompartments.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
         self.assertIsNotNone(protPKPDPOTwoCompartments.outputFitting.fnFitting, "There was a problem with the two-compartmental model ")
@@ -76,18 +66,13 @@ class TestGabrielssonPK12Workflow(TestWorkflow):
         Clp = float(experiment.samples['Individual'].descriptors['Clp'])
         V = float(experiment.samples['Individual'].descriptors['V'])
         Vp = float(experiment.samples['Individual'].descriptors['Vp'])
-        Ka = float(experiment.samples['Individual'].descriptors['Oral_Ka'])
-        tlag = float(experiment.samples['Individual'].descriptors['Oral_tlag'])
-        bioavailability = float(experiment.samples['Individual'].descriptors['Oral_bioavailability'])
-        self.assertTrue(Cl>0.0125 and Cl<0.015) # Gabrielsson p. 598: Cl=0.0145
-        self.assertTrue(Clp>0.008 and Clp<0.01) # Gabrielsson p. 598: Cld=0.0208
-        self.assertTrue(V>0.21 and V<0.23) # Gabrielsson p. 598: Vc=0.120
-        self.assertTrue(Vp>0.28 and Vp<0.32) # Gabrielsson p. 598: Vt=0.2759
-        self.assertTrue(Ka>0.09 and Ka<0.1) # Gabrielsson p. 598: Ka=0.103
-        self.assertTrue(tlag>0 and tlag<5) # Gabrielsson p. 598: tlag=4.67
+        self.assertTrue(Cl>0.33 and Cl<0.37) # Gabrielsson p. 603: Cl=0.3448
+        self.assertTrue(Clp>0.15 and Clp<0.17) # Gabrielsson p. 603: Cld=0.168
+        self.assertTrue(V>3.1 and V<3.3) # Gabrielsson p. 603: Vc=2.933
+        self.assertTrue(Vp>2 and Vp<2.2) # Gabrielsson p. 603: Vt=2.16
         fitting = PKPDFitting()
         fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
-        self.assertTrue(fitting.sampleFits[0].R2>0.98)
+        self.assertTrue(fitting.sampleFits[0].R2>0.99)
 
 
 if __name__ == "__main__":
