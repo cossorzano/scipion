@@ -49,10 +49,10 @@ are independent, which are not. Use Bootstrap estimates instead.\n
                                                               "Richards","Morgan-Mercer-Flodin","Weibull"],
                       label="Generic model", default=0,
                       help='Linear: Y=e0+s*X\nLog-linear: Y=m*log(X-X0)\nSaturated: Y=e0+(emax*X/(eC50+X))\n'\
-                            'Sigmoid: Y=e0-(emax*(X**h)/((eC50**h)+(X**h)))\nGompertz: Y=a*exp(-exp(b-g*X))\n'\
-                            'Logistic 1: Y=a/(1+exp(b-g*X))\nLogistic 2: Y=1/(a+exp(b-g*X))\nLogistic 3: Y=a/(1+b*exp(-g*X))\n'\
-                            'Logistic 4: Y=1/(a+b*exp(-g*X))\nRichards: Y=a/((1+exp(b-g*X))^(1/d))\n'\
-                            'Morgan-Mercer-Flodin: Y=(b*g+a*(X^d))/(g+(X^d))\nWeibull: Y=a-b*exp(-g*(X^d))\n')
+                            'Sigmoid: Y=e0+(emax*(X**h)/((eC50**h)+(X**h)))\nGompertz: Y=e0+a*exp(-exp(b-g*X))\n'\
+                            'Logistic 1: Y=e0+(a/(1+exp(b-g*X)))\nLogistic 2: Y=e0+(1/(a+exp(b-g*X)))\nLogistic 3: Y=e0+(a/(1+b*exp(-g*X)))\n'\
+                            'Logistic 4: Y=e0+(1/(a+b*exp(-g*X)))\nRichards: Y=e0+(a/((1+exp(b-g*X))^(1/d)))\n'\
+                            'Morgan-Mercer-Flodin: Y=e0+((b*g+a*(X^d))/(g+(X^d)))\nWeibull: Y=a-b*exp(-g*(X^d))\n')
         form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic","Relative"], label="Fit mode", default=1,
                       help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2\n'\
                            "Relative: sum ((Cobserved-Cpredicted)/Cobserved)^2")
@@ -62,14 +62,14 @@ are independent, which are not. Use Bootstrap estimates instead.\n
                            'Log-linear: m;X0\n'\
                            'Saturated: e0;emax;eC50\n'\
                            'Sigmoid: e0;emax;eC50;h\n'\
-                           'Gompertz: a;b;g\n'\
-                           'Logistic 1: a;b;g\n'\
-                           'Logistic 2: a;b;g\n'\
-                           'Logistic 3: a;b;g\n'\
-                           'Logistic 4: a;b;g\n'\
-                           'Richards: a;b;g;d\n'\
-                           'Morgan-Mercer-Flodin: b;g;a;d\n'\
-                           'Richards: a;b;g;d\n')
+                           'Gompertz: e0;a;b;g\n'\
+                           'Logistic 1: e0;a;b;g\n'\
+                           'Logistic 2: e0;a;b;g\n'\
+                           'Logistic 3: e0;a;b;g\n'\
+                           'Logistic 4: e0;a;b;g\n'\
+                           'Richards: e0;a;b;g;d\n'\
+                           'Morgan-Mercer-Flodin: e0;b;g;a;d\n'\
+                           'Weibull: a;b;g;d\n')
         form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
         form.addParam('reportX', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,

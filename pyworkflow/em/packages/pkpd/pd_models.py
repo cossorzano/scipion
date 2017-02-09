@@ -41,6 +41,7 @@ class PDModel(PKPDModel):
 class PDGenericModel(PDModel):
     pass
 
+
 class PDLinear(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x==None:
@@ -98,11 +99,7 @@ class PDLinear(PDGenericModel):
         return True
 
 
-
 class PDLogLinear(PDGenericModel):
-
-    # voy a ultilizar la formula E = m*log(C(t) + c0) como  E = m*log(C(t) + 10^(e0/m) )
-    # suponemos que m esta dentro de parameters en parameters[0]
 
     def forwardModel(self, parameters, x=None):
         if x==None:
@@ -130,7 +127,7 @@ class PDLogLinear(PDGenericModel):
 
             self.bounds = []
             self.bounds.append((0.1 * m, 10 * m))
-            self.bounds.append((-9 * C0, 11 * C0)) # C0 +- 10* C0
+            self.bounds.append((-9 * C0, 11 * C0))
 
     def printSetup(self):
         print ("Model: %s " %self.getModelEquation())
@@ -180,7 +177,7 @@ class PDSaturated(PDGenericModel):
         return self.yPredicted
 
     def getDescription(self):
-        return "Saturated (%s)"%self.__class__.__name__ #no se reconoce
+        return "Saturated (%s)"%self.__class__.__name__
 
     def prepare(self):
         if self.bounds == None:
@@ -278,7 +275,7 @@ class PDSigmoid(PDGenericModel):
         return ['e0', 'emax', 'eC50', 'h']
 
     def getParameterDescriptions(self):
-        return ['Automatically fitted model of the form  Y = e0 - ( emax*(X**h) / ( (eC50**h) + (X**h)) )'] * self.getNumberOfParameters()
+        return ['Automatically fitted model of the form  Y = e0 + ( emax*(X**h) / ( (eC50**h) + (X**h)) )'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self,sample):
         yunits = self.experiment.getVarUnits(self.yName)
@@ -303,12 +300,14 @@ class PDGompertz(PDGenericModel):
         if x==None:
             x = self.x
         self.yPredicted = np.zeros(x.shape[0])
-        a = parameters[0]
-        b = parameters[1]
-        g = parameters[2]
+
+        e0 = parameters[0]
+        a = parameters[1]
+        b = parameters[2]
+        g = parameters[3]
 
         d = np.exp(b - (g*x))
-        self.yPredicted = a * np.exp(-d)
+        self.yPredicted = e0 + a * np.exp(-d)
 
         return self.yPredicted
 
@@ -318,21 +317,21 @@ class PDGompertz(PDGenericModel):
 
     def prepare(self):
         if self.bounds==None:
-            #self.y and self.x must be different to 0
+            e0 = np.min(self.y)
 
-            emax = np.max(self.y)
+            emax = np.max(self.y - e0 )
             a=emax
 
-            emin = 0.9*np.min(self.y)+0.1*emax
-
-            b = math.log(-math.log(emin/emax))
+            emin = 0.9*e0+0.1*(emax+e0)
+            b = math.log(-math.log((emin-e0)/emax))
             g = (b + 5) / np.max(self.x)
 
 
             print("First estimate of Gompertz term: ")
-            print("Y = (%f) *exp(-exp((%f) - (%f) * X))" %(a,b,g))
+            print("Y = (%f) + (%f) *exp(-exp((%f) - (%f) * X))" %(e0,a,b,g))
 
             self.bounds = []
+            self.bounds.append((min(0.1*e0, 10*e0),max(0.1*e0,10*e0)))
             self.bounds.append((min(0.1*a, 10*a),max(0.1*a,10*a)))
             self.bounds.append((min(0.1*b, 10*b),max(0.1*b,10*b)))
             self.bounds.append((min(0.1*g, 10*g),max(0.1*g,10*g)))
@@ -342,19 +341,19 @@ class PDGompertz(PDGenericModel):
         print("Bounds: " + str(self.bounds))
 
     def getModelEquation(self):
-        return "Y = a*exp(-exp(b-g*X))"
+        return "Y = e0 + a*exp(-exp(b-g*X))"
 
     def getEquation(self):
-        toPrint = "Y = (%f)*exp(-exp((%f)-(%f)*X))"%(self.parameters[0], self.parameters[1], self.parameters[2])
+        toPrint = "Y = (%f) + (%f)*exp(-exp((%f)-(%f)*X))"%(self.parameters[0], self.parameters[1], self.parameters[2], self.parameters[3])
         return toPrint
 
     def getParameterNames(self):
-        return ['a', 'b', 'g']
+        return ['e0','a', 'b', 'g']
 
     def getParameterDescriptions(self):
-        return ['Automatically fitted model of the form Y=a*exp(-exp(b-g*X))']*self.getNumberOfParameters()
+        return ['Automatically fitted model of the form Y=e0+a*exp(-exp(b-g*X))']*self.getNumberOfParameters()
 
-    def calculateParameterUnits(self,sample):
+    def calculateParameterUnits(self, sample):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
         self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
@@ -365,6 +364,7 @@ class PDGompertz(PDGenericModel):
         retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
         retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
         retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
         return retval
 
     def areParametersValid(self, p):
@@ -376,13 +376,14 @@ class PDLogistic1(PDGenericModel):
         if x == None:
             x = self.x
         self.yPredicted = np.zeros(x.shape[0])
-        a = parameters[0]
-        b = parameters[1]
-        g = parameters[2]
+        e0 = parameters[0]
+        a = parameters[1]
+        b = parameters[2]
+        g = parameters[3]
 
         d = np.exp(b - (g * x))
 
-        self.yPredicted = a / (1 + d)
+        self.yPredicted = e0 + (a / (1 + d))
 
         return self.yPredicted
 
@@ -391,25 +392,24 @@ class PDLogistic1(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
+            e0 = np.min(self.y)
+            emax = np.max(self.y - e0)
+            a = emax
 
-            a = np.max(self.y)
+            emin = 0.9 * e0 + 0.1 * (emax + e0)
 
-            if np.min(self.y) == 0:
-                y = np.min(self.y) + 0.1
-
-            else: y = np.min(self.y)
-
-            b = math.log((a/y)-1)
-            g = (b+3)/np.max(self.x)
-
+            b = math.log(emax/(emin-e0) - 1)
+            g = (b + 5)/np.max(self.x)
 
             print("First estimate of Logistic 1 term: ")
-            print("Y = (%f) / (1+exp((%f) - (%f) * X))" % (a,b,g))
+            print("Y = (%f) + ( (%f) / (1+exp((%f) - (%f) * X)) )" % (e0,a,b,g))
 
             self.bounds = []
-            self.bounds.append((0.1 * a, 10 * a))
-            self.bounds.append((0.1 * b, 10 * b))
-            self.bounds.append((0.1 * g, 10 * g))
+
+            self.bounds.append((min(0.1 * e0, 10 * e0), max(0.1 * e0, 10 * e0)))
+            self.bounds.append((min(0.1 * a, 10 * a), max(0.1 * a, 10 * a)))
+            self.bounds.append((min(0.1 * b, 10 * b), max(0.1 * b, 10 * b)))
+            self.bounds.append((min(0.1 * g, 10 * g), max(0.1 * g, 10 * g)))
 
 
     def printSetup(self):
@@ -417,20 +417,23 @@ class PDLogistic1(PDGenericModel):
         print("Bounds: " + str(self.bounds))
 
     def getModelEquation(self):
-        return "Y = a/(1+exp(b-g*X))"
+        return "Y = e0 + a/(1+exp(b-g*X))"
 
     def getEquation(self):
-        toPrint = "Y = (%f)/(1+exp((%f)-(%f)*X))" % (self.parameters[0], self.parameters[1], self.parameters[2])
+        toPrint = "Y = (%f) + ( (%f)/(1+exp((%f)-(%f)*X)) )" % (self.parameters[0], self.parameters[1],
+                                                            self.parameters[2], self.parameters[3])
         return toPrint
 
     def getParameterNames(self):
-        return ['a', 'b', 'g']
+        return ['e0', 'a', 'b', 'g']
 
     def getParameterDescriptions(self):
-        return ['Automatically fitted model of the form Y=a/(1+exp(b-g*X))'] * self.getNumberOfParameters()
+        return ['Automatically fitted model of the form Y=e0 + a/(1+exp(b-g*X))'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self, sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -438,6 +441,7 @@ class PDLogistic1(PDGenericModel):
         retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
         retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
         retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
         return retval
 
     def areParametersValid(self, p):
@@ -449,13 +453,14 @@ class PDLogistic2(PDGenericModel):
         if x == None:
             x = self.x
         self.yPredicted = np.zeros(x.shape[0])
-        a = parameters[0]
-        b = parameters[1]
-        g = parameters[2]
+        e0 = parameters[0]
+        a = parameters[1]
+        b = parameters[2]
+        g = parameters[3]
 
         d = np.exp(b - (g * x))
 
-        self.yPredicted = 1 / (a + d)
+        self.yPredicted =  e0 + (1 / (a + d))
 
         return self.yPredicted
 
@@ -464,45 +469,48 @@ class PDLogistic2(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
+            e0 = np.min(self.y)
+            emax = np.max(self.y - e0)
 
-            a = (1 / np.max(self.y))  #a tiene que ser +- 0
+            a = (1 / emax)
 
-            if np.min(self.y) == 0:
-                y = np.min(self.y) + 0.1
+            emin = 0.9*e0 + 0.1*(emax + e0)
 
-            else:
-                y = np.min(self.y)
-
-            b = math.log((1 / y) - a)
-            g = (b + 3) / np.max(self.x)
+            b = math.log((1/(emin-e0)) - a)
+            g = (b + 5) / np.max(self.x)
 
             print("First estimate of Logistic 2 term: ")
-            print("Y = 1 / ((%f) + exp((%f) - (%f) * X))" % (a, b, g))
+            print("Y = (%f) + ( 1 / ((%f) + exp((%f) - (%f) * X)) )" % (e0, a, b, g))
+
 
             self.bounds = []
-            self.bounds.append((0.01 * a, 10 * a))
-            self.bounds.append((0.1 * b, 10 * b))
-            self.bounds.append((0.1 * g, 10 * g))
+            self.bounds.append((min(0.1 * e0, 10 * e0), max(0.1 * e0, 10 * e0)))
+            self.bounds.append((min(0.01 * a, 10 * a), max(0.01 * a, 10 * a)))
+            self.bounds.append((min(0.1 * b, 10 * b), max(0.1 * b, 10 * b)))
+            self.bounds.append((min(0.1 * g, 10 * g), max(0.1 * g, 10 * g)))
 
     def printSetup(self):
         print("Model: %s" % self.getModelEquation())
         print("Bounds: " + str(self.bounds))
 
     def getModelEquation(self):
-        return "Y = 1/(a+exp(b-g*X))"
+        return "Y = e0+(1/(a+exp(b-g*X)))"
 
     def getEquation(self):
-        toPrint = "Y = 1/((%f)+exp((%f)-(%f)*X))" % (self.parameters[0], self.parameters[1], self.parameters[2])
+        toPrint = "Y = (%f)+(1/((%f)+exp((%f)-(%f)*X)))" % (self.parameters[0], self.parameters[1],
+                                                          self.parameters[2], self.parameters[3])
         return toPrint
 
     def getParameterNames(self):
-        return ['a', 'b', 'g']
+        return ['e0', 'a', 'b', 'g']
 
     def getParameterDescriptions(self):
-        return ['Automatically fitted model of the form Y=1/(a+exp(b-g*X))'] * self.getNumberOfParameters()
+        return ['Automatically fitted model of the form Y=e0+(1/(a+exp(b-g*X)))'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self, sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -510,6 +518,7 @@ class PDLogistic2(PDGenericModel):
         retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
         retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
         retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
         return retval
 
     def areParametersValid(self, p):
@@ -521,13 +530,15 @@ class PDLogistic3(PDGenericModel):
         if x == None:
             x = self.x
         self.yPredicted = np.zeros(x.shape[0])
-        a = parameters[0]
-        b = parameters[1]
-        g = parameters[2]
+
+        e0 = parameters[0]
+        a = parameters[1]
+        b = parameters[2]
+        g = parameters[3]
 
         d = np.exp(-(g * x))
 
-        self.yPredicted = a / (1 + b*d)
+        self.yPredicted = e0 + ( a / (1 + b*d) )
 
         return self.yPredicted
 
@@ -536,45 +547,47 @@ class PDLogistic3(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
+            e0 = np.min(self.y)
+            emax = np.max(self.y - e0)
+            a = emax
 
-            a = np.max(self.y)
+            emin = 0.9*e0 + 0.1*(emax + e0)
 
-            if np.min(self.y) == 0:
-                y = np.min(self.y) + 0.1
-
-            else:
-                y = np.min(self.y)
-
-            b = (a/y) - 1
-            g = 3 / np.max(self.x)
+            b = (emax/(emin - e0)) - 1
+            g = 5 / np.max(self.x)
 
             print("First estimate of Logistic 3 term: ")
-            print("Y = (%f) / (1 + (%f) * exp(-(%f) * X))" % (a, b, g))
+            print("Y = (%f) + ( (%f) / (1 + (%f) * exp(-(%f) * X)) )" % (e0, a, b, g))
 
             self.bounds = []
-            self.bounds.append((0.1 * a, 10 * a))
-            self.bounds.append((0.1 * b, 10 * b))
-            self.bounds.append((0.1 * g, 10 * g))
+            self.bounds.append((min(0.1 * e0, 10 * e0), max(0.1 * e0, 10 * e0)))
+            self.bounds.append((min(0.1 * a, 10 * a), max(0.1 * a, 10 * a)))
+            self.bounds.append((min(0.1 * b, 10 * b), max(0.1 * b, 10 * b)))
+            self.bounds.append((min(0.1 * g, 10 * g), max(0.1 * g, 10 * g)))
+
 
     def printSetup(self):
         print("Model: %s" % self.getModelEquation())
         print("Bounds: " + str(self.bounds))
 
     def getModelEquation(self):
-        return "Y = a/(1+b*exp(-g*X))"
+        return "Y = e0 + ( a/(1+b*exp(-g*X)) )"
 
     def getEquation(self):
-        toPrint = "Y = (%f)/(1+(%f)*exp(-(%f)*X))" % (self.parameters[0], self.parameters[1], self.parameters[2])
+        toPrint = "Y = (%f) + ( (%f)/(1+(%f)*exp(-(%f)*X)) )" % (self.parameters[0], self.parameters[1],
+                                                                 self.parameters[2], self.parameters[3])
         return toPrint
 
     def getParameterNames(self):
-        return ['a', 'b', 'g']
+        return ['e0', 'a', 'b', 'g']
 
     def getParameterDescriptions(self):
-        return ['Automatically fitted model of the form Y=a/(1+b*exp(-g*X))'] * self.getNumberOfParameters()
+        return ['Automatically fitted model of the form Y=e0+(a/(1+b*exp(-g*X)))'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self, sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -582,6 +595,7 @@ class PDLogistic3(PDGenericModel):
         retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
         retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
         retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
         return retval
 
     def areParametersValid(self, p):
@@ -593,13 +607,14 @@ class PDLogistic4(PDGenericModel):
         if x == None:
             x = self.x
         self.yPredicted = np.zeros(x.shape[0])
-        a = parameters[0]
-        b = parameters[1]
-        g = parameters[2]
+        e0 = parameters[0]
+        a = parameters[1]
+        b = parameters[2]
+        g = parameters[3]
 
         d = np.exp(-(g * x))
 
-        self.yPredicted = 1 / (a + b*d)
+        self.yPredicted = e0 + ( 1 / (a + b*d) )
 
         return self.yPredicted
 
@@ -608,45 +623,46 @@ class PDLogistic4(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
+            e0 = np.min(self.y)
+            emax = np.max(self.y -e0)
+            a = 1 / emax
 
-            a = 1 / np.max(self.y)
-
-            if np.min(self.y) == 0:
-                y = np.min(self.y) + 0.1
-
-            else:
-                y = np.min(self.y)
-
-            b = (1 / y) - a
-            g = 3 / np.max(self.x)
+            emin = 0.9 * e0 + 0.1 * (emax + e0)
+            b = (1 / (emin-e0)) - emax
+            g = 5 / np.max(self.x)
 
             print("First estimate of Logistic 4 term: ")
-            print("Y = 1 / ((%f)+ (%f)*exp(-(%f)*X))" % (a, b, g))
+            print("Y = (%f) + ( 1 / ((%f)+ (%f)*exp(-(%f)*X)) )" % (e0, a, b, g))
 
             self.bounds = []
-            self.bounds.append((0.01 * a, 10 * a))
-            self.bounds.append((0.1 * b, 10 * b))
-            self.bounds.append((0.1 * g, 10 * g))
+            self.bounds.append((min(0.1 * e0, 10 * e0), max(0.1 * e0, 10 * e0)))
+            self.bounds.append((min(0.1 * a, 10 * a), max(0.1 * a, 10 * a)))
+            self.bounds.append((min(0.1 * b, 10 * b), max(0.1 * b, 10 * b)))
+            self.bounds.append((min(0.1 * g, 10 * g), max(0.1 * g, 10 * g)))
+
 
     def printSetup(self):
         print("Model: %s" % self.getModelEquation())
         print("Bounds: " + str(self.bounds))
 
     def getModelEquation(self):
-        return "Y = 1/(a+b*exp(-g*X))"
+        return "Y = e0 + ( 1/(a+b*exp(-g*X)) )"
 
     def getEquation(self):
-        toPrint = "Y = 1/((%f)+(%f)*exp(-(%f)*X))" % (self.parameters[0], self.parameters[1], self.parameters[2])
+        toPrint = "Y = (%f) + ( 1/((%f)+(%f)*exp(-(%f)*X)) )" % (self.parameters[0], self.parameters[1],
+                                                                 self.parameters[2], self.parameters[3])
         return toPrint
 
     def getParameterNames(self):
-        return ['a', 'b', 'g']
+        return ['e0', 'a', 'b', 'g']
 
     def getParameterDescriptions(self):
-        return ['Automatically fitted model of the form Y=1/(a+b*exp(-g*X))'] * self.getNumberOfParameters()
+        return ['Automatically fitted model of the form Y=e0+(1/(a+b*exp(-g*X)))'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self, sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -654,6 +670,7 @@ class PDLogistic4(PDGenericModel):
         retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
         retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
         retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
         return retval
 
     def areParametersValid(self, p):
@@ -665,41 +682,68 @@ class PDRichards(PDGenericModel):
         if x == None:
             x = self.x
         self.yPredicted = np.zeros(x.shape[0])
-        a = parameters[0]
-        b = parameters[1]
-        g = parameters[2]
-        d = parameters[3]
+        e0 = parameters[0]
+        a = parameters[1]
+        b = parameters[2]
+        g = parameters[3]
+        d = parameters[4]
 
         p = np.exp(b-(g * x))
 
-        self.yPredicted = a / ((1+p)**(1/d))
+        self.yPredicted = e0 + ( a / ((1+p)**(1/d)) )
 
         return self.yPredicted
 
     def getDescription(self):
         return "Richards (%s)" % self.__class__.__name__
 
-    # def prepare(self):
+    def prepare(self):
+        if self.bounds == None:
+            d = 1
+
+            e0 = np.min(self.y)
+            emax = np.max(self.y - e0)
+            a = emax
+
+            emin = 0.9 * e0 + 0.1 * (emax + e0)
+
+            b = math.log(emax/(emin-e0) -1)
+            g = (b + 5) / np.max(self.x)
+
+            print("First estimate of Richards term: ")
+            print("Y = (%f) + ( (%f)/ ((1 + exp((%f) - (%f)*X))^(1/(%f))) ) " % (e0, a, b, g, d))
+
+            self.bounds = []
+            self.bounds.append((min(0.1 * e0, 10 * e0), max(0.1 * e0, 10 * e0)))
+            self.bounds.append((min(0.1 * a, 10 * a), max(0.1 * a, 10 * a)))
+            self.bounds.append((min(0.1 * b, 10 * b), max(0.1 * b, 10 * b)))
+            self.bounds.append((min(0.1 * g, 10 * g), max(0.1 * g, 10 * g)))
+            self.bounds.append((min(0.1 * d, 10 * d), max(0.1 * d, 10 * d)))
+
 
     def printSetup(self):
         print("Model: %s" % self.getModelEquation())
         print("Bounds: " + str(self.bounds))
 
     def getModelEquation(self):
-        return "Y = a/ ((1 + exp(b - g*X))^(1/d))"
+        return "Y = e0 + ( a/ ((1 + exp(b - g*X))^(1/d)) )"
 
     def getEquation(self):
-        toPrint = "Y = (%f)/ ((1 + exp((%f) - (%f)*X))^(1/(%f)))" % (self.parameters[0], self.parameters[1], self.parameters[2], self.parameters[3])
+        toPrint = "Y = (%f) + ( (%f)/ ((1 + exp((%f) - (%f)*X))^(1/(%f))) )" % (self.parameters[0], self.parameters[1],
+                                                                                self.parameters[2], self.parameters[3],
+                                                                                self.parameters[4])
         return toPrint
 
     def getParameterNames(self):
-        return ['a', 'b', 'g', 'd']
+        return ['e0', 'a', 'b', 'g', 'd']
 
     def getParameterDescriptions(self):
-        return ['Automatically fitted model of the form Y = a/ ((1 + exp(b - g*X))^(1/d))'] * self.getNumberOfParameters()
+        return ['Automatically fitted model of the form Y = e0 + ( a/ ((1 + exp(b - g*X))^(1/d)) )'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self, sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -708,6 +752,7 @@ class PDRichards(PDGenericModel):
         retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
         retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
         retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
+        retval.append(lowerBound[4] > 0 or upperBound[4] < 0)
         return retval
 
     def areParametersValid(self, p):
@@ -719,41 +764,68 @@ class PDMorgan(PDGenericModel):
         if x == None:
             x = self.x
         self.yPredicted = np.zeros(x.shape[0])
-        b = parameters[0]
-        g = parameters[1]
-        a = parameters[2]
-        d = parameters[3]
+        e0 = parameters[0]
+        b = parameters[1]
+        g = parameters[2]
+        a = parameters[3]
+        d = parameters[4]
 
         xprime = x**d
 
-        self.yPredicted = ((b*g) + (a*xprime)) / (g + xprime)
+        self.yPredicted = e0 + ( ((b*g) + (a*xprime)) / (g + xprime) )
 
         return self.yPredicted
 
     def getDescription(self):
         return "Morgan-Mercer-Flodin (%s)" % self.__class__.__name__
 
-    # def prepare(self):
+    def prepare(self):
+        if self.bounds == None:
+            d = 1
+            g = 1
+
+            e0 = np.min(self.y)
+            emax = np.max(self.y - e0)
+            a = emax
+
+            emin = 0.9 * e0 + 0.1 * (emax + e0)
+
+            b = emin - e0
+
+            print("First estimate of Morgan term: ")
+            print("Y = Y = (%f) + ( ((%f)*(%f) + (%f)*(X^(%f))) / ((%f) + (X^(%f))) ) " % (e0, b, g, a, d, g, d))
+
+            self.bounds = []
+            self.bounds.append((min(0.1 * e0, 10 * e0), max(0.1 * e0, 10 * e0)))
+            self.bounds.append((min(0.1 * b, 10 * b), max(0.1 * b, 10 * b)))
+            self.bounds.append((min(0.1 * g, 10 * g), max(0.1 * g, 10 * g)))
+            self.bounds.append((min(0.1 * a, 10 * a), max(0.1 * a, 10 * a)))
+            self.bounds.append((min(0.1 * d, 10 * d), max(0.1 * d, 10 * d)))
 
     def printSetup(self):
         print("Model: %s" % self.getModelEquation())
         print("Bounds: " + str(self.bounds))
 
     def getModelEquation(self):
-        return "Y = (b*g + a*(X^d)) / (g + (X^d))"
+        return "Y = e0 + ( (b*g + a*(X^d)) / (g + (X^d)) )"
 
     def getEquation(self):
-        toPrint = "Y = ((%f)*(%f) + (%f)*(X^(%f))) / ((%f) + (X^(%f)))" % (self.parameters[0], self.parameters[1], self.parameters[2], self.parameters[3], self.parameters[1], self.parameters[3])
+        toPrint = "Y = (%f) + ( ((%f)*(%f) + (%f)*(X^(%f))) / ((%f) + (X^(%f))) )" % (self.parameters[0],self.parameters[1],
+                                                                                      self.parameters[2],self.parameters[3],
+                                                                                      self.parameters[4], self.parameters[2],
+                                                                                      self.parameters[4])
         return toPrint
 
     def getParameterNames(self):
-        return ['b', 'g', 'a', 'd']
+        return ['e0', 'b', 'g', 'a', 'd']
 
     def getParameterDescriptions(self):
-        return ['Automatically fitted model of the form Y=(b*g+a*(X^d))/(g+(X^d))'] * self.getNumberOfParameters()
+        return ['Automatically fitted model of the form Y=e0+((b*g+a*(X^d))/(g+(X^d)))'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self, sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -762,6 +834,7 @@ class PDMorgan(PDGenericModel):
         retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
         retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
         retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
+        retval.append(lowerBound[4] > 0 or upperBound[4] < 0)
         return retval
 
     def areParametersValid(self, p):
@@ -785,9 +858,27 @@ class PDWeibull(PDGenericModel):
         return self.yPredicted
 
     def getDescription(self):
-        return "Wibull (%s)" % self.__class__.__name__
+        return "Weibull (%s)" % self.__class__.__name__
 
-    # def prepare(self):
+    def prepare(self):
+        if self.bounds == None:
+            d = 1
+
+            emin = np.min(self.y)
+            emax = np.max(self.y)
+            a = emax
+
+            b = emax - emin
+            g = 5 / np.max(self.x)
+
+            print("First estimate of Weibull term: ")
+            print("Y  = (%f) - (%f)*exp(-(%f)*(X^(%f))) " % (a, b, g, d))
+
+            self.bounds = []
+            self.bounds.append((min(0.1 * a, 10 * a), max(0.1 * a, 10 * a)))
+            self.bounds.append((min(0.1 * b, 10 * b), max(0.1 * b, 10 * b)))
+            self.bounds.append((min(0.1 * g, 10 * g), max(0.1 * g, 10 * g)))
+            self.bounds.append((min(0.1 * d, 10 * d), max(0.1 * d, 10 * d)))
 
     def printSetup(self):
         print("Model: %s" % self.getModelEquation())
@@ -797,7 +888,8 @@ class PDWeibull(PDGenericModel):
         return "Y = a - b*exp(-g*(X^d))"
 
     def getEquation(self):
-        toPrint = "Y  = (%f) - (%f)*exp(-(%f)*(X^(%f)))" % (self.parameters[0], self.parameters[1], self.parameters[2], self.parameters[3])
+        toPrint = "Y  = (%f) - (%f)*exp(-(%f)*(X^(%f)))" % (self.parameters[0], self.parameters[1], self.parameters[2],
+                                                            self.parameters[3])
         return toPrint
 
     def getParameterNames(self):
@@ -807,7 +899,9 @@ class PDWeibull(PDGenericModel):
         return ['Automatically fitted model of the form Y=a-b*exp(-g*(X^d))'] * self.getNumberOfParameters()
 
     def calculateParameterUnits(self, sample):
-        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]  # COSS: Buscar unidades de C
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
