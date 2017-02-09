@@ -36,6 +36,7 @@ import pyworkflow.em.biopharmaceutics
 # TESTED in test_workflow_gabrielsson_pk11.py
 # TESTED in test_workflow_gabrielsson_pk12.py
 # TESTED in test_workflow_gabrielsson_pk13.py
+# TESTED in test_workflow_gabrielsson_pk14.py
 
 class ProtPKPDTwoCompartments(ProtPKPDODEBase):
     """ Fit a two-compartmentx model to a set of measurements (any arbitrary dosing regimen is allowed)\n

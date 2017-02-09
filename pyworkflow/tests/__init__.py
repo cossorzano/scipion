@@ -104,6 +104,11 @@ DataSet(name='Gabrielsson_PK13', folder='Gabrielsson_PK13',
                'experiment': 'experiment.pkpd'
                })
 
+DataSet(name='Gabrielsson_PK14', folder='Gabrielsson_PK14',
+        files={
+               'experiment': 'experiment.pkpd'
+               })
+
 DataSet(name='model',  folder='model',
         files={
                'classesSelection': 'gold/classes_selection.sqlite',
