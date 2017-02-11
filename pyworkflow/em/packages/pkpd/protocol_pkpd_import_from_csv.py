@@ -110,32 +110,32 @@ class ProtPKPDImportFromText(ProtPKPD):
 
         # Read vias
         for line in self.vias.get().replace('\n',';;').split(';;'):
-            tokens = line.split(';')
-            if len(tokens)<2:
-                print("Skipping via: ",line)
-                continue
-            vianame = tokens[0].strip()
-            self.experiment.vias[vianame] = PKPDVia()
-            self.experiment.vias[vianame].parseTokens(tokens)
+            if line!="":
+                tokens = line.split(';')
+                if len(tokens)<2:
+                    print("Skipping via: ",line)
+                    continue
+                vianame = tokens[0].strip()
+                self.experiment.vias[vianame] = PKPDVia()
+                self.experiment.vias[vianame].parseTokens(tokens)
 
         # Read the doses
         for line in self.doses.get().replace('\n',';;').split(';;'):
-            tokens = line.split(';')
-            if len(tokens)<5:
-                print("Skipping dose: ",line)
-                continue
-            dosename = tokens[0].strip()
-            self.experiment.doses[dosename] = PKPDDose()
-            self.experiment.doses[dosename].parseTokens(tokens,self.experiment.vias)
+            if line!="":
+                tokens = line.split(';')
+                if len(tokens)<5:
+                    print("Skipping dose: ",line)
+                    continue
+                dosename = tokens[0].strip()
+                self.experiment.doses[dosename] = PKPDDose()
+                self.experiment.doses[dosename].parseTokens(tokens,self.experiment.vias)
 
         # Read the sample doses
         for line in self.dosesToSamples.get().replace('\n',';;').split(';;'):
             tokens = line.split(';')
-            if len(tokens)<2:
-                print("Skipping sample: ",line)
-                continue
             samplename = tokens[0].strip()
-            tokens[1]="dose="+tokens[1]
+            if len(tokens)>1:
+                tokens[1]="dose="+tokens[1]
             self.experiment.samples[samplename] = PKPDSample()
             self.experiment.samples[samplename].parseTokens(tokens,self.experiment.variables, self.experiment.doses)
 
