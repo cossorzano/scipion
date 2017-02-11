@@ -207,6 +207,35 @@ class BiopharmaceuticsModelOrderFractional(BiopharmaceuticsModel):
     def areParametersValid(self, p):
         return np.sum(p<0)==0 and p[2]>0 and p[2]<1
 
+class BiopharmaceuticsModelImmediateAndOrder1(BiopharmaceuticsModel):
+    def getDescription(self):
+        return ['Absorption rate','Immediate fraction']
+
+    def getParameterNames(self):
+        return ['Ka','F']
+
+    def calculateParameterUnits(self,sample):
+        self.parameterUnits = [PKPDUnit.UNIT_INVTIME_MIN,PKPDUnit.UNIT_NONE]
+        return self.parameterUnits
+
+    def getAg(self,t):
+        if t<0:
+            return 0.0
+        Ka = self.parameters[0]
+        F = self.parameters[1]
+        return self.Amax*(1-F)*math.exp(-Ka*t)
+
+    def getEquation(self):
+        Ka = self.parameters[0]
+        F = self.parameters[1]
+        return "D(t)=(%f)*delta(t)+(%f)*(1-exp(-(%f)*t)"%(self.Amax*F,self.Amax*(1-F),Ka)
+
+    def getModelEquation(self):
+        return "D(t)=Amax*F*delta(t)+(1-F)*Amax*(1-exp(-Ka*t))"
+
+    def getDescription(self):
+        return "Immediate and First order absorption (%s)"%self.__class__.__name__
+
 class PKPDVia:
     def __init__(self):
         self.viaName = None
@@ -277,7 +306,9 @@ class PKPDVia:
             self.viaProfile=None
         else:
             if self.viaProfile==None:
-                if self.via=="ev0":
+                if self.via=="iv-ev1":
+                    self.viaProfile=BiopharmaceuticsModelImmediateAndOrder1()
+                elif self.via=="ev0":
                     self.viaProfile=BiopharmaceuticsModelOrder0()
                 elif self.via=="ev01":
                     self.viaProfile=BiopharmaceuticsModelOrder01()
@@ -330,8 +361,8 @@ class PKPDVia:
 
     def areParametersSignificant(self, lowerBound, upperBound):
         retval=[]
+        currentIdx=0
         if self.paramsToOptimize:
-            currentIdx=0
             for paramName in self.paramsToOptimize:
                 if paramName=="tlag":
                     retval+=[str(lowerBound[currentIdx]>0)]
@@ -345,8 +376,8 @@ class PKPDVia:
 
     def areParametersValid(self, p):
         retval=True
+        currentIdx=0
         if self.paramsToOptimize:
-            currentIdx=0
             for paramName in self.paramsToOptimize:
                 if paramName=="tlag":
                     retval=retval and p[currentIdx]>=0
