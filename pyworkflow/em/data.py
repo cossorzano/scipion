@@ -204,27 +204,28 @@ class PKPDSample:
         # Get name
         self.varName = tokens[0].strip()
 
-        # Get doses
-        doseList = tokens[1].split('=')[1].strip()
-        for doseName in doseList.split(','):
-            doseName=doseName.strip()
-            if doseName in doseDict:
-                self.doseList.append(doseName)
-            else:
-                raise Exception("Unrecognized dose %s"%doseName)
+        if len(tokens)>1:
+            # Get doses
+            doseList = tokens[1].split('=')[1].strip()
+            for doseName in doseList.split(','):
+                doseName=doseName.strip()
+                if doseName in doseDict:
+                    self.doseList.append(doseName)
+                else:
+                    raise Exception("Unrecognized dose %s"%doseName)
 
-        # Get rest of variables
-        self.descriptors = {}
-        for n in range(2,len(tokens)):
-            if '=' in tokens[n]:
-                varTokens = tokens[n].split('=')
-                varName  = varTokens[0].strip()
-                varValue = varTokens[1].strip()
-                if varName in variableDict:
-                    varPtr = variableDict[varName]
-                    if varPtr.role != PKPDVariable.ROLE_LABEL:
-                        raise Exception("Samples can only use role variables")
-                    self.descriptors[varName] = varValue
+            # Get rest of variables
+            self.descriptors = {}
+            for n in range(2,len(tokens)):
+                if '=' in tokens[n]:
+                    varTokens = tokens[n].split('=')
+                    varName  = varTokens[0].strip()
+                    varValue = varTokens[1].strip()
+                    if varName in variableDict:
+                        varPtr = variableDict[varName]
+                        if varPtr.role != PKPDVariable.ROLE_LABEL:
+                            raise Exception("Samples can only use role variables")
+                        self.descriptors[varName] = varValue
 
         self.measurementPattern = []
 
@@ -305,9 +306,13 @@ class PKPDSample:
 
     def _printToStream(self,fh):
         descriptorString = ""
-        for key in sorted(self.descriptors.keys()):
-            descriptorString +="; %s=%s"%(key,self.descriptors[key])
-        fh.write("%s; dose=%s %s\n"%(self.varName,",".join(self.doseList),descriptorString))
+        if self.descriptors:
+            for key in sorted(self.descriptors.keys()):
+                descriptorString +="; %s=%s"%(key,self.descriptors[key])
+        fh.write("%s"%self.varName)
+        if self.doseList:
+            fh.write("; dose=%s %s"%(",".join(self.doseList),descriptorString))
+        fh.write("\n")
 
     def _printMeasurements(self,fh):
         patternString = ""
@@ -485,31 +490,31 @@ class PKPDExperiment(EMObject):
                 self.variables[varname].parseTokens(tokens)
 
             elif state==PKPDExperiment.READING_VIAS:
-                tokens = line.split(';')
-                if len(tokens)<2:
-                    print("Skipping via: ",line)
-                    continue
-                vianame = tokens[0].strip()
-                self.vias[vianame] = PKPDVia()
-                self.vias[vianame].parseTokens(tokens)
+                if line!="":
+                    tokens = line.split(';')
+                    if len(tokens)<2:
+                        print("Skipping via: ",line)
+                        continue
+                    vianame = tokens[0].strip()
+                    self.vias[vianame] = PKPDVia()
+                    self.vias[vianame].parseTokens(tokens)
 
             elif state==PKPDExperiment.READING_DOSES:
-                tokens = line.split(';')
-                if len(tokens)!=5:
-                    print("Skipping dose: ",line)
-                    continue
-                dosename = tokens[0].strip()
-                self.doses[dosename] = PKPDDose()
-                self.doses[dosename].parseTokens(tokens,self.vias)
+                if line!="":
+                    tokens = line.split(';')
+                    if len(tokens)!=5:
+                        print("Skipping dose: ",line)
+                        continue
+                    dosename = tokens[0].strip()
+                    self.doses[dosename] = PKPDDose()
+                    self.doses[dosename].parseTokens(tokens,self.vias)
 
             elif state==PKPDExperiment.READING_SAMPLES:
-                tokens = line.split(';')
-                if len(tokens)<2:
-                    print("Skipping sample: ",line)
-                    continue
-                samplename = tokens[0].strip()
-                self.samples[samplename] = PKPDSample()
-                self.samples[samplename].parseTokens(tokens,self.variables, self.doses)
+                if line!="":
+                    tokens = line.split(';')
+                    samplename = tokens[0].strip()
+                    self.samples[samplename] = PKPDSample()
+                    self.samples[samplename].parseTokens(tokens,self.variables, self.doses)
 
             elif state==PKPDExperiment.READING_MEASUREMENTS:
                 tokens = line.split(';')
@@ -908,8 +913,8 @@ class PKPDOptimizer:
         self.fitType = fitType
 
         if type(model.y[0])!=list and type(model.y[0])!=np.ndarray:
-            self.yTarget = np.array(model.y, dtype=np.float32)
-            self.yTargetLogs = [np.array([math.log10(yi) if np.isfinite(yi) and yi>0 else float("inf") for yi in self.yTarget],dtype=np.float32)]
+            self.yTarget = [np.array(model.y, dtype=np.float32)]
+            self.yTargetLogs = [np.array([math.log10(yi) if np.isfinite(yi) and yi>0 else float("inf") for yi in model.y],dtype=np.float32)]
         else:
             self.yTarget = [np.array(yi, dtype=np.float32) for yi in model.y]
             self.yTargetLogs = [np.log10(yi) for yi in self.yTarget]
