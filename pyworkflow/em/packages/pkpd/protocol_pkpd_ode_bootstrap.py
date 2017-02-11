@@ -173,29 +173,35 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
             else:
                 idx = [k for k in range(0,len(x))]
             for n in range(0,self.Nbootstrap.get()):
-                if type(x[0])==list:
-                    idxB = [sorted(np.random.choice(idxj,len(idxj))) for idxj in idx]
-                    xB=[]
-                    yB=[]
-                    for j in range(len(idxB)):
-                        idxBj = idxB[j]
-                        xj=x[j]
-                        yj=y[j]
-                        xB.append([xj[i] for i in idxBj])
-                        yB.append([yj[i] for i in idxBj])
-                else:
-                    idxB = sorted(np.random.choice(idx,len(idx)))
-                    xB = [x[i] for i in idxB]
-                    yB = [y[i] for i in idxB]
-                print("Bootstrap sample %d"%n)
-                print("X= "+str(xB))
-                print("Y= "+str(yB))
-                self.setXYValues(xB, yB)
-                self.parameters = parameters0
+                ok = False
+                while not ok:
+                    if type(x[0])==list:
+                        idxB = [sorted(np.random.choice(idxj,len(idxj))) for idxj in idx]
+                        xB=[]
+                        yB=[]
+                        for j in range(len(idxB)):
+                            idxBj = idxB[j]
+                            xj=x[j]
+                            yj=y[j]
+                            xB.append([xj[i] for i in idxBj])
+                            yB.append([yj[i] for i in idxBj])
+                    else:
+                        idxB = sorted(np.random.choice(idx,len(idx)))
+                        xB = [x[i] for i in idxB]
+                        yB = [y[i] for i in idxB]
+                    print("Bootstrap sample %d"%n)
+                    print("X= "+str(xB))
+                    print("Y= "+str(yB))
+                    self.setXYValues(xB, yB)
+                    self.parameters = parameters0
 
-                optimizer2 = PKPDLSOptimizer(self,fitType)
-                optimizer2.verbose = 0
-                optimizer2.optimize()
+                    optimizer2 = PKPDLSOptimizer(self,fitType)
+                    optimizer2.verbose = 0
+                    try:
+                        optimizer2.optimize()
+                        ok=True
+                    except:
+                        ok=False
 
                 # Evaluate the quality on the whole data set
                 self.setXYValues(x, y)
