@@ -124,8 +124,11 @@ class SamplesTreeProvider(TreeProvider):
         numberOfSamples = len(experiment.samples)
         if numberOfSamples > 0:
             sample = self.experiment.samples.values()[0]
-            self.columns = [(key, 60)
-                            for key in sorted(sample.descriptors.keys())]
+            if sample.descriptors:
+                self.columns = [(key, 60)
+                                for key in sorted(sample.descriptors.keys())]
+            else:
+                self.columns = []
             if self.fitting:
                 self.columns.extend([(key, 60) for key in self.FIT_COLUMNS])
         else:
