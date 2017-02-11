@@ -280,7 +280,7 @@ class PDSigmoid(PDGenericModel):
     def calculateParameterUnits(self,sample):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
-        self.parameterUnits = [yunits, yunits, xunits]
+        self.parameterUnits = [yunits, yunits, xunits, PKPDUnit.UNIT_NONE]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
