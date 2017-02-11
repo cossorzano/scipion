@@ -148,9 +148,9 @@ class SamplesTreeProvider(TreeProvider):
 
     def getObjectInfo(self, obj):
         key = obj.varName
-        values = [','.join(obj.doseList)] + [obj.descriptors[k]
-                                             for k, _ in self.columns
-                                             if k in obj.descriptors]
+        values = [','.join(obj.doseList)]
+        if obj.descriptors:
+            values += [obj.descriptors[k] for k, _ in self.columns if k in obj.descriptors]
 
         if self.fitting:
             if obj.fit!=None:
