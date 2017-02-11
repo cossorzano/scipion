@@ -205,27 +205,26 @@ class PKPDSample:
         self.varName = tokens[0].strip()
 
         if len(tokens)>1:
-            # Get doses
-            doseList = tokens[1].split('=')[1].strip()
-            for doseName in doseList.split(','):
-                doseName=doseName.strip()
-                if doseName in doseDict:
-                    self.doseList.append(doseName)
-                else:
-                    raise Exception("Unrecognized dose %s"%doseName)
-
             # Get rest of variables
             self.descriptors = {}
-            for n in range(2,len(tokens)):
+            for n in range(1,len(tokens)):
                 if '=' in tokens[n]:
                     varTokens = tokens[n].split('=')
                     varName  = varTokens[0].strip()
                     varValue = varTokens[1].strip()
-                    if varName in variableDict:
-                        varPtr = variableDict[varName]
-                        if varPtr.role != PKPDVariable.ROLE_LABEL:
-                            raise Exception("Samples can only use role variables")
-                        self.descriptors[varName] = varValue
+                    if varName=="dose":
+                        for doseName in varValue.split(','):
+                            doseName=doseName.strip()
+                            if doseName in doseDict:
+                                self.doseList.append(doseName)
+                            else:
+                                raise Exception("Unrecognized dose %s"%doseName)
+                    else:
+                        if varName in variableDict:
+                            varPtr = variableDict[varName]
+                            if varPtr.role != PKPDVariable.ROLE_LABEL:
+                                raise Exception("Samples can only use role variables")
+                            self.descriptors[varName] = varValue
 
         self.measurementPattern = []
 
@@ -245,8 +244,8 @@ class PKPDSample:
             else:
                 dose.doseAmount = convertUnits(dose.doseAmount, dose.dunits.unit, firstUnit)
             self.parsedDoseList.append(dose)
-        if len(self.parsedDoseList)==0:
-            raise Exception("Cannot find any useful dose")
+        # if len(self.parsedDoseList)==0:
+        #     raise Exception("Cannot find any useful dose")
 
     def isDoseABolus(self):
         if len(self.parsedDoseList)!=1:
@@ -263,7 +262,10 @@ class PKPDSample:
         return self.getDoseAt(t0,tF-t0)
 
     def getDoseUnits(self):
-        return self.parsedDoseList[0].dunits.unit
+        if len(self.parsedDoseList)>0:
+            return self.parsedDoseList[0].dunits.unit
+        else:
+            return PKPDUnit.UNIT_NONE
 
     def addMeasurementPattern(self,tokens):
         self.measurementPattern = []
@@ -305,13 +307,14 @@ class PKPDSample:
         return len(getattr(self,"measurement_%s"%self.measurementPattern[0]))
 
     def _printToStream(self,fh):
-        descriptorString = ""
-        if self.descriptors:
-            for key in sorted(self.descriptors.keys()):
-                descriptorString +="; %s=%s"%(key,self.descriptors[key])
         fh.write("%s"%self.varName)
         if self.doseList:
-            fh.write("; dose=%s %s"%(",".join(self.doseList),descriptorString))
+            fh.write("; dose=%s"%(",".join(self.doseList)))
+        if self.descriptors:
+            descriptorString = ""
+            for key in sorted(self.descriptors.keys()):
+                descriptorString +="; %s=%s"%(key,self.descriptors[key])
+            fh.write(" %s"%descriptorString)
         fh.write("\n")
 
     def _printMeasurements(self,fh):
@@ -632,6 +635,8 @@ class PKPDExperiment(EMObject):
             self.variables[varName] = varX
         if sampleName in self.samples:
             sample = self.samples[sampleName]
+            if sample.descriptors==None:
+                sample.descriptors={}
             sample.descriptors[varName] = varValue
 
     def getSubGroup(self,condition):
