@@ -101,10 +101,10 @@ class TestGabrielssonPK15Workflow(TestWorkflow):
         ec50 = float(experiment.samples['Population measures'].descriptors['eC50'])
         emax = float(experiment.samples['Population measures'].descriptors['emax'])
         h = float(experiment.samples['Population measures'].descriptors['h'])
-        self.assertTrue(e0>82 and e0<84)
-        self.assertTrue(ec50>0.35 and ec50<0.39)
+        self.assertTrue(e0>82 and e0<84) # Gabrielsson p 621: 82.25
+        self.assertTrue(ec50>0.35 and ec50<0.39) # Gabrielsson p 621: 0.3488
         self.assertTrue(emax>-91 and emax<-0.88)
-        self.assertTrue(h>5.3 and h<5.4)
+        self.assertTrue(h>5.3 and h<5.4) # Gabrielsson p 621: 6.69
         fitting = PKPDFitting()
         fitting.load(protPDfitting.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.99)
