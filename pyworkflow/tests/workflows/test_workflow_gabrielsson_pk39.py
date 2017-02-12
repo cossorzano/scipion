@@ -31,15 +31,15 @@ from pyworkflow.tests import *
 from pyworkflow.em.packages.pkpd import *
 from test_workflow import TestWorkflow
 
-class TestGabrielssonPK25Workflow(TestWorkflow):
+class TestGabrielssonPK39Workflow(TestWorkflow):
 
     @classmethod
     def setUpClass(cls):
         tests.setupTestProject(cls)
-        cls.dataset = DataSet.getDataSet('Gabrielsson_PK25')
+        cls.dataset = DataSet.getDataSet('Gabrielsson_PK39')
         cls.exptFn = cls.dataset.getFile('experiment')
 
-    def testGabrielssonPK25Workflow(self):
+    def testGabrielssonPK39Workflow(self):
         # Import an experiment (intravenous)
 
         print "Import Experiment (intravenous doses)"
@@ -60,33 +60,30 @@ class TestGabrielssonPK25Workflow(TestWorkflow):
         self.assertIsNotNone(protChangeTimeUnit.outputExperiment.fnPKPD, "There was a problem with changing units")
         self.validateFiles('protChangeUnits', protChangeTimeUnit)
 
-        # # Fit a monocompartmental model to a set of measurements obtained by intravenous doses and urine
-        print "Fitting a two-compartmental model (intravenous doses and urine) ..."
-        protIVTwoCompartmentsUrine = self.newProtocol(ProtPKPDTwoCompartmentsUrine,
-                                                      objLabel='pkpd - iv two-compartments urine',
-                                                      globalSearch=False,
-                                                      bounds='(2,4); (200,300); (0,1); (300,500); (0,0.1)')
-        protIVTwoCompartmentsUrine.inputExperiment.set(protChangeTimeUnit.outputExperiment)
-        self.launchProtocol(protIVTwoCompartmentsUrine)
-        self.assertIsNotNone(protIVTwoCompartmentsUrine.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
-        self.assertIsNotNone(protIVTwoCompartmentsUrine.outputFitting.fnFitting, "There was a problem with the two-compartmental model ")
-        self.validateFiles('protIVTwoCompartmentsUrine', protIVTwoCompartmentsUrine)
+        # Fit a monocompartmental model to a set of measurements obtained by intravenous doses and urine
+        print "Fitting a two-compartmental model (intravenous doses) ..."
+        protIVTwoCompartments = self.newProtocol(ProtPKPDTwoCompartments,
+                                                      objLabel='pkpd - iv two-compartments',
+                                                      bounds='(0,0.03); (0,1); (0,0.03); (1,3)')
+        protIVTwoCompartments.inputExperiment.set(protChangeTimeUnit.outputExperiment)
+        self.launchProtocol(protIVTwoCompartments)
+        self.assertIsNotNone(protIVTwoCompartments.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
+        self.assertIsNotNone(protIVTwoCompartments.outputFitting.fnFitting, "There was a problem with the two-compartmental model ")
+        self.validateFiles('protIVTwoCompartmentsUrine', protIVTwoCompartments)
         experiment = PKPDExperiment()
-        experiment.load(protIVTwoCompartmentsUrine.outputExperiment.fnPKPD)
+        experiment.load(protIVTwoCompartments.outputExperiment.fnPKPD)
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         Clp = float(experiment.samples['Individual'].descriptors['Clp'])
         V = float(experiment.samples['Individual'].descriptors['V'])
         Vp = float(experiment.samples['Individual'].descriptors['Vp'])
-        fe = float(experiment.samples['Individual'].descriptors['fe'])
-        self.assertTrue(Clp>0.65 and Clp<0.75)
-        self.assertTrue(Cl>2.9 and Cl<3)
-        self.assertTrue(V>240 and V<260)
-        self.assertTrue(Vp>390 and Vp<410)
-        self.assertTrue(fe>0.025 and fe<0.04)
+        self.assertTrue(Clp>0.011 and Clp<0.014) # Gabrielsson p 801: 0.8985 h^-1=.014975 min^-1
+        self.assertTrue(Cl>0.006 and Cl<0.008) # Gabrielsson p 801: 0.417 h^-1=.006950 min^-1
+        self.assertTrue(V>0.35 and V<0.37) # Gabrielsson p 801: Vc=0.322
+        self.assertTrue(Vp>2.1 and Vp<2.3) # Gabrielsson p 802: Vt=2.14
         fitting = PKPDFitting()
-        fitting.load(protIVTwoCompartmentsUrine.outputFitting.fnFitting)
+        fitting.load(protIVTwoCompartments.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.99)
-        self.assertTrue(fitting.sampleFits[0].AIC<-30)
+        self.assertTrue(fitting.sampleFits[0].AIC<-50)
 
 if __name__ == "__main__":
     unittest.main()
