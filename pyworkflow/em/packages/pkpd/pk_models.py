@@ -501,3 +501,115 @@ class PK_MonocompartmentUrine(PKPDODEModel):
 
     def areParametersValid(self, p):
         return np.sum(p<0)==0 and p[2]<1
+
+class PK_TwocompartmentsUrine(PKPDODEModel):
+    def F(self, t, y):
+        C = y[0]
+        Cp = y[2]
+
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        Clp=self.parameters[2]
+        Vp=self.parameters[3]
+        fe=self.parameters[4]
+        Q12 = Clp * (C-Cp)
+
+        return np.array([-(Cl*C + Q12)/V, fe*Cl*C, Q12/Vp],np.double)
+
+    def G(self, t, dD):
+        V=self.parameters[1]
+        return np.array([dD/V,0.0,0.0],np.double)
+
+    def getResponseDimension(self):
+        return 2
+
+    def getStateDimension(self):
+        return 3
+
+    def getDescription(self):
+        return "Two-compartmental model urine (%s)"%self.__class__.__name__
+
+    def getModelEquation(self):
+        return "dC/dt = -Cl/V * C - Clp/V * (C-Cp) + 1/V * dD/dt, dCp/dt = Clp/Vp * (C-Cp) and dAu/dt=fe*Cl*C"
+
+    def getEquation(self):
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        Clp=self.parameters[2]
+        Vp=self.parameters[3]
+        fe=self.parameters[4]
+        return "dC/dt = -(%f)/(%f) * C - (%f)/(%f) * (C-Cp) + 1/(%f) * dD/dt, dCp/dt = (%f)/(%f) * (C-Cp) and and dAu/dt = (%f)*(%f)*C"%\
+               (Cl,V,Clp,V,V,Clp,Vp,fe,Cl)
+
+    def getParameterNames(self):
+        return ['Cl','V','Clp','Vp','fe']
+
+    def calculateParameterUnits(self,sample):
+        xunits = unitFromString("min")
+        yunits = self.experiment.getVarUnits(self.yName[0])
+        Vunits = divideUnits(self.Dunits,yunits)
+        Clunits = divideUnits(Vunits,xunits)
+        self.parameterUnits = [Clunits,Vunits,Clunits,Vunits,PKPDUnit.UNIT_NONE]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        # Cl
+        ClLower = lowerBound[0]
+        ClUpper = upperBound[0]
+        if ClLower<0 and ClUpper>0:
+            retval.append("Suspicious, Ka looks like a constant")
+        elif ClLower<0:
+            retval.append("Suspicious, Ka may be unstable")
+        elif ClLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # V
+        VLower = lowerBound[1]
+        VUpper = upperBound[1]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, V looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, V seems to be negative")
+        else:
+            retval.append("True")
+
+        # Clp
+        ClLower = lowerBound[2]
+        ClUpper = upperBound[2]
+        if ClLower<0 and ClUpper>0:
+            retval.append("Suspicious, Clp looks like a constant")
+        elif ClLower<0:
+            retval.append("Suspicious, Clp may be unstable")
+        elif ClLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # Vp
+        VLower = lowerBound[3]
+        VUpper = upperBound[3]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, Vp looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, Vp seems to be negative")
+        else:
+            retval.append("True")
+
+        # fe
+        feLower = lowerBound[4]
+        feUpper = upperBound[4]
+        if feLower<0 and feUpper>0:
+            retval.append("Suspicious, fe looks like 0")
+        elif feUpper<0:
+            retval.append("Suspicious, fe seems to be negative")
+        elif feLower>1:
+            retval.append("Suspicious, fe seems to be larger than 1")
+        else:
+            retval.append("True")
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p<0)==0 and p[4]<1
