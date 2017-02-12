@@ -29,6 +29,7 @@ from protocol_pkpd_ode_base import ProtPKPDODEBase
 from pk_models import PK_TwocompartmentsUrine
 
 # TESTED in test_workflow_gabrielsson_pk16.py
+# TESTED in test_workflow_gabrielsson_pk25.py
 
 class ProtPKPDTwoCompartmentsUrine(ProtPKPDODEBase):
     """ Fit a two-compartments model to a set of plasma and urine (cumulated) measurements ((any arbitrary dosing regimen is allowed)\n

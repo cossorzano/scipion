@@ -31,15 +31,15 @@ from pyworkflow.tests import *
 from pyworkflow.em.packages.pkpd import *
 from test_workflow import TestWorkflow
 
-class TestGabrielssonPK16Workflow(TestWorkflow):
+class TestGabrielssonPK25Workflow(TestWorkflow):
 
     @classmethod
     def setUpClass(cls):
         tests.setupTestProject(cls)
-        cls.dataset = DataSet.getDataSet('Gabrielsson_PK16')
+        cls.dataset = DataSet.getDataSet('Gabrielsson_PK25')
         cls.exptFn = cls.dataset.getFile('experiment')
 
-    def testGabrielssonPK16Workflow(self):
+    def testGabrielssonPK25Workflow(self):
         # Import an experiment (intravenous)
 
         print "Import Experiment (intravenous doses)"
@@ -60,37 +60,12 @@ class TestGabrielssonPK16Workflow(TestWorkflow):
         self.assertIsNotNone(protChangeTimeUnit.outputExperiment.fnPKPD, "There was a problem with changing units")
         self.validateFiles('protChangeUnits', protChangeTimeUnit)
 
-        # Fit a two-compartment model with oral absorption to a set of measurements
-        print "Fitting a two-compartment model ..."
-        protPKPDPOTwoCompartments = self.newProtocol(ProtPKPDTwoCompartments,
-                                                     objLabel='pkpd - iv two-compartments',
-                                                     globalSearch=False,
-                                                     bounds='(0.002, 0.01); (1, 2); (0.0001, 0.001); (0, 0.4)')
-        protPKPDPOTwoCompartments.inputExperiment.set(protChangeTimeUnit.outputExperiment)
-        self.launchProtocol(protPKPDPOTwoCompartments)
-        self.assertIsNotNone(protPKPDPOTwoCompartments.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
-        self.assertIsNotNone(protPKPDPOTwoCompartments.outputFitting.fnFitting, "There was a problem with the two-compartmental model ")
-        self.validateFiles('protPKPDPOTwoCompartments', protPKPDPOTwoCompartments)
-        experiment = PKPDExperiment()
-        experiment.load(protPKPDPOTwoCompartments.outputExperiment.fnPKPD)
-        Cl = float(experiment.samples['Individual'].descriptors['Cl'])
-        Clp = float(experiment.samples['Individual'].descriptors['Clp'])
-        V = float(experiment.samples['Individual'].descriptors['V'])
-        Vp = float(experiment.samples['Individual'].descriptors['Vp'])
-        self.assertTrue(Clp>0.00045 and Clp<0.00055) # Gabrielsson p. 626: Cld=0.030407 h^-1=0.0005067 min^-1
-        self.assertTrue(Cl>0.005 and Cl<0.007) # Gabrielsson p. 626: (ClR+Clm)=(0.3149+0.0540) h^-1=.006148 min^-1
-        self.assertTrue(V>1.5 and V<1.7) # Gabrielsson p. 626: Vc=1.61
-        self.assertTrue(Vp>0.15 and Vp<0.17) # Gabrielsson p. 626: Vt=0.1647
-        fitting = PKPDFitting()
-        fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
-        self.assertTrue(fitting.sampleFits[0].R2>0.99)
-
-        # Fit a monocompartmental model to a set of measurements obtained by intravenous doses and urine
+        # # Fit a monocompartmental model to a set of measurements obtained by intravenous doses and urine
         print "Fitting a two-compartmental model (intravenous doses and urine) ..."
         protIVTwoCompartmentsUrine = self.newProtocol(ProtPKPDTwoCompartmentsUrine,
                                                       objLabel='pkpd - iv two-compartments urine',
                                                       globalSearch=False,
-                                                      bounds='(0.002, 0.01); (1, 2); (0.0001, 0.001); (0, 0.4); (0,1)')
+                                                      bounds='(2,4); (200,300); (0,1); (300,500); (0,0.1)')
         protIVTwoCompartmentsUrine.inputExperiment.set(protChangeTimeUnit.outputExperiment)
         self.launchProtocol(protIVTwoCompartmentsUrine)
         self.assertIsNotNone(protIVTwoCompartmentsUrine.outputExperiment.fnPKPD, "There was a problem with the monocompartmental model ")
@@ -103,15 +78,15 @@ class TestGabrielssonPK16Workflow(TestWorkflow):
         V = float(experiment.samples['Individual'].descriptors['V'])
         Vp = float(experiment.samples['Individual'].descriptors['Vp'])
         fe = float(experiment.samples['Individual'].descriptors['fe'])
-        self.assertTrue(Clp>0.00045 and Clp<0.00055) # Gabrielsson p. 626: Cld=0.030407 h^-1=0.0005067 min^-1
-        self.assertTrue(Cl>0.005 and Cl<0.007) # Gabrielsson p. 626: (ClR+Clm)=(0.3149+0.0540) h^-1=.006148 min^-1
-        self.assertTrue(V>1.5 and V<1.7) # Gabrielsson p. 626: Vc=1.61
-        self.assertTrue(Vp>0.15 and Vp<0.17) # Gabrielsson p. 626: Vt=0.1647
-        self.assertTrue(fe>0.84 and fe<0.88) # Gabrielsson p. 626: Clr=0.3149 h^-1, fe=ClR/(ClR+Clm)=0.3149/(0.3149+0.0540)=0.8536
+        self.assertTrue(Clp>0.65 and Clp<0.75)
+        self.assertTrue(Cl>2.9 and Cl<3)
+        self.assertTrue(V>240 and V<260)
+        self.assertTrue(Vp>390 and Vp<410)
+        self.assertTrue(fe>0.025 and fe<0.04)
         fitting = PKPDFitting()
         fitting.load(protIVTwoCompartmentsUrine.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.99)
-        self.assertTrue(fitting.sampleFits[0].AIC<-120)
+        self.assertTrue(fitting.sampleFits[0].AIC<-30)
 
 if __name__ == "__main__":
     unittest.main()
