@@ -38,6 +38,9 @@ class PKPDUnit:
     UNIT_CONC_g_mL= 14
     UNIT_CONC_g_uL= 15
     UNIT_CONC_ug_mL= 16
+    UNIT_CONC_mmol_L= 17
+    UNIT_CONC_umol_L= 18
+    UNIT_CONC_nmol_L= 19
     UNIT_VOLUME_L=30
     UNIT_VOLUME_mL=31
     UNIT_VOLUME_uL=32
@@ -47,6 +50,9 @@ class PKPDUnit:
     UNIT_WEIGHT_mg= 102
     UNIT_WEIGHT_ug= 103
     UNIT_WEIGHT_ng= 104
+    UNIT_WEIGHT_mmol= 105
+    UNIT_WEIGHT_umol= 106
+    UNIT_WEIGHT_nmol= 107
     UNIT_TIMECONC_H_g_L = 200
     UNIT_TIMECONC_H_mg_L = 201
     UNIT_TIMECONC_H_ug_L = 202
@@ -54,6 +60,9 @@ class PKPDUnit:
     UNIT_TIMECONC_H_g_mL = 204
     UNIT_TIMECONC_H_g_uL = 205
     UNIT_TIMECONC_H_ug_mL = 206
+    UNIT_TIMECONC_H_mmol_L = 207
+    UNIT_TIMECONC_H_umol_L = 208
+    UNIT_TIMECONC_H_nmol_L = 209
     UNIT_TIMECONC_MIN_g_L = 220
     UNIT_TIMECONC_MIN_mg_L = 221
     UNIT_TIMECONC_MIN_ug_L = 222
@@ -61,6 +70,9 @@ class PKPDUnit:
     UNIT_TIMECONC_MIN_g_mL = 224
     UNIT_TIMECONC_MIN_g_uL = 225
     UNIT_TIMECONC_MIN_ug_mL = 226
+    UNIT_TIMECONC_MIN_mmol_L = 227
+    UNIT_TIMECONC_MIN_umol_L = 228
+    UNIT_TIMECONC_MIN_nmol_L = 229
     UNIT_TIME2CONC_H2_g_L = 250
     UNIT_TIME2CONC_H2_mg_L = 251
     UNIT_TIME2CONC_H2_ug_L = 252
@@ -68,6 +80,9 @@ class PKPDUnit:
     UNIT_TIME2CONC_H2_g_mL = 254
     UNIT_TIME2CONC_H2_g_uL = 255
     UNIT_TIME2CONC_H2_ug_mL = 256
+    UNIT_TIME2CONC_H2_mmol_L = 257
+    UNIT_TIME2CONC_H2_umol_L = 258
+    UNIT_TIME2CONC_H2_nmol_L = 259
     UNIT_TIME2CONC_MIN2_g_L = 270
     UNIT_TIME2CONC_MIN2_mg_L = 271
     UNIT_TIME2CONC_MIN2_ug_L = 272
@@ -75,6 +90,9 @@ class PKPDUnit:
     UNIT_TIME2CONC_MIN2_g_mL = 274
     UNIT_TIME2CONC_MIN2_g_uL = 275
     UNIT_TIME2CONC_MIN2_ug_mL = 276
+    UNIT_TIME2CONC_MIN2_mmol_L = 277
+    UNIT_TIME2CONC_MIN2_umol_L = 278
+    UNIT_TIME2CONC_MIN2_nmol_L = 279
     UNIT_VOLUMEINVTIME_L_H = 300
     UNIT_VOLUMEINVTIME_mL_H = 301
     UNIT_VOLUMEINVTIME_uL_H = 302
@@ -120,6 +138,9 @@ class PKPDUnit:
         UNIT_CONC_g_mL: "g/mL",
         UNIT_CONC_g_uL: "g/uL",
         UNIT_CONC_ug_mL: "ug/mL",
+        UNIT_CONC_mmol_L: "mmol/L",
+        UNIT_CONC_umol_L: "umol/L",
+        UNIT_CONC_nmol_L: "nmol/L",
         UNIT_VOLUME_L: "L",
         UNIT_VOLUME_mL: "mL",
         UNIT_VOLUME_uL: "uL",
@@ -129,6 +150,9 @@ class PKPDUnit:
         UNIT_WEIGHT_mg: "mg",
         UNIT_WEIGHT_ug: "ug",
         UNIT_WEIGHT_ng: "ng",
+        UNIT_WEIGHT_mmol: "mmol",
+        UNIT_WEIGHT_umol: "umol",
+        UNIT_WEIGHT_nmol: "nmol",
         UNIT_NONE: "none",
 
         UNIT_TIMECONC_H_g_L: "g*h/L",
@@ -138,6 +162,9 @@ class PKPDUnit:
         UNIT_TIMECONC_H_g_mL: "g*h/mL",
         UNIT_TIMECONC_H_g_uL: "g*h/uL",
         UNIT_TIMECONC_H_ug_mL: "ug*h/mL",
+        UNIT_TIMECONC_H_mmol_L: "mmol*h/L",
+        UNIT_TIMECONC_H_umol_L:  "umol*h/L",
+        UNIT_TIMECONC_H_nmol_L:  "nmol*h/L",
         UNIT_TIMECONC_MIN_g_L: "g*min/L",
         UNIT_TIMECONC_MIN_mg_L: "mg*min/L",
         UNIT_TIMECONC_MIN_ug_L: "ug*min/L",
@@ -145,6 +172,9 @@ class PKPDUnit:
         UNIT_TIMECONC_MIN_g_mL: "g*min/mL",
         UNIT_TIMECONC_MIN_g_uL: "g*min/uL",
         UNIT_TIMECONC_MIN_ug_mL: "ug*min/mL",
+        UNIT_TIMECONC_MIN_mmol_L: "mmol*min/L",
+        UNIT_TIMECONC_MIN_umol_L:  "umol*min/L",
+        UNIT_TIMECONC_MIN_nmol_L:  "nmol*min/L",
 
         UNIT_TIME2CONC_H2_g_L: "g*h^2/L",
         UNIT_TIME2CONC_H2_mg_L: "mg*h^2/L",
@@ -153,6 +183,9 @@ class PKPDUnit:
         UNIT_TIME2CONC_H2_g_mL: "g*h^2/mL",
         UNIT_TIME2CONC_H2_g_uL: "g*h^2/uL",
         UNIT_TIME2CONC_H2_ug_mL: "ug*h^2/mL",
+        UNIT_TIME2CONC_H2_mmol_L: "mmol*h^2/L",
+        UNIT_TIME2CONC_H2_umol_L:  "umol*h^2/L",
+        UNIT_TIME2CONC_H2_nmol_L:  "nmol*h^2/L",
         UNIT_TIME2CONC_MIN2_g_L: "g*min^2/L",
         UNIT_TIME2CONC_MIN2_mg_L: "mg*min^2/L",
         UNIT_TIME2CONC_MIN2_ug_L: "ug*min^2/L",
@@ -160,6 +193,9 @@ class PKPDUnit:
         UNIT_TIME2CONC_MIN2_g_mL: "g*min^2/mL",
         UNIT_TIME2CONC_MIN2_g_uL: "g*min^2/uL",
         UNIT_TIME2CONC_MIN2_ug_mL: "ug*min^2/mL",
+        UNIT_TIME2CONC_MIN2_mmol_L: "mmol*min^2/L",
+        UNIT_TIME2CONC_MIN2_umol_L:  "umol*min^2/L",
+        UNIT_TIME2CONC_MIN2_nmol_L:  "nmol*min^2/L",
 
         UNIT_VOLUMEINVTIME_L_H: "L/h",
         UNIT_VOLUMEINVTIME_mL_H: "mL/h",
@@ -246,7 +282,7 @@ def convertUnits(x, unitsIn, unitsOut):
         elif unitsOut == PKPDUnit.UNIT_WEIGHT_ng:
             return 1e9*x
         else:
-            raise Exception("Uknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
+            raise Exception("Unknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
 
     elif unitsIn == PKPDUnit.UNIT_WEIGHT_mg:
         if unitsOut == PKPDUnit.UNIT_WEIGHT_g:
@@ -258,7 +294,7 @@ def convertUnits(x, unitsIn, unitsOut):
         elif unitsOut == PKPDUnit.UNIT_WEIGHT_ng:
             return 1e6*x
         else:
-            raise Exception("Uknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
+            raise Exception("Unknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
 
     elif unitsIn == PKPDUnit.UNIT_WEIGHT_ug:
         if unitsOut == PKPDUnit.UNIT_WEIGHT_g:
@@ -270,7 +306,7 @@ def convertUnits(x, unitsIn, unitsOut):
         elif unitsOut == PKPDUnit.UNIT_WEIGHT_ng:
             return 1e3*x
         else:
-            raise Exception("Uknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
+            raise Exception("Unknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
 
     elif unitsIn == PKPDUnit.UNIT_WEIGHT_ng:
         if unitsOut == PKPDUnit.UNIT_WEIGHT_g:
@@ -282,7 +318,37 @@ def convertUnits(x, unitsIn, unitsOut):
         elif unitsOut == PKPDUnit.UNIT_WEIGHT_ng:
             return x
         else:
-            raise Exception("Uknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
+            raise Exception("Unknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
+
+    elif unitsIn == PKPDUnit.UNIT_WEIGHT_mmol:
+        if unitsOut == PKPDUnit.UNIT_WEIGHT_mmol:
+            return x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_umol:
+            return 1e3*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_nmol:
+            return 1e6*x
+        else:
+            raise Exception("Unknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
+
+    elif unitsIn == PKPDUnit.UNIT_WEIGHT_umol:
+        if unitsOut == PKPDUnit.UNIT_WEIGHT_mmol:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_umol:
+            return x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_nmol:
+            return 1e3*x
+        else:
+            raise Exception("Unknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
+
+    elif unitsIn == PKPDUnit.UNIT_WEIGHT_nmol:
+        if unitsOut == PKPDUnit.UNIT_WEIGHT_mmol:
+            return 1e-6*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_umol:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_nmol:
+            return x
+        else:
+            raise Exception("Unknown unit conversion from %s to %s"%(PKPDUnit.unitDictionary[unitsIn],PKPDUnit.unitDictionary[unitsOut]))
 
     elif unitsIn == PKPDUnit.UNIT_CONC_g_L:
         if unitsOut == PKPDUnit.UNIT_CONC_mg_L or unitsOut==PKPDUnit.UNIT_CONC_ug_mL:
@@ -398,6 +464,12 @@ def multiplyUnits(unitX,unitY):
             return PKPDUnit.UNIT_TIMECONC_H_g_uL
         elif unitY==PKPDUnit.UNIT_CONC_ug_mL:
             return PKPDUnit.UNIT_TIMECONC_H_ug_mL
+        elif unitY==PKPDUnit.UNIT_CONC_mmol_L:
+            return PKPDUnit.UNIT_TIMECONC_H_mmol_L
+        elif unitY==PKPDUnit.UNIT_CONC_umol_L:
+            return PKPDUnit.UNIT_TIMECONC_H_umol_L
+        elif unitY==PKPDUnit.UNIT_CONC_nmol_L:
+            return PKPDUnit.UNIT_TIMECONC_H_nmol_L
 
         elif unitY==PKPDUnit.UNIT_TIMECONC_H_g_L:
             return PKPDUnit.UNIT_TIME2CONC_H2_g_L
@@ -413,6 +485,12 @@ def multiplyUnits(unitX,unitY):
             return PKPDUnit.UNIT_TIME2CONC_H2_g_uL
         elif unitY==PKPDUnit.UNIT_TIMECONC_H_ug_mL:
             return PKPDUnit.UNIT_TIME2CONC_H2_ug_mL
+        elif unitY==PKPDUnit.UNIT_TIMECONC_H_mmol_L:
+            return PKPDUnit.UNIT_TIME2CONC_H2_mmol_L
+        elif unitY==PKPDUnit.UNIT_TIMECONC_H_umol_L:
+            return PKPDUnit.UNIT_TIME2CONC_H2_umol_L
+        elif unitY==PKPDUnit.UNIT_TIMECONC_H_nmol_L:
+            return PKPDUnit.UNIT_TIME2CONC_H2_nmol_L
 
         else:
             return PKPDUnit.UNIT_NONE
@@ -432,6 +510,12 @@ def multiplyUnits(unitX,unitY):
             return PKPDUnit.UNIT_TIMECONC_MIN_g_uL
         elif unitY==PKPDUnit.UNIT_CONC_ug_mL:
             return PKPDUnit.UNIT_TIMECONC_MIN_ug_mL
+        elif unitY==PKPDUnit.UNIT_CONC_mmol_L:
+            return PKPDUnit.UNIT_TIMECONC_MIN_mmol_L
+        elif unitY==PKPDUnit.UNIT_CONC_umol_L:
+            return PKPDUnit.UNIT_TIMECONC_MIN_umol_L
+        elif unitY==PKPDUnit.UNIT_CONC_nmol_L:
+            return PKPDUnit.UNIT_TIMECONC_MIN_nmol_L
 
         elif unitY==PKPDUnit.UNIT_TIMECONC_MIN_g_L:
             return PKPDUnit.UNIT_TIME2CONC_MIN2_g_L
@@ -447,6 +531,12 @@ def multiplyUnits(unitX,unitY):
             return PKPDUnit.UNIT_TIME2CONC_MIN2_g_uL
         elif unitY==PKPDUnit.UNIT_TIMECONC_MIN_ug_mL:
             return PKPDUnit.UNIT_TIME2CONC_MIN2_ug_mL
+        elif unitY==PKPDUnit.UNIT_TIMECONC_MIN_mmol_L:
+            return PKPDUnit.UNIT_TIME2CONC_MIN2_mmol_L
+        elif unitY==PKPDUnit.UNIT_TIMECONC_MIN_umol_L:
+            return PKPDUnit.UNIT_TIME2CONC_MIN2_umol_L
+        elif unitY==PKPDUnit.UNIT_TIMECONC_MIN_nmol_L:
+            return PKPDUnit.UNIT_TIME2CONC_MIN2_nmol_L
 
         else:
             return PKPDUnit.UNIT_NONE
@@ -524,21 +614,21 @@ def divideUnits(unitX,unitY):
         else:
             return PKPDUnit.UNIT_NONE
 
-    elif unitX==PKPDUnit.UNIT_WEIGHT_ng:
-        if unitY==PKPDUnit.UNIT_CONC_g_L:
-            return PKPDUnit.UNIT_VOLUME_nL
-        elif unitY==PKPDUnit.UNIT_CONC_mg_L:
-            return PKPDUnit.UNIT_VOLUME_uL
-        elif unitY==PKPDUnit.UNIT_CONC_ug_L:
-            return PKPDUnit.UNIT_VOLUME_mL
-        elif unitY==PKPDUnit.UNIT_CONC_ng_L:
+    elif unitX==PKPDUnit.UNIT_WEIGHT_mmol:
+        if unitY==PKPDUnit.UNIT_CONC_mmol_L:
             return PKPDUnit.UNIT_VOLUME_L
-
-        elif unitY==PKPDUnit.UNIT_CONC_g_mL:
+        else:
             return PKPDUnit.UNIT_NONE
 
-        elif unitY==PKPDUnit.UNIT_CONC_g_uL:
+    elif unitX==PKPDUnit.UNIT_WEIGHT_umol:
+        if unitY==PKPDUnit.UNIT_CONC_umol_L:
+            return PKPDUnit.UNIT_VOLUME_L
+        else:
             return PKPDUnit.UNIT_NONE
+
+    elif unitX==PKPDUnit.UNIT_WEIGHT_nmol:
+        if unitY==PKPDUnit.UNIT_CONC_nmol_L:
+            return PKPDUnit.UNIT_VOLUME_L
         else:
             return PKPDUnit.UNIT_NONE
 
