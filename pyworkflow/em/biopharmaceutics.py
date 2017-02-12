@@ -236,6 +236,43 @@ class BiopharmaceuticsModelImmediateAndOrder1(BiopharmaceuticsModel):
     def getDescription(self):
         return "Immediate and First order absorption (%s)"%self.__class__.__name__
 
+class BiopharmaceuticsModelOrder1AndOrder1(BiopharmaceuticsModel):
+    def getDescription(self):
+        return ['Absorption rate1','Absorption rate2','tlag2','Fraction 1']
+
+    def getParameterNames(self):
+        return ['Ka1','Ka2','tlag12','F1']
+
+    def calculateParameterUnits(self,sample):
+        self.parameterUnits = [PKPDUnit.UNIT_INVTIME_MIN,PKPDUnit.UNIT_INVTIME_MIN,PKPDUnit.UNIT_TIME_MIN,PKPDUnit.UNIT_NONE]
+        return self.parameterUnits
+
+    def getAg(self,t):
+        if t<0:
+            return 0.0
+        Ka1 = self.parameters[0]
+        Ka2 = self.parameters[1]
+        tlag12 = self.parameters[2]
+        F1 = self.parameters[3]
+        A1=F1*math.exp(-Ka1*t)
+        A2=1-F1
+        if t>tlag12:
+            A2=(1-F1)*math.exp(-Ka2*(t-tlag12))
+        return self.Amax*(A1+A2)
+
+    def getEquation(self):
+        Ka1 = self.parameters[0]
+        Ka2 = self.parameters[1]
+        tlag12 = self.parameters[2]
+        F1 = self.parameters[3]
+        return "D(t)=(%f)*(1-exp(-(%f)*t)+(%f)*(1-exp(-(%f)*(t-%f))"%(self.Amax*F1,Ka1,self.Amax*(1-F1),Ka2,tlag12)
+
+    def getModelEquation(self):
+        return "D(t)=Amax*F1*(1-exp(-Ka1*t))+(1-F1)*Amax*(1-exp(-Ka2*(t-tlag12)))"
+
+    def getDescription(self):
+        return "First and First order absorption (%s)"%self.__class__.__name__
+
 class PKPDVia:
     def __init__(self):
         self.viaName = None
@@ -316,6 +353,8 @@ class PKPDVia:
                     self.viaProfile=BiopharmaceuticsModelOrder1()
                 elif self.via=="evFractional":
                     self.viaProfile=BiopharmaceuticsModelOrderFractional()
+                elif self.via=="ev1-ev1":
+                    self.viaProfile=BiopharmaceuticsModelOrder1AndOrder1()
 
     def changeTimeUnitsToMinutes(self):
         if self.tunits.unit==PKPDUnit.UNIT_TIME_MIN:
