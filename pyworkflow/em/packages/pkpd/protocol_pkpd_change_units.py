@@ -41,6 +41,7 @@ from pyworkflow.em.pkpd_units import  unitFromString, convertUnits, strUnit, PKP
 # TESTED in test_workflow_gabrielsson_pk16.py
 # TESTED in test_workflow_gabrielsson_pk25.py
 # TESTED in test_workflow_gabrielsson_pk39.py
+# TESTED in test_workflow_gabrielsson_pk43.py
 
 class ProtPKPDChangeUnits(ProtPKPD):
     """ Change units of a given variable.\n
