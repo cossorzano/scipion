@@ -49,7 +49,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
     def _defineParams(self, form):
         form.addSection('Input')
         form.addParam('inputODE', params.PointerParam, label="Input ODE model",
-                      pointerClass='ProtPKPDIVMonoCompartment, ProtPKPDEV1MonoCompartment', help='Select a run of an ODE model')
+                      pointerClass='ProtPKPDMonoCompartment, ProtPKPDTwoCompartments', help='Select a run of an ODE model')
         form.addParam('paramsSource', params.EnumParam, label="Source of parameters", choices=['ODE Bootstrap','User defined'], default=0,
                       help="Choose a population of parameters or your own")
         form.addParam('inputPopulation', params.PointerParam, label="Input population", condition="paramsSource==0",
