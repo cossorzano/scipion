@@ -440,6 +440,11 @@ class PKPDVia:
         if self.via != "iv":
             self.viaProfile.setParameters(p[currentIdx:])
 
+def createVia(line):
+    via = PKPDVia()
+    via.parseTokens(line.split(';'))
+    via.prepare()
+    return via
 
 class PKPDDose:
     TYPE_BOLUS = 1
@@ -626,11 +631,12 @@ class PKPDDose:
         return self.dunits._toString()
 
 
-def createDeltaDose(doseAmount,t=0,dunits="mg",via="iv"):
+def createDeltaDose(doseAmount,via,t=0,dunits="mg"):
     dose = PKPDDose()
     dose.doseName = "Bolus"
     dose.doseType = PKPDDose.TYPE_BOLUS
     dose.doseAmount = doseAmount
+    dose.via = via
     dose.t0 = t
     dose.tunits = PKPDUnit("min")
     dose.dunits = PKPDUnit(dunits)
