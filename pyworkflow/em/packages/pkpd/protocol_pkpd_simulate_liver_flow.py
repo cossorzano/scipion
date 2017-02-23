@@ -31,7 +31,7 @@ import os
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDODEModel
-import pyworkflow.em.biopharmaceutics
+from pyworkflow.em.biopharmaceutics import DrugSource, createDeltaDose, createVia
 
 class PKPDLiver(PKPDODEModel):
     def F(self, t, y):
@@ -72,22 +72,21 @@ class PKPDLiver(PKPDODEModel):
 
 class PKPDLiverEV1():
     def __init__(self):
-        self.drugSource = biopharmaceutics.DrugSource()
-        self.drugSource.type = biopharmaceutics.DrugSource.EV
-        self.drugSource.evProfile = biopharmaceutics.BiopharmaceuticsModelOrder1()
+        self.drugSource = DrugSource()
         self.model = PKPDLiver()
         self.model.drugSource = self.drugSource
-        self.NparametersSource = len(self.drugSource.getParameterNames())
+        self.via = createVia("Oral; ev1")
 
     def setTimeRange(self,tF):
         self.model.t0 = 0
         self.model.tF = tF*60
 
     def setDose(self,doseAmount):
-        self.drugSource.setDoses([createDeltaDose(doseAmount,"mg","ev1")],self.model.t0,self.model.tF)
+        self.drugSource.setDoses([createDeltaDose(doseAmount,self.via,0,"mg")],self.model.t0,self.model.tF)
+        self.NparametersSource = len(self.drugSource.getParameterNames())
 
     def simulate(self,params,t):
-        self.drugSource.evProfile.setParameters(params[0:self.NparametersSource])
+        self.drugSource.setParameters(params[0:self.NparametersSource])
         return self.model.forwardModel(params[self.NparametersSource:],t)
 
 
