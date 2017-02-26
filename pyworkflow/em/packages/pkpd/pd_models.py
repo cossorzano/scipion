@@ -356,7 +356,7 @@ class PDGompertz(PDGenericModel):
     def calculateParameterUnits(self, sample):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
-        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
+        self.parameterUnits = [yunits, yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
