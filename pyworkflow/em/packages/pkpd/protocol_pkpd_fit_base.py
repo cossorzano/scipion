@@ -203,8 +203,8 @@ class ProtPKPDFitBase(ProtPKPD):
             optimizer2 = PKPDLSOptimizer(self.model,fitType)
             optimizer2.optimize()
             optimizer2.setConfidenceInterval(self.confidenceInterval.get())
-            self.model.setParameters(optimizer2.optimum)
-            self.model.forwardModel(optimizer2.optimum) # To make sure that self.yPredicted is what it must
+            self.setParameters(optimizer2.optimum)
+            optimizer2.evaluateQuality()
 
             # Keep this result
             sampleFit = PKPDSampleFit()
