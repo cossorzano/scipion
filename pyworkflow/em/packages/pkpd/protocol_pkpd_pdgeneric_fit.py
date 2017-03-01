@@ -48,13 +48,14 @@ are independent, which are not. Use Bootstrap estimates instead.\n
         self._defineParams1(form,"Cp","E")
         form.addParam('modelType', params.EnumParam, choices=["Linear","Log-linear","Saturated","Sigmoid","Gompertz",
                                                               "Logistic1 ","Logistic 2","Logistic 3","Logistic 4",
-                                                              "Richards","Morgan-Mercer-Flodin","Weibull"],
+                                                              "Richards","Morgan-Mercer-Flodin","Weibull","Hill"],
                       label="Generic model", default=0,
                       help='Linear: Y=e0+s*X\nLog-linear: Y=m*log(X-X0)\nSaturated: Y=e0+(emax*X/(eC50+X))\n'\
                             'Sigmoid: Y=e0+(emax*(X**h)/((eC50**h)+(X**h)))\nGompertz: Y=e0+a*exp(-exp(b-g*X))\n'\
                             'Logistic 1: Y=e0+(a/(1+exp(b-g*X)))\nLogistic 2: Y=e0+(1/(a+exp(b-g*X)))\nLogistic 3: Y=e0+(a/(1+b*exp(-g*X)))\n'\
                             'Logistic 4: Y=e0+(1/(a+b*exp(-g*X)))\nRichards: Y=e0+(a/((1+exp(b-g*X))^(1/d)))\n'\
-                            'Morgan-Mercer-Flodin: Y=e0+((b*g+a*(X^d))/(g+(X^d)))\nWeibull: Y=a-b*exp(-g*(X^d))\n')
+                            'Morgan-Mercer-Flodin: Y=e0+((b*g+a*(X^d))/(g+(X^d)))\nWeibull: Y=a-b*exp(-g*(X^d))\n'
+                            'Hill: Y=e0+b*X^d/(g^d+X^d)\n')
         form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic","Relative"], label="Fit mode", default=1,
                       help='Linear: sum (Cobserved-Cpredicted)^2\nLogarithmic: sum(log10(Cobserved)-log10(Cpredicted))^2\n'\
                            "Relative: sum ((Cobserved-Cpredicted)/Cobserved)^2")
@@ -71,7 +72,8 @@ are independent, which are not. Use Bootstrap estimates instead.\n
                            'Logistic 4: e0;a;b;g\n'\
                            'Richards: e0;a;b;g;d\n'\
                            'Morgan-Mercer-Flodin: e0;b;g;a;d\n'\
-                           'Weibull: a;b;g;d\n')
+                           'Weibull: a;b;g;d\n'\
+                           'Hill: e0;b;g;d\n')
         form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval=", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
         form.addParam('reportX', params.StringParam, label="Evaluate at X=", default="", expertLevel=LEVEL_ADVANCED,
@@ -107,3 +109,5 @@ are independent, which are not. Use Bootstrap estimates instead.\n
             return PDMorgan()
         elif self.modelType.get() == 11:
             return PDWeibull()
+        elif self.modelType.get() == 12:
+            return PDHill()
