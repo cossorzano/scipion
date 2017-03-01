@@ -633,6 +633,11 @@ class PKPDExperiment(EMObject):
             varX.units = PKPDUnit()
             varX.units.unit = varUnits
             self.variables[varName] = varX
+        else:
+            varPresent = self.variables[varName]
+            if varPresent.role!=PKPDVariable.ROLE_LABEL or varPresent.comment!=varDescr or varPresent.units.unit!=varUnits:
+                raise Exception("%s is already a variable in the experiment with a different purpose"%varName)
+
         if sampleName in self.samples:
             sample = self.samples[sampleName]
             if sample.descriptors==None:
