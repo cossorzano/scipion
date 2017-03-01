@@ -433,7 +433,7 @@ class PDLogistic1(PDGenericModel):
     def calculateParameterUnits(self, sample):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
-        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
+        self.parameterUnits = [yunits, yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -510,7 +510,7 @@ class PDLogistic2(PDGenericModel):
     def calculateParameterUnits(self, sample):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
-        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
+        self.parameterUnits = [yunits, yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -587,7 +587,7 @@ class PDLogistic3(PDGenericModel):
     def calculateParameterUnits(self, sample):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
-        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
+        self.parameterUnits = [yunits, yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -662,7 +662,7 @@ class PDLogistic4(PDGenericModel):
     def calculateParameterUnits(self, sample):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
-        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
+        self.parameterUnits = [yunits, yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -743,7 +743,7 @@ class PDRichards(PDGenericModel):
     def calculateParameterUnits(self, sample):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
-        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
+        self.parameterUnits = [yunits, yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits), PKPDUnit.UNIT_NONE]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -825,7 +825,7 @@ class PDMorgan(PDGenericModel):
     def calculateParameterUnits(self, sample):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
-        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
+        self.parameterUnits = [yunits, yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits), PKPDUnit.UNIT_NONE]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
@@ -901,7 +901,82 @@ class PDWeibull(PDGenericModel):
     def calculateParameterUnits(self, sample):
         yunits = self.experiment.getVarUnits(self.yName)
         xunits = self.experiment.getVarUnits(self.xName)
-        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits)]
+        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, inverseUnits(xunits), PKPDUnit.UNIT_NONE]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        retval.append(lowerBound[0] > 0 or upperBound[0] < 0)
+        retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
+        retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
+        retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+class PDHill(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        self.yPredicted = np.zeros(x.shape[0])
+        e0 = parameters[0]
+        b = parameters[1]
+        g = parameters[2]
+        d = parameters[3]
+
+        xprime = x**d
+
+        self.yPredicted = e0 + (b*xprime)/(g**d+xprime)
+
+        return self.yPredicted
+
+    def getDescription(self):
+        return "Hill (%s)" % self.__class__.__name__
+
+    def prepare(self):
+        if self.bounds == None:
+            d = 1
+
+            emin = np.min(self.y)
+            emax = np.max(self.y)
+            e0 = emin
+
+            b = emax - emin
+            g = 5 / np.max(self.x)
+
+            print("First estimate of Hill term: ")
+            print("Y  = (%f) + (%f)*exp(-(%f)*(X^(%f))) " % (e0, b, g, d))
+
+            self.bounds = []
+            self.bounds.append((min(0.1 * e0, 10 * e0), max(0.1 * e0, 10 * e0)))
+            self.bounds.append((min(0.1 * b, 10 * b), max(0.1 * b, 10 * b)))
+            self.bounds.append((min(0.1 * g, 10 * g), max(0.1 * g, 10 * g)))
+            self.bounds.append((min(0.1 * d, 10 * d), max(0.1 * d, 10 * d)))
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y = e0 + b*X^d/(g^d+X^d)"
+
+    def getEquation(self):
+        toPrint = "Y  = (%f) + (%f)*(X^(%f))/((%f)^(%f)+X^(%f))" % (self.parameters[0], self.parameters[1],
+                                                                    self.parameters[3], self.parameters[2],
+                                                                    self.parameters[3], self.parameters[3])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['e0', 'b', 'g', 'd']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=e0 + b*X^d/(g^d+X^d)'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        yunits = self.experiment.getVarUnits(self.yName)
+        xunits = self.experiment.getVarUnits(self.xName)
+        self.parameterUnits = [yunits, PKPDUnit.UNIT_NONE, xunits, PKPDUnit.UNIT_NONE]
         return self.parameterUnits
 
     def areParametersSignificant(self, lowerBound, upperBound):
