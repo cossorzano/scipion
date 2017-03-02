@@ -121,7 +121,7 @@ class TestGabrielssonPK03Workflow(TestWorkflow):
         Ka = float(experiment.samples['Individual'].descriptors['Oral_Ka'])
         tlag = float(experiment.samples['Individual'].descriptors['Oral_tlag'])
         self.assertTrue(Cl>0.75 and Cl<0.8)
-        self.assertTrue(V>93 and V<100) # Gabrielsson p 521, Solution I: FV=98.7 L
+        self.assertTrue(V>93 and V<102) # Gabrielsson p 521, Solution I: FV=98.7 L
         self.assertTrue(Ka>0.0075 and Ka<0.0085) # Gabrielsson p 521, Solution I: ka=0.418 1/h=0.007 1/min
         self.assertTrue(tlag>20 and tlag<30) # Gabrielsson p 521, Solution I: tlag=0.39h=23.4 min
         fitting = PKPDFitting()

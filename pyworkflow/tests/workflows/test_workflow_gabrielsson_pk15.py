@@ -69,7 +69,7 @@ class TestGabrielssonPK15Workflow(TestWorkflow):
         V = float(experiment.samples['Individual'].descriptors['V'])
         self.assertTrue(Ka>0.005 and Ka<0.006)
         self.assertTrue(F>0.94 and F<0.97)
-        self.assertTrue(Cl>0.44 and Cl<0.57)
+        self.assertTrue(Cl>0.40 and Cl<0.57)
         self.assertTrue(V>3.2 and V<3.9)
         fitting = PKPDFitting()
         fitting.load(protPKPDPOMonoCompartment.outputFitting.fnFitting)
