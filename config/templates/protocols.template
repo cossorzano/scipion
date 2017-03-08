@@ -158,6 +158,10 @@ Protocols = [{
 		"text": "monocompartment (urine)"
 	},{
 		"tag": "protocol",
+		"value": "ProtPKPDMonoCompartmentClint",
+		"text": "monocompartment (intrinsic)"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDTwoCompartments",
 		"text": "two compartments"
 	},{
