@@ -122,6 +122,15 @@ class PKPDUnit:
     UNIT_WEIGHTINVTIME_mg_SEC = 362
     UNIT_WEIGHTINVTIME_ug_SEC = 363
     UNIT_WEIGHTINVTIME_ng_SEC = 364
+    UNIT_WEIGHTINVTIME_mmol_H = 365
+    UNIT_WEIGHTINVTIME_umol_H = 366
+    UNIT_WEIGHTINVTIME_nmol_H = 367
+    UNIT_WEIGHTINVTIME_mmol_MIN = 368
+    UNIT_WEIGHTINVTIME_umol_MIN = 369
+    UNIT_WEIGHTINVTIME_nmol_MIN = 370
+    UNIT_WEIGHTINVTIME_mmol_SEC = 371
+    UNIT_WEIGHTINVTIME_umol_SEC = 372
+    UNIT_WEIGHTINVTIME_nmol_SEC = 373
     UNIT_NONE = 99999
 
     unitDictionary = {
@@ -227,6 +236,15 @@ class PKPDUnit:
         UNIT_WEIGHTINVTIME_mg_SEC: "mg/s",
         UNIT_WEIGHTINVTIME_ug_SEC: "ug/s",
         UNIT_WEIGHTINVTIME_ng_SEC: "ng/s",
+        UNIT_WEIGHTINVTIME_mmol_H: "mmol/h",
+        UNIT_WEIGHTINVTIME_umol_H: "umol/h",
+        UNIT_WEIGHTINVTIME_nmol_H: "nmol/h",
+        UNIT_WEIGHTINVTIME_mmol_MIN: "mmol/min",
+        UNIT_WEIGHTINVTIME_umol_MIN: "umol/min",
+        UNIT_WEIGHTINVTIME_nmol_MIN: "nmol/min",
+        UNIT_WEIGHTINVTIME_mmol_SEC: "mmol/s",
+        UNIT_WEIGHTINVTIME_umol_SEC: "umol/s",
+        UNIT_WEIGHTINVTIME_nmol_SEC: "nmol/s",
     }
 
     def __init__(self,unitString=""):
@@ -240,6 +258,9 @@ class PKPDUnit:
 
     def isWeight(self):
         return self.unit>=100 and self.unit<=109
+
+    def isWeightInvTime(self):
+        return self.unit>=350 and self.unit<=375
 
     def _fromString(self, unitString):
         return self.stringToCode(unitString)
@@ -272,6 +293,9 @@ class PKPDUnit:
 
 
 def convertUnits(x, unitsIn, unitsOut):
+    if unitsIn==unitsOut:
+        return x
+
     if unitsIn == PKPDUnit.UNIT_WEIGHT_g:
         if unitsOut == PKPDUnit.UNIT_WEIGHT_g:
             return x
@@ -446,7 +470,94 @@ def convertUnits(x, unitsIn, unitsOut):
         if unitsOut == PKPDUnit.UNIT_TIMECONC_H_mg_L:
             return x/60
 
+    elif unitsIn == PKPDUnit.UNIT_WEIGHTINVTIME_g_MIN:
+        if unitsOut == PKPDUnit.UNIT_WEIGHT_g:
+            return x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_mg:
+            return 1e3*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_ug:
+            return 1e6*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_ng:
+            return 1e9*x
+
+    elif unitsIn == PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN:
+        if unitsOut == PKPDUnit.UNIT_WEIGHT_g:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_mg:
+            return x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_ug:
+            return 1e3*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_ng:
+            return 1e6*x
+
+    elif unitsIn == PKPDUnit.UNIT_WEIGHTINVTIME_ug_MIN:
+        if unitsOut == PKPDUnit.UNIT_WEIGHT_g:
+            return 1e-6*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_mg:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_ug:
+            return x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_ng:
+            return 1e3*x
+
+    elif unitsIn == PKPDUnit.UNIT_WEIGHTINVTIME_ng_MIN:
+        if unitsOut == PKPDUnit.UNIT_WEIGHT_g:
+            return 1e-9*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_mg:
+            return 1e-6*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_ug:
+            return 1e-3*x
+        elif unitsOut == PKPDUnit.UNIT_WEIGHT_ng:
+            return x
+
+    elif unitsIn == PKPDUnit.UNIT_WEIGHTINVTIME_umol_MIN:
+        if unitsOut == PKPDUnit.UNIT_WEIGHT_umol:
+            return x
+
     return None
+
+def changeRateToMinutes(amount,unit):
+    if unit==PKPDUnit.UNIT_WEIGHTINVTIME_g_H:
+        return (amount/60,PKPDUnit.UNIT_WEIGHTINVTIME_g_MIN)
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_g_SEC:
+        return (amount*60,PKPDUnit.UNIT_WEIGHTINVTIME_g_MIN)
+
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_mg_H:
+        return (amount/60,PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN)
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_mg_SEC:
+        return (amount*60,PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN)
+
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_ug_H:
+        return (amount/60,PKPDUnit.UNIT_WEIGHTINVTIME_ug_MIN)
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_ug_SEC:
+        return (amount*60,PKPDUnit.UNIT_WEIGHTINVTIME_ug_MIN)
+
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_ng_H:
+        return (amount/60,PKPDUnit.UNIT_WEIGHTINVTIME_ng_MIN)
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_ng_SEC:
+        return (amount*60,PKPDUnit.UNIT_WEIGHTINVTIME_ng_MIN)
+
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_umol_H:
+        return (amount/60,PKPDUnit.UNIT_WEIGHTINVTIME_umol_MIN)
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_umol_SEC:
+        return (amount*60,PKPDUnit.UNIT_WEIGHTINVTIME_umol_MIN)
+
+    else:
+        return (amount,unit)
+
+def changeRateToWeight(unit):
+    if unit==PKPDUnit.UNIT_WEIGHTINVTIME_g_MIN:
+        return PKPDUnit.UNIT_WEIGHT_g
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN:
+        return PKPDUnit.UNIT_WEIGHT_mg
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_ug_MIN:
+        return PKPDUnit.UNIT_WEIGHT_ug
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_ng_MIN:
+        return PKPDUnit.UNIT_WEIGHT_ng
+    elif unit==PKPDUnit.UNIT_WEIGHTINVTIME_umol_MIN:
+        return PKPDUnit.UNIT_WEIGHT_umol
+    else:
+        return unit
 
 def multiplyUnits(unitX,unitY):
     if unitX==PKPDUnit.UNIT_TIME_H:
@@ -541,6 +652,15 @@ def multiplyUnits(unitX,unitY):
         else:
             return PKPDUnit.UNIT_NONE
 
+    elif unitX==PKPDUnit.UNIT_VOLUMEINVTIME_mL_MIN:
+        if unitY==PKPDUnit.UNIT_CONC_g_mL:
+            return PKPDUnit.UNIT_WEIGHTINVTIME_g_MIN
+        elif unitY==PKPDUnit.UNIT_CONC_g_L:
+            return PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN
+        elif unitY==PKPDUnit.UNIT_CONC_ug_mL:
+            return PKPDUnit.UNIT_WEIGHTINVTIME_ug_MIN
+
+
 def divideUnits(unitX,unitY):
     if unitX==PKPDUnit.UNIT_WEIGHT_g:
         if unitY==PKPDUnit.UNIT_CONC_g_L:
@@ -590,9 +710,12 @@ def divideUnits(unitX,unitY):
 
         elif unitY==PKPDUnit.UNIT_CONC_g_mL:
             return PKPDUnit.UNIT_VOLUME_nL
-
         elif unitY==PKPDUnit.UNIT_CONC_g_uL:
             return PKPDUnit.UNIT_NONE
+
+        elif unitY==PKPDUnit.UNIT_CONC_ug_mL:
+            return PKPDUnit.UNIT_VOLUME_mL
+
         else:
             return PKPDUnit.UNIT_NONE
 
