@@ -10,9 +10,9 @@ t ; h ; numeric[%f] ; time ; Time variable
 Intravenous; iv
 
 [DOSES] ================================
-infusion0 ; via=Intravenous; infusion; t=0:15 min; d=1.79333 ug
-infusion1 ; via=Intravenous; infusion; t=16:480 min; d=0.29892 ug
-infusion2 ; via=Intravenous; infusion; t=481:1440 min; d=0.144739 ug
+infusion0 ; via=Intravenous; infusion; t=0:15 min; d=1.79333 ug/min
+infusion1 ; via=Intravenous; infusion; t=16:480 min; d=0.29892 ug/min
+infusion2 ; via=Intravenous; infusion; t=481:1440 min; d=0.144739 ug/min
 
 [SAMPLES] ================================
 Individual; dose=infusion0, infusion1, infusion2

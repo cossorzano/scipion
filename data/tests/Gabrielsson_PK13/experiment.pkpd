@@ -8,11 +8,10 @@ t ; min ; numeric[%f] ; time ; Time variable
 
 [VIAS] ================================
 Intravenous; iv; tlag=0.000000 min; bioavailability=1.000000
-Oral; ev1;  tlag min;  bioavailability
 
 [DOSES] ================================
 D0; via=Intravenous; bolus; t=0.000000 min; d=400 ug
-D1; via=Intravenous; infusion; t=0.000000:26.000000 min; d=30.76923 ug
+D1; via=Intravenous; infusion; t=0.000000:26.000000 min; d=30.76923 ug/min
 
 [SAMPLES] ================================
 Individual; dose=D0,D1 
