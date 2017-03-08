@@ -52,6 +52,7 @@ from protocol_pkpd_monocompartment_urine import ProtPKPDMonoCompartmentUrine
 from protocol_pkpd_pdgeneric_fit import ProtPKPDGenericFit
 from protocol_pkpd_change_via import ProtPKPDChangeVia
 from protocol_pkpd_twocompartments_urine import ProtPKPDTwoCompartmentsUrine
+from protocol_pkpd_monocompartment_clint import ProtPKPDMonoCompartmentClint
 
 from tk_ode import PKPDODEDialog, PKPDFitDialog
 
@@ -303,6 +304,7 @@ class PKPDDosesToSamplesTemplateWizard(Wizard):
 class PKPDODEWizard(Wizard):
     _targets = [(ProtPKPDMonoCompartment, ['bounds']),
                 (ProtPKPDMonoCompartmentUrine, ['bounds']),
+                (ProtPKPDMonoCompartmentClint, ['bounds']),
                 (ProtPKPDTwoCompartments, ['bounds']),
                 (ProtPKPDTwoCompartmentsUrine, ['bounds']),
                 (ProtPKPDGenericFit, ['bounds']),
