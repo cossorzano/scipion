@@ -31,7 +31,7 @@ import math
 import numpy as np
 
 from pyworkflow.em.data import PKPDModel, PKPDODEModel
-from pyworkflow.em.pkpd_units import inverseUnits, divideUnits, unitFromString, PKPDUnit
+from pyworkflow.em.pkpd_units import inverseUnits, divideUnits, multiplyUnits, unitFromString, PKPDUnit
 
 
 class PKModel(PKPDModel):
@@ -263,10 +263,12 @@ class PK_Monocompartment(PKPDODEModel):
     def F(self, t, y):
         Cl=self.parameters[0]
         V=self.parameters[1]
+        # print("F t=",t," C=",y, " incC=",-Cl/V*y)
         return -Cl/V*y
 
     def G(self, t, dD):
         V=self.parameters[1]
+        # print("G t=",t," dD=",dD," incC=",dD/V)
         return dD/V
 
     def getResponseDimension(self):
@@ -314,6 +316,89 @@ class PK_Monocompartment(PKPDODEModel):
         # V
         VLower = lowerBound[1]
         VUpper = upperBound[1]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, V looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, V seems to be negative")
+        else:
+            retval.append("True")
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p[0:1]<0)==0
+
+class PK_MonocompartmentClint(PKPDODEModel):
+    # https://www.nps.org.au/australian-prescriber/articles/pharmacokinetics-made-easy-9-non-linear-pharmacokinetics
+    def F(self, t, y):
+        Vmax=self.parameters[0]
+        Km=self.parameters[1]
+        V=self.parameters[2]
+        Clint=Vmax/(Km+y)
+        return -Clint/V*y
+
+    def G(self, t, dD):
+        V=self.parameters[2]
+        return dD/V
+
+    def getResponseDimension(self):
+        return 1
+
+    def getStateDimension(self):
+        return 1
+
+    def getDescription(self):
+        return "Monocompartmental intrinsic clearance model (%s)"%self.__class__.__name__
+
+    def getModelEquation(self):
+        return "dC/dt = -Clint/V * C + 1/V * dD/dt and Clint=Vmax/(Km+C)"
+
+    def getEquation(self):
+        Vmax=self.parameters[0]
+        Km=self.parameters[1]
+        V=self.parameters[2]
+        return "dC/dt = -Clint/(%f) * C + 1/(%f) dD/dt and Clint=(%f)/((%f)+C)"%(V,V,Vmax,Km)
+
+    def getParameterNames(self):
+        return ['Vmax','Km','V']
+
+    def calculateParameterUnits(self,sample):
+        xunits = unitFromString("min")
+        yunits = self.experiment.getVarUnits(self.yName)
+        Vunits = divideUnits(self.Dunits,yunits)
+        Clunits = divideUnits(Vunits,xunits)
+        Vmaxunits = multiplyUnits(Clunits,yunits)
+        self.parameterUnits = [Vmaxunits,yunits,Vunits]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        # Vmax
+        VmaxLower = lowerBound[0]
+        VmaxlUpper = upperBound[0]
+        if VmaxLower<0 and VmaxlUpper>0:
+            retval.append("Suspicious, Vmax looks like a constant")
+        elif VmaxLower<0:
+            retval.append("Suspicious, Vmax may be unstable")
+        elif VmaxLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # Km
+        KmLower = lowerBound[1]
+        KmUpper = upperBound[1]
+        if KmLower<0 and KmUpper>0:
+            retval.append("Suspicious, Km looks like a constant")
+        elif KmLower<0:
+            retval.append("Suspicious, Km may be unstable")
+        elif KmLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # V
+        VLower = lowerBound[2]
+        VUpper = upperBound[2]
         if VLower<0 and VUpper>0:
             retval.append("Suspicious, V looks like 0")
         elif VUpper<0:
