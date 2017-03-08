@@ -30,7 +30,7 @@ import copy
 from itertools import izip
 import math
 import numpy as np
-from pyworkflow.em.pkpd_units import PKPDUnit
+from pyworkflow.em.pkpd_units import PKPDUnit, changeRateToWeight
 
 class BiopharmaceuticsModel:
     def __init__(self):
@@ -467,7 +467,7 @@ class PKPDDose:
     def parseTokens(self,tokens,vias):
         # Dose1; via=Intravenous; bolus; t=0 min; d=60*$(weight)/1000 mg
         # Dose1; via=Oral; repeated_bolus; t=0:8:48 h; d=60*$(weight)/1000 mg
-        # Dose1; via=Intravenous; infusion; t=0:59 min; d=1 mg
+        # Dose1; via=Intravenous; infusion; t=0:59 min; d=1 mg/min
 
         # Get name
         currentToken = 0
@@ -534,8 +534,12 @@ class PKPDDose:
         self.dunits = PKPDUnit(unitString)
         if not self.dunits.unit:
             raise Exception("Unrecognized unit: %s"%unitString)
-        if not self.dunits.isWeight():
-            raise Exception("After normalization, the dose must be a weight")
+        if doseTypeString=="infusion":
+            if not self.dunits.isWeightInvTime():
+                raise Exception("After normalization, the dose must be a weight/time (=rate)")
+        else:
+            if not self.dunits.isWeight():
+                raise Exception("After normalization, the dose must be a weight")
         currentToken+=1
 
     def _printToStream(self,fh):
@@ -605,7 +609,7 @@ class PKPDDose:
     def getAmountReleasedAt(self,t0,dt=0.5):
         doseAmount = 0.0
         if self.via.viaProfile == None:
-            doseAmount += self.via.bioavailability*self.getDoseAt(t0,dt)
+            doseAmount += self.getDoseAt(t0,dt)
         else:
             if self.doseType!=PKPDDose.TYPE_INFUSION:
                 self.via.viaProfile.Amax = self.via.bioavailability*self.doseAmount
@@ -657,8 +661,13 @@ class DrugSource:
         self.parameterNames = []
         self.vias = []
         for dose in parsedDoseList:
-            if dose.doseType != PKPDDose.TYPE_REPEATED_BOLUS:
+            if dose.doseType == PKPDDose.TYPE_BOLUS:
                 self.parsedDoseList.append(dose)
+            elif dose.doseType == PKPDDose.TYPE_INFUSION:
+                newDose = copy.copy(dose)
+                newDose.dunits = copy.copy(dose.dunits)
+                newDose.dunits.unit = changeRateToWeight(dose.dunits.unit)
+                self.parsedDoseList.append(newDose)
             else:
                 for t in np.arange(dose.t0,dose.tF,dose.every):
                     if t0<=t and t<=tF:
