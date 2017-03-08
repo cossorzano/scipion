@@ -29,7 +29,7 @@ import json
 import math
 import numpy as np
 
-from pyworkflow.em.pkpd_units import PKPDUnit, convertUnits
+from pyworkflow.em.pkpd_units import PKPDUnit, convertUnits, changeRateToMinutes, changeRateToWeight
 from pyworkflow.object import *
 from pyworkflow.utils.path import writeMD5, verifyMD5
 from pyworkflow.em.biopharmaceutics import PKPDDose, PKPDVia
@@ -239,6 +239,10 @@ class PKPDSample:
             dose.doseAmount = self.evaluateExpression(dose.doseAmount)
             dose.changeTimeUnitsToMinutes()
             dose.prepare()
+
+            if dose.doseType == PKPDDose.TYPE_INFUSION:
+                dose.doseAmount, dose.dunits.unit = changeRateToMinutes(dose.doseAmount, dose.dunits.unit)
+
             if firstUnit==None:
                 firstUnit = dose.dunits.unit
             else:
@@ -263,7 +267,10 @@ class PKPDSample:
 
     def getDoseUnits(self):
         if len(self.parsedDoseList)>0:
-            return self.parsedDoseList[0].dunits.unit
+            if self.parsedDoseList[0].doseType==PKPDDose.TYPE_INFUSION:
+                return changeRateToWeight(self.parsedDoseList[0].dunits.unit)
+            else:
+                return self.parsedDoseList[0].dunits.unit
         else:
             return PKPDUnit.UNIT_NONE
 
@@ -877,16 +884,29 @@ class PKPDODEModel(PKPDModelBase2):
             # Internal evolution
             # Runge Kutta's 4th order (http://lpsa.swarthmore.edu/NumInt/NumIntFourth.html)
             k1 = self.F(t,yt)
-            k2 = self.F(t+delta_2,yt+k1*delta_2)
-            k3 = self.F(t+delta_2,yt+k2*delta_2)
-            k4 = self.F(t+self.deltaT,yt+k3*self.deltaT)
+            dD1 = self.drugSource.getAmountReleasedAt(t,delta_2)
+            dyD1 = self.G(t, dD1)
+            y1 = yt+k1*delta_2+dyD1
+            # print("t=",t," y0=",yt," k1=",k1," dD1=",dD1," dyD1=",dyD1," y1=",y1)
 
-            # External driving: Drug component
+            t_delta_2=t+delta_2
+            k2 = self.F(t_delta_2,y1)
+            y2 = yt+k2*delta_2+dyD1
+            # print("k2=",k2," y2=",y2)
+
             dD = self.drugSource.getAmountReleasedAt(t,self.deltaT)
             dyD = self.G(t, dD)
+            k3 = self.F(t_delta_2,y2)
+            y3 = yt+k3*self.deltaT+dyD
+            # print("k3=",k3," dD=",dD," dyD=",dyD," y3=",y3)
+
+            k4 = self.F(t+self.deltaT,y3)
+            y4 = yt+k4*self.deltaT+dyD
+            # print("k4=",k4," y4=",y4)
 
             # Update state
             yt += (0.5*(k1+k4)+k2+k3)*K+dyD
+            # print("yt=",yt)
 
             # Make sure it makes sense
             self.imposeConstraints(yt)
