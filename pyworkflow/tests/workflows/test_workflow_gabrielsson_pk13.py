@@ -68,7 +68,7 @@ class TestGabrielssonPK13Workflow(TestWorkflow):
         Vp = float(experiment.samples['Individual'].descriptors['Vp'])
         self.assertTrue(Cl>0.33 and Cl<0.37) # Gabrielsson p. 603: Cl=0.3448
         self.assertTrue(Clp>0.15 and Clp<0.17) # Gabrielsson p. 603: Cld=0.168
-        self.assertTrue(V>3.1 and V<3.3) # Gabrielsson p. 603: Vc=2.933
+        self.assertTrue(V>3 and V<3.3) # Gabrielsson p. 603: Vc=2.933
         self.assertTrue(Vp>2 and Vp<2.2) # Gabrielsson p. 603: Vt=2.16
         fitting = PKPDFitting()
         fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)

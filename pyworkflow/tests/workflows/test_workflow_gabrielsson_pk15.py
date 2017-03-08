@@ -55,7 +55,7 @@ class TestGabrielssonPK15Workflow(TestWorkflow):
         protPKPDPOMonoCompartment = self.newProtocol(ProtPKPDMonoCompartment,
                                                      objLabel='pkpd - iv-ev1 mono-compartment',
                                                      globalSearch=True, fitType=2,
-                                                     bounds='(0.0, 0.01); (0.9, 1.0); (0.2, 0.8); (3, 4)')
+                                                     bounds='(0.0, 0.01); (0.9, 1.0); (0.2, 0.8); (3, 6)')
         protPKPDPOMonoCompartment.inputExperiment.set(protImport.outputExperiment)
         self.launchProtocol(protPKPDPOMonoCompartment)
         self.assertIsNotNone(protPKPDPOMonoCompartment.outputExperiment.fnPKPD, "There was a problem with the mono-compartmental model ")
@@ -68,9 +68,9 @@ class TestGabrielssonPK15Workflow(TestWorkflow):
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
         self.assertTrue(Ka>0.005 and Ka<0.006)
-        self.assertTrue(F>0.94 and F<0.97)
-        self.assertTrue(Cl>0.40 and Cl<0.57)
-        self.assertTrue(V>3.2 and V<3.9)
+        self.assertTrue(F>0.92 and F<0.97)
+        self.assertTrue(Cl>0.45 and Cl<0.7)
+        self.assertTrue(V>3.2 and V<5.2)
         fitting = PKPDFitting()
         fitting.load(protPKPDPOMonoCompartment.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.85)

@@ -75,8 +75,8 @@ class TestGabrielssonPK05Workflow(TestWorkflow):
         experiment.load(protIVMonoCompartment.outputExperiment.fnPKPD)
         Cl = float(experiment.samples['Individual'].descriptors['Cl'])
         V = float(experiment.samples['Individual'].descriptors['V'])
-        self.assertAlmostEqual(Cl,0.0204,3) # Gabrielsson, p 542 Cl=1.229 1/h=0.204 1/min ------------ mine=0.204
-        self.assertAlmostEqual(V,10.7141,3) # Gabrielsson, p 542 Vd=10.71 ------------ mine=10.71
+        self.assertTrue(Cl>0.018 and Cl<0.022) # Gabrielsson, p 542 Cl=1.229 1/h=0.204 1/min ------------ mine=0.204
+        self.assertTrue(V>10.6 and V<10.8) # Gabrielsson, p 542 Vd=10.71 ------------ mine=10.71
         fitting = PKPDFitting()
         fitting.load(protIVMonoCompartment.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.99)
