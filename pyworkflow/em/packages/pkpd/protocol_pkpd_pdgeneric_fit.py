@@ -34,6 +34,7 @@ from pd_models import *
 # TESTED in test_workflow_gabrielsson_pk11.py
 # TESTED in test_workflow_gabrielsson_pk15.py
 # TESTED in test_workflow_gabrielsson_pd03.py
+# TESTED in test_workflow_gabrielsson_pd11.py
 
 class ProtPKPDGenericFit(ProtPKPDFitBase):
     """ Fit a generic model. The observed measurement is modelled as Y=f(X).\n

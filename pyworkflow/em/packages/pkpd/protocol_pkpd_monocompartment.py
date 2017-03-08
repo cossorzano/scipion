@@ -36,6 +36,7 @@ import pyworkflow.em.biopharmaceutics
 # TESTED in test_workflow_gabrielsson_pk05.py
 # TESTED in test_workflow_gabrielsson_pk06.py
 # TESTED in test_workflow_gabrielsson_pk15.py
+# TESTED in test_workflow_gabrielsson_pk17.py
 # TESTED in test_workflow_gabrielsson_pk43.py
 
 class ProtPKPDMonoCompartment(ProtPKPDODEBase):
