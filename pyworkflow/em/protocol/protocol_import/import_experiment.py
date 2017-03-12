@@ -50,6 +50,8 @@ from pyworkflow.utils.path import copyFile
 # TESTED in test_workflow_gabrielsson_pk14.py
 # TESTED in test_workflow_gabrielsson_pk15.py
 # TESTED in test_workflow_gabrielsson_pk16.py
+# TESTED in test_workflow_gabrielsson_pk17.py
+# TESTED in test_workflow_gabrielsson_pk18.py
 # TESTED in test_workflow_gabrielsson_pk25.py
 # TESTED in test_workflow_gabrielsson_pk39.py
 # TESTED in test_workflow_gabrielsson_pk43.py

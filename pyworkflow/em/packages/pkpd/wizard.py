@@ -53,6 +53,7 @@ from protocol_pkpd_pdgeneric_fit import ProtPKPDGenericFit
 from protocol_pkpd_change_via import ProtPKPDChangeVia
 from protocol_pkpd_twocompartments_urine import ProtPKPDTwoCompartmentsUrine
 from protocol_pkpd_monocompartment_clint import ProtPKPDMonoCompartmentClint
+from protocol_pkpd_two_compartments_clint import ProtPKPDTwoCompartmentsClint
 
 from tk_ode import PKPDODEDialog, PKPDFitDialog
 
@@ -307,6 +308,7 @@ class PKPDODEWizard(Wizard):
                 (ProtPKPDMonoCompartmentClint, ['bounds']),
                 (ProtPKPDTwoCompartments, ['bounds']),
                 (ProtPKPDTwoCompartmentsUrine, ['bounds']),
+                (ProtPKPDTwoCompartmentsClint, ['bounds']),
                 (ProtPKPDGenericFit, ['bounds']),
                 ]
 

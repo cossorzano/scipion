@@ -170,6 +170,10 @@ Protocols = [{
 		"text": "two compartments (urine)"
 	},{
 		"tag": "protocol",
+		"value": "ProtPKPDTwoCompartmentsClint",
+		"text": "two compartments (intrinsic)"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDODERefine",
 		"text": "ode refinement"
 	},{
