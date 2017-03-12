@@ -660,6 +660,14 @@ def multiplyUnits(unitX,unitY):
         elif unitY==PKPDUnit.UNIT_CONC_ug_mL:
             return PKPDUnit.UNIT_WEIGHTINVTIME_ug_MIN
 
+    elif unitX==PKPDUnit.UNIT_VOLUMEINVTIME_L_MIN:
+        if unitY==PKPDUnit.UNIT_CONC_g_L:
+            return PKPDUnit.UNIT_WEIGHTINVTIME_g_MIN
+        elif unitY==PKPDUnit.UNIT_CONC_mg_L:
+            return PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN
+        elif unitY==PKPDUnit.UNIT_CONC_ug_L:
+            return PKPDUnit.UNIT_WEIGHTINVTIME_ug_MIN
+
 
 def divideUnits(unitX,unitY):
     if unitX==PKPDUnit.UNIT_WEIGHT_g:
