@@ -1,20 +1,22 @@
+## devel
 
-## v1.0.0 (2016-02-20) Augusto
+- MonoCompartment with intrinsic clearance added
+- Infusions are now computed more accurately
 
-- Allows to combine several EM software packages (~ 100 protocols):
-  - All protocols from Xmipp 
-  - Most of protocols from Relion
-  - MDA protocols from Spider
-  - Some protocols from Eman2/Sparx
-  - From Grigorieff lab: CTFFIND, FREALIGN, unblur and summovie.
-  - A few tools from Bsoft
-  - ResMap, gEMpicker, dogpicker, motioncorr
-- Full tracking and reproducibility:
-  - Display runs as a list or a tree.
-  - Inspect the parameters of a previous run
-  - Repeat one or several runs
-  - Export/Import a workflow template
-- Data analysis:
-  - Visualization and operation with Sets. (Particles, Micrographs, CTFs, etc)
-  - Visualization of Volumes
-  - Resolution and angular distribution plots
+## v17.03 Chlorine 30
+
+- Internal structure redesigned to support simultaneous intravenous and extravascular doses
+- Bioavailability and lag time of drug sources can now be estimated
+- Pharmacodynamics models added
+- More Pharmacokinetics models added
+
+## v16.12 Sulfur 37
+
+- Administrative tasks: importing/exporting experiments, filter and join samples, filter and drop measurements, creating and merging labels, calculating cumulated dose, changing units, scaling doses
+- Non-compartmental PK: fitting exponentials, calculating elimination and absorption rates, intravenous and extra-vascular NCA,
+- Compartmental PK: monocompartmental (iv and ev of orders 0, 1 and mixed; iv and order 1 ev with urine data), two-compartments (iv and ev of orders 0 and 1)
+- Population PK: Bootstrapping and managing populations (merging and filtering)
+- Simulating any dosing regime in an individual or population
+- Simulating and fitting any generic PD profile
+- PBPK: Simulating the liver flow
+- Statistical tests on PKPD parameters, regression, and statistical summary
