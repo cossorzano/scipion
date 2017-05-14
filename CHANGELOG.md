@@ -1,5 +1,7 @@
 ## devel
 
+## v17.05 Chlorine 32
+
 - Infusions are now computed more accurately
 - MonoCompartment with intrinsic clearance added
 - Two-Compartments with intrinsic clearance added
