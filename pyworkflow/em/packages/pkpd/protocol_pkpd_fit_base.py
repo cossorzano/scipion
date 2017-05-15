@@ -208,7 +208,7 @@ class ProtPKPDFitBase(ProtPKPD):
 
             # Keep this result
             sampleFit = PKPDSampleFit()
-            sampleFit.sampleName = sample.varName
+            sampleFit.sampleName = sample.sampleName
             sampleFit.x = self.model.x
             sampleFit.y = self.model.y
             sampleFit.yp = self.model.yPredicted

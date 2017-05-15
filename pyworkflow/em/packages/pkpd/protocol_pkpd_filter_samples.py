@@ -87,7 +87,7 @@ class ProtPKPDFilterSamples(ProtPKPD):
                     conditionPython = "True"
                 else:
                     conditionPython = copy.copy(condition)
-                conditionPython = conditionPython.replace('$(sampleName)','"%s"'%sample.varName)
+                conditionPython = conditionPython.replace('$(sampleName)','"%s"'%sample.sampleName)
                 for key, variable in experiment.variables.iteritems():
                     if key in sample.descriptors:
                         value = sample.descriptors[key]

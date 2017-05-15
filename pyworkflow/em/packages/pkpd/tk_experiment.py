@@ -85,6 +85,26 @@ class DosesTreeProvider(TreeProvider):
                           )
                 }
 
+class GroupsTreeProvider(TreeProvider):
+    def __init__(self, experiment):
+        self.experiment = experiment
+
+    def getColumns(self):
+        return [('Name', 60), ('Samples', 60)]
+
+    def getObjects(self):
+        sortedGroups = []
+        for key in sorted(self.experiment.groups.keys()):
+            sortedGroups.append(self.experiment.groups[key])
+        return sortedGroups
+
+    def getObjectInfo(self, obj):
+        key = obj.groupName
+        return {'key': key, 'text': key,
+                'values': (obj.getSamplesString()
+                          )
+                }
+
 class ViasTreeProvider(TreeProvider):
     def __init__(self, experiment):
         self.experiment = experiment
@@ -135,7 +155,7 @@ class SamplesTreeProvider(TreeProvider):
             self.columns = []
 
     def getColumns(self):
-        return [('Name', 60), ('Dose', 60)] + self.columns
+        return [('Name', 60), ('Dose', 60),('Groups',60)] + self.columns
 
     def getObjects(self):
         sortedSamples = []
@@ -147,8 +167,9 @@ class SamplesTreeProvider(TreeProvider):
         return sortedSamples
 
     def getObjectInfo(self, obj):
-        key = obj.varName
+        key = obj.sampleName
         values = [','.join(obj.doseList)]
+        values +=[','.join(obj.groupList)]
         if obj.descriptors:
             values += [obj.descriptors[k] for k, _ in self.columns if k in obj.descriptors]
 
@@ -307,6 +328,9 @@ class ExperimentWindow(gui.Window):
 
         lfDoses = addTab('Doses')
         self.dosesTree = self._addBoundTree(lfDoses, DosesTreeProvider, 5)
+
+        lfGroups = addTab('Groups')
+        self.groupsTree = self._addBoundTree(lfGroups, GroupsTreeProvider, 5)
 
         # Fitting tab
         if self.fitting:

@@ -162,7 +162,7 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
 
             # Output object
             sampleFit = PKPDSampleFitBootstrap()
-            sampleFit.sampleName = sample.varName
+            sampleFit.sampleName = sample.sampleName
             sampleFit.parameters = np.zeros((self.Nbootstrap.get(),len(parameters0)),np.double)
             sampleFit.xB = []
             sampleFit.yB = []

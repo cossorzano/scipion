@@ -158,7 +158,7 @@ class ProtPKPDODERefine(ProtPKPDODEBase):
 
             # Keep this result
             sampleFit = PKPDSampleFit()
-            sampleFit.sampleName = sample.varName
+            sampleFit.sampleName = sample.sampleName
             sampleFit.x = x
             sampleFit.y = y
             sampleFit.yp = self.yPredicted

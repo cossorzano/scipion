@@ -75,13 +75,13 @@ class ProtPKPDNCAEstimateBioavailability(ProtPKPD):
                 if AUCev!="NA" and AUCiv!="NA":
                     F=(float(AUCev)/DEV)/(float(AUCiv)/DIV)
                     Flist.append(F)
-                    self.experimentEV.addParameterToSample(sampleEV.varName,"bioavailability",PKPDUnit.UNIT_NONE,
+                    self.experimentEV.addParameterToSample(sampleEV.sampleName,"bioavailability",PKPDUnit.UNIT_NONE,
                                                            "bioavailability",F)
                 else:
-                    self.experimentEV.addParameterToSample(sampleEV.varName,"bioavailability",PKPDUnit.UNIT_NONE,
+                    self.experimentEV.addParameterToSample(sampleEV.sampleName,"bioavailability",PKPDUnit.UNIT_NONE,
                                                            "bioavailability","NA")
             else:
-                self.experimentEV.addParameterToSample(sampleEV.varName,"bioavailability",PKPDUnit.UNIT_NONE,
+                self.experimentEV.addParameterToSample(sampleEV.sampleName,"bioavailability",PKPDUnit.UNIT_NONE,
                                                        "bioavailability","NA")
         self.experimentEV.write(self._getPath("experiment.pkpd"))
         fhSummary=open(self._getPath("summary.txt"),"w")

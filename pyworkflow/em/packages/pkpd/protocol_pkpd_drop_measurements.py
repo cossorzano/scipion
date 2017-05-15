@@ -73,7 +73,7 @@ class ProtPKPDDropMeasurements(ProtPKPD):
             candidateSample = PKPDSample()
             candidateSample.variableDictPtr    = filteredExperiment.variables
             candidateSample.doseDictPtr        = filteredExperiment.doses
-            candidateSample.varName            = copy.copy(sample.varName)
+            candidateSample.sampleName          = copy.copy(sample.sampleName)
             candidateSample.doseList           = copy.copy(sample.doseList)
             candidateSample.descriptors        = copy.copy(sample.descriptors)
             candidateSample.measurementPattern = []

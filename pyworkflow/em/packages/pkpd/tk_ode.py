@@ -53,7 +53,7 @@ class SamplesTreeProvider(TreeProvider):
         return sortedSamples
 
     def getObjectInfo(self, obj):
-        key = obj.varName
+        key = obj.sampleName
         values = [','.join(obj.doseList)]
 
         return {'key': key, 'text': key,
@@ -333,7 +333,7 @@ class PKPDResponsiveDialog(dialog.Dialog):
             ax = self.plotter.getLastSubPlot()
             self.plotter.clear()
 
-        ax = self.plotter.createSubPlot("Sample: %s" % self.sample.varName,
+        ax = self.plotter.createSubPlot("Sample: %s" % self.sample.sampleName,
                                         self.getTimeLabel(),
                                         self.getMeasureLabel())
         self.newXPValues, self.newYPValues = self.computePlotValues(self.xpValues,

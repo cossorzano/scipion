@@ -81,7 +81,7 @@ class BatchProtCreateExperiment(BatchProtocol, ProtPKPD):
         # Samples
         for sampleName in self.listOfSamples.get().split(';'):
             sample = copy.copy(experiment.samples[sampleName])
-            newExperiment.samples[sample.varName] = sample
+            newExperiment.samples[sample.sampleName] = sample
 
         self.writeExperiment(newExperiment,self._getPath("experiment.pkpd"))
         self._defineOutputs(outputExperiment=newExperiment)

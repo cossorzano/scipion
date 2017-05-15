@@ -285,7 +285,7 @@ class ProtPKPDODETwoVias(ProtPKPD,PKPDModelBase2):
         return prot.experiment
 
     def setupSample(self,prot,sample,prefix):
-        sample.varName = prefix+sample.varName
+        sample.sampleName = prefix+sample.sampleName
         prot.setTimeRange(sample)
         sample.interpretDose()
         prot.drugSource.setDoses(sample.parsedDoseList, prot.model.t0, prot.model.tF)

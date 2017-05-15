@@ -15,10 +15,13 @@ Infusion300; via=Intravenous; infusion; t=0:5 min; d=60 umol/min
 Infusion50; via=Intravenous; infusion; t=0:5 min; d=10 umol/min
 Infusion10; via=Intravenous; infusion; t=0:5 min; d=2 umol/min
 
+[GROUPS] ===============================
+Group1
+
 [SAMPLES] ================================
-Individual300; dose=Infusion300
-Individual50; dose=Infusion50
-Individual10; dose=Infusion10
+Individual300; dose=Infusion300; group=Group1
+Individual50; dose=Infusion50; group=Group1
+Individual10; dose=Infusion10; group=Group1
 
 [MEASUREMENTS] ===========================
 Individual300 ; t; Cp; Cm

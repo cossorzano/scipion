@@ -90,7 +90,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
     #--------------------------- STEPS functions --------------------------------------------
     def addSample(self, sampleName, doseName, simulationsX, y):
         newSample = PKPDSample()
-        newSample.varName = sampleName
+        newSample.sampleName = sampleName
         newSample.variableDictPtr = self.outputExperiment.variables
         newSample.doseDictPtr = self.outputExperiment.doses
         newSample.descriptors = {}

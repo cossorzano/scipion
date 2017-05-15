@@ -188,22 +188,23 @@ class PKPDVariable:
 
 class PKPDSample:
     def __init__(self):
-        self.varName = ""
+        self.sampleName = ""
         self.variableDictPtr = None
         self.doseDictPtr = None
         self.doseList = []
+        self.groupList = []
         self.descriptors = None
         self.measurementPattern = None
 
-    def parseTokens(self,tokens,variableDict,doseDict):
-        # FemaleRat1; dose=Dose1; weight=207
+    def parseTokens(self,tokens,variableDict,doseDict,groupDict):
+        # FemaleRat1; dose=Dose1[,Dose2]; weight=207; [group=Group1,Group2]
 
         # Keep a pointer to variableDict and doseDict
         self.variableDictPtr = variableDict
         self.doseDictPtr = doseDict
 
         # Get name
-        self.varName = tokens[0].strip()
+        self.sampleName = tokens[0].strip()
 
         if len(tokens)>1:
             # Get rest of variables
@@ -220,6 +221,13 @@ class PKPDSample:
                                 self.doseList.append(doseName)
                             else:
                                 raise Exception("Unrecognized dose %s"%doseName)
+                    elif varName=="group":
+                        for groupName in varValue.split(','):
+                            groupName=groupName.strip()
+                            if groupName in groupDict.keys():
+                                self.groupList.append(groupName)
+                            else:
+                                raise Exception("Unrecognized group %s"%groupName)
                     else:
                         if varName in variableDict:
                             varPtr = variableDict[varName]
@@ -230,7 +238,7 @@ class PKPDSample:
         self.measurementPattern = []
 
     def getSampleName(self):
-        return self.varName
+        return self.sampleName
 
     def interpretDose(self):
         self.parsedDoseList = []
@@ -315,9 +323,11 @@ class PKPDSample:
         return len(getattr(self,"measurement_%s"%self.measurementPattern[0]))
 
     def _printToStream(self,fh):
-        fh.write("%s"%self.varName)
+        fh.write("%s"%self.sampleName)
         if self.doseList:
             fh.write("; dose=%s"%(",".join(self.doseList)))
+        if self.groupList:
+            fh.write("; group=%s"%(",".join(self.groupList)))
         if self.descriptors:
             descriptorString = ""
             for key in sorted(self.descriptors.keys()):
@@ -329,7 +339,7 @@ class PKPDSample:
         patternString = ""
         for n in range(0,len(self.measurementPattern)):
             patternString += "; %s"%self.measurementPattern[n]
-        fh.write("%s %s\n"%(self.varName,patternString))
+        fh.write("%s %s\n"%(self.sampleName,patternString))
         if len(self.measurementPattern)>0:
             aux=getattr(self,"measurement_%s"%self.measurementPattern[0])
             N = len(aux)
@@ -426,15 +436,24 @@ class PKPDSampleMeasurement():
             values.append(aux[self.n])
         return values
 
+class PKPDGroup():
+    def __init__(self, groupName):
+        self.groupName = groupName
+        self.sampleList = []
+
+    def getSamplesString(self):
+        return ",".join(self.sampleList)
+
 
 class PKPDExperiment(EMObject):
     READING_GENERAL = 1
     READING_VARIABLES = 2
     READING_VIAS = 3
     READING_DOSES = 4
-    READING_SAMPLES = 5
-    READING_MEASUREMENTS = 6
-    READING_A_MEASUREMENT = 7
+    READING_GROUPS = 5
+    READING_SAMPLES = 6
+    READING_MEASUREMENTS = 7
+    READING_A_MEASUREMENT = 8
 
     def __init__(self, **args):
         EMObject.__init__(self, **args)
@@ -445,6 +464,7 @@ class PKPDExperiment(EMObject):
         self.samples = {}
         self.doses = {}
         self.vias = {}
+        self.groups = {}
 
     def __str__(self):
         if not self.infoStr.hasValue():
@@ -478,6 +498,8 @@ class PKPDExperiment(EMObject):
                     state=PKPDExperiment.READING_VIAS
                 elif section=="[doses]":
                     state=PKPDExperiment.READING_DOSES
+                elif section=="[groups]":
+                    state=PKPDExperiment.READING_GROUPS
                 elif section=="[samples]":
                     state=PKPDExperiment.READING_SAMPLES
                 elif section=="[measurements]":
@@ -520,12 +542,24 @@ class PKPDExperiment(EMObject):
                     self.doses[dosename] = PKPDDose()
                     self.doses[dosename].parseTokens(tokens,self.vias)
 
+            elif state==PKPDExperiment.READING_GROUPS:
+                if line!="":
+                    groupName = line.strip()
+                    self.groups[groupName] = PKPDGroup(groupName)
+
             elif state==PKPDExperiment.READING_SAMPLES:
                 if line!="":
                     tokens = line.split(';')
                     samplename = tokens[0].strip()
-                    self.samples[samplename] = PKPDSample()
-                    self.samples[samplename].parseTokens(tokens,self.variables, self.doses)
+                    newSample = PKPDSample()
+                    newSample.parseTokens(tokens,self.variables, self.doses, self.groups)
+                    if not newSample.groupList: # If there is no group, create one for this sample
+                        groupName = "__"+newSample.sampleName
+                        self.groups[groupName]=PKPDGroup(groupName)
+                        newSample.groupList.append(groupName)
+                    for groupName in newSample.groupList: # A sample may belong to several groups
+                        self.groups[groupName].sampleList.append(newSample.sampleName)
+                    self.samples[samplename] = newSample
 
             elif state==PKPDExperiment.READING_MEASUREMENTS:
                 tokens = line.split(';')
@@ -571,6 +605,11 @@ class PKPDExperiment(EMObject):
         fh.write("[DOSES] ================================\n")
         for key in sorted(self.doses.keys()):
             self.doses[key]._printToStream(fh)
+        fh.write("\n")
+
+        fh.write("[GROUPS] ================================\n")
+        for groupName in sorted(self.groups.keys()):
+            fh.write("%s\n"%groupName)
         fh.write("\n")
 
         fh.write("[SAMPLES] ================================\n")
