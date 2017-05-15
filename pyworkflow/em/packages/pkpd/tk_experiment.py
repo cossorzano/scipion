@@ -525,10 +525,10 @@ class ExperimentWindow(gui.Window):
 
             samples = [self.experiment.samples[k] for k in sampleKeys]
             for s in samples:
-                if not s.varName in self.plotDict:
+                if not s.sampleName in self.plotDict:
                     x, y = self.getPlotValues(s)
-                    ax.plot(x, y, label=s.varName)
-                    self.plotDict[s.varName] = True
+                    ax.plot(x, y, label=s.sampleName)
+                    self.plotDict[s.sampleName] = True
             leg = ax.legend()
             if leg:
                 leg.draggable()
