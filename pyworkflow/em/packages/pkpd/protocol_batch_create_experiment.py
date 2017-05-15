@@ -69,7 +69,7 @@ class BatchProtCreateExperiment(BatchProtocol, ProtPKPD):
         # Doses
         for key, value in experiment.doses.iteritems():
             dose = copy.copy(value)
-            newExperiment.doses[dose.varName] = dose
+            newExperiment.doses[dose.doseName] = dose
 
         # Samples
         for sampleName in self.listOfSamples.get().split(';'):
