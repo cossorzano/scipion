@@ -54,6 +54,7 @@ from protocol_pkpd_change_via import ProtPKPDChangeVia
 from protocol_pkpd_twocompartments_urine import ProtPKPDTwoCompartmentsUrine
 from protocol_pkpd_monocompartment_clint import ProtPKPDMonoCompartmentClint
 from protocol_pkpd_two_compartments_clint import ProtPKPDTwoCompartmentsClint
+from protocol_pkpd_two_compartments_metabolite import ProtPKPDTwoCompartmentsClintMetabolite
 
 from tk_ode import PKPDODEDialog, PKPDFitDialog
 
@@ -101,6 +102,14 @@ class PKPDChooseVariableWizard(Wizard):
                 (ProtPKPDMonoCompartmentUrine, ['predictor']),
                 (ProtPKPDMonoCompartmentUrine, ['predicted']),
                 (ProtPKPDMonoCompartmentUrine, ['Au']),
+                (ProtPKPDTwoCompartments, ['predictor']),
+                (ProtPKPDTwoCompartments, ['predicted']),
+                (ProtPKPDTwoCompartmentsClint, ['predictor']),
+                (ProtPKPDTwoCompartmentsClint, ['predicted']),
+                (ProtPKPDTwoCompartmentsClintMetabolite, ['predictor']),
+                (ProtPKPDTwoCompartmentsClintMetabolite, ['predicted']),
+                (ProtPKPDTwoCompartmentsClintMetabolite, ['metabolite']),
+                (ProtPKPDMonoCompartmentUrine, ['predicted']),
                 (ProtPKPDSimulateGenericPD, ['predictor']),
                 (ProtPKPDStatsExp2Subgroups2Mean, ['label1', 'inputExperiment1']),
                 (ProtPKPDStatsExp2Subgroups2Mean, ['label2', 'inputExperiment2'])
@@ -309,6 +318,7 @@ class PKPDODEWizard(Wizard):
                 (ProtPKPDTwoCompartments, ['bounds']),
                 (ProtPKPDTwoCompartmentsUrine, ['bounds']),
                 (ProtPKPDTwoCompartmentsClint, ['bounds']),
+                (ProtPKPDTwoCompartmentsClintMetabolite, ['bounds']),
                 (ProtPKPDGenericFit, ['bounds']),
                 ]
 

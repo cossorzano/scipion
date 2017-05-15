@@ -621,6 +621,147 @@ class PK_TwocompartmentsClint(PKPDODEModel):
     def areParametersValid(self, p):
         return np.sum(p[0:1]<0)==0
 
+class PK_TwocompartmentsClintMetabolite(PKPDODEModel):
+    def F(self, t, y):
+        Vmax=self.parameters[0]
+        Km=self.parameters[1]
+        V=self.parameters[2]
+        Clp=self.parameters[3]
+        Vp=self.parameters[4]
+        Clm=self.parameters[5]
+        Vm=self.parameters[6]
+        C=y[0]
+        Cm=y[1]
+        Cp=y[2]
+
+        Clint=Vmax/(Km+C)
+        Q12 = Clp * (C-Cp)
+        return np.array([-(Clint*C + Q12)/V, (Clint*C-Clm*Cm)/Vm, Q12/Vp],np.double)
+
+    def G(self, t, dD):
+        V=self.parameters[2]
+        return np.array([dD/V,0.0,0.0],np.double)
+
+    def getResponseDimension(self):
+        return 2
+
+    def getStateDimension(self):
+        return 3
+
+    def getDescription(self):
+        return "Two-compartments intrinsic clearance model with metabolites (%s)"%self.__class__.__name__
+
+    def getModelEquation(self):
+        return "dC/dt = -Clint/V * C - Clp/V * (C-Cp) + 1/V * dD/dt and dCp/dt = Clp/Vp * (C-Cp) and Clint=Vmax/(Km+C) and dCm/dt=Clint*C/Vm-Clm*Cm/Vm"
+
+    def getEquation(self):
+        Vmax=self.parameters[0]
+        Km=self.parameters[1]
+        V=self.parameters[2]
+        Clp=self.parameters[3]
+        Vp=self.parameters[4]
+        Clm=self.parameters[5]
+        Vm=self.parameters[6]
+        return "dC/dt = -Clint/(%f) * C - (%f)/(%f) * (C-Cp) + 1/(%f) * dD/dt; dCp/dt = (%f)/(%f) * (C-Cp); Clint=(%f)/((%f)+C); dCm/dt=Clint*C/(%f)-(%f)*Cm/(%f)"%\
+               (V,Clp,V,V,Clp,Vp,Vmax,Km,Vm,Clm,Vm)
+
+    def getParameterNames(self):
+        return ['Vmax','Km','V','Clp','Vp','Clm','Vm']
+
+    def calculateParameterUnits(self,sample):
+        xunits = unitFromString("min")
+        yunits = self.experiment.getVarUnits(self.yName[0])
+        Vunits = divideUnits(self.Dunits,yunits)
+        Clunits = divideUnits(Vunits,xunits)
+        Vmaxunits = multiplyUnits(Clunits,yunits)
+        self.parameterUnits = [Vmaxunits,yunits,Vunits,Clunits,Vunits,Clunits,Vunits]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        # Vmax
+        VmaxLower = lowerBound[0]
+        VmaxlUpper = upperBound[0]
+        if VmaxLower<0 and VmaxlUpper>0:
+            retval.append("Suspicious, Vmax looks like a constant")
+        elif VmaxLower<0:
+            retval.append("Suspicious, Vmax may be unstable")
+        elif VmaxLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # Km
+        KmLower = lowerBound[1]
+        KmUpper = upperBound[1]
+        if KmLower<0 and KmUpper>0:
+            retval.append("Suspicious, Km looks like a constant")
+        elif KmLower<0:
+            retval.append("Suspicious, Km may be unstable")
+        elif KmLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # V
+        VLower = lowerBound[2]
+        VUpper = upperBound[2]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, V looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, V seems to be negative")
+        else:
+            retval.append("True")
+
+        # Clp
+        ClLower = lowerBound[3]
+        ClUpper = upperBound[3]
+        if ClLower<0 and ClUpper>0:
+            retval.append("Suspicious, Clp looks like a constant")
+        elif ClLower<0:
+            retval.append("Suspicious, Clp may be unstable")
+        elif ClLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # Vp
+        VLower = lowerBound[4]
+        VUpper = upperBound[4]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, Vp looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, Vp seems to be negative")
+        else:
+            retval.append("True")
+
+        # Clm
+        ClLower = lowerBound[5]
+        ClUpper = upperBound[5]
+        if ClLower<0 and ClUpper>0:
+            retval.append("Suspicious, Clm looks like a constant")
+        elif ClLower<0:
+            retval.append("Suspicious, Clp may be unstable")
+        elif ClLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # Vm
+        VLower = lowerBound[6]
+        VUpper = upperBound[6]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, Vm looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, Vm seems to be negative")
+        else:
+            retval.append("True")
+
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p[0:1]<0)==0
+
 class PK_MonocompartmentUrine(PKPDODEModel):
     def F(self, t, y):
         C = y[0]
