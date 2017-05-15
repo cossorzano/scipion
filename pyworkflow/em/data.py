@@ -28,6 +28,7 @@ import copy
 import json
 import math
 import numpy as np
+import sys
 
 from pyworkflow.em.pkpd_units import PKPDUnit, convertUnits, changeRateToMinutes, changeRateToWeight
 from pyworkflow.object import *
@@ -941,6 +942,8 @@ class PKPDOptimizer:
     def __init__(self,model,fitType,goalFunction="RMSE"):
         self.model = model
         self.fitType = fitType
+        self.Nevaluations = 0
+        self.bestRmse=1e38
 
         if type(model.y[0])!=list and type(model.y[0])!=np.ndarray:
             self.yTarget = [np.array(model.y, dtype=np.float32)]
@@ -1009,8 +1012,19 @@ class PKPDOptimizer:
             idx = np.logical_not(np.isfinite(allDiffs))
             allDiffs[idx]=1e38
         e = allDiffs[np.isfinite(allDiffs)]
-        if e.size<=parameters.size:
+        if e.size<parameters.size:
             e=1e38*np.ones(len(yPredicted))
+
+        rmse = math.sqrt(np.power(e,2).mean())
+        if rmse<self.bestRmse:
+            print("   Best rmse so far=%f"%rmse)
+            print("      at x=%s"%str(parameters))
+            print("      e=%s"%str(e))
+            self.bestRmse=rmse
+        elif self.Nevaluations%100==0:
+            print("   Neval=%d RMSE=%f"%(self.Nevaluations,rmse))
+            sys.stdout.flush()
+        self.Nevaluations+=1
         return e
 
     def goalRMSE(self,parameters):
