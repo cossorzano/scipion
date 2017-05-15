@@ -667,6 +667,8 @@ def multiplyUnits(unitX,unitY):
             return PKPDUnit.UNIT_WEIGHTINVTIME_mg_MIN
         elif unitY==PKPDUnit.UNIT_CONC_ug_L:
             return PKPDUnit.UNIT_WEIGHTINVTIME_ug_MIN
+        elif unitY==PKPDUnit.UNIT_CONC_umol_L:
+            return PKPDUnit.UNIT_WEIGHTINVTIME_umol_MIN
 
 
 def divideUnits(unitX,unitY):
