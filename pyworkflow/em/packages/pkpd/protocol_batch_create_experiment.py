@@ -67,9 +67,16 @@ class BatchProtCreateExperiment(BatchProtocol, ProtPKPD):
                 newExperiment.variables[key] = copy.copy(value)
 
         # Doses
+        viasSubset = []
         for key, value in experiment.doses.iteritems():
             dose = copy.copy(value)
             newExperiment.doses[dose.doseName] = dose
+            print(dose.via.viaName)
+            viasSubset.append(dose.via.viaName)
+
+        # Vias
+        for via in viasSubset:
+            newExperiment.vias[via] = experiment.vias[via]
 
         # Samples
         for sampleName in self.listOfSamples.get().split(';'):
