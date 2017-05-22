@@ -27,7 +27,7 @@
 
 from pyworkflow.protocol.params import PointerParam, StringParam
 from pyworkflow.em.protocol import BatchProtocol
-from pyworkflow.em.data import PKPDExperiment
+from pyworkflow.em.data import PKPDExperiment, PKPDGroup
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 import copy
 
@@ -71,16 +71,21 @@ class BatchProtCreateExperiment(BatchProtocol, ProtPKPD):
         for key, value in experiment.doses.iteritems():
             dose = copy.copy(value)
             newExperiment.doses[dose.doseName] = dose
-            print(dose.via.viaName)
             viasSubset.append(dose.via.viaName)
 
         # Vias
         for via in viasSubset:
             newExperiment.vias[via] = experiment.vias[via]
 
-        # Samples
+        # Samples and groups
+        newExperiment.groups = {}
         for sampleName in self.listOfSamples.get().split(';'):
             sample = copy.copy(experiment.samples[sampleName])
+            for groupName, group in experiment.groups.iteritems():
+                if sampleName in group.sampleList:
+                    if not groupName in newExperiment.groups.keys():
+                        newExperiment.groups[groupName]=PKPDGroup(groupName)
+                    newExperiment.groups[groupName].sampleList.append(sampleName)
             newExperiment.samples[sample.sampleName] = sample
 
         self.writeExperiment(newExperiment,self._getPath("experiment.pkpd"))
