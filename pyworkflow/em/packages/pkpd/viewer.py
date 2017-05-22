@@ -66,7 +66,7 @@ class PKPDExperimentViewer(Viewer):
         the currently displayed experiment and register the action.
         """
         sampleKeys = self.experimentWindow.samplesTree.selection()
-        samples = ';'.join([self.experimentWindow.experiment.samples[k].varName
+        samples = ';'.join([self.experimentWindow.experiment.samples[k].sampleName
                             for k in sampleKeys])
 
         prot = self.protocol
