@@ -740,6 +740,7 @@ class DrugSource:
         for via,viaPrmNo in self.vias:
             retval=retval and via.areParametersValid(p[currentToken:currentToken+viaPrmNo])
             currentToken+=viaPrmNo
+        return retval
 
     def setParameters(self, p):
         currentToken=0
