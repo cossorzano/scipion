@@ -1,0 +1,19 @@
+Generic analysis (signalAnalysis.py)
+Generic PD analysis
+Generic fitters (expression or func.py)
+Generic EDO model
+Bayesian optimization
+NCA infusion
+Anova like analysis
+K-means of simulated data
+Population comparison between simulated data
+Batch effect via PCA
+Bootstrap on PD models
+Variance Inflation Factor
+
+# Files to revise
+wizard.py: createDrugSource, configureSource
+tk_ode.py: configureSource
+protocol_pkpd_ode_refine.py: configureSource
+protocol_pkpd_ode_bootstrap.py: configureSource
+protocol_pkpd_bootstrap_simulate.py: configureSource
