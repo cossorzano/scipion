@@ -332,8 +332,10 @@ class PKPDODEWizard(Wizard):
         if experiment is None:
             form.showError("Select the input experiment first.")
         else:
-            try:
+            # try:
                 protocol.setInputExperiment() # this load the experiment
+                protocol.clearGroupParameters()
+                protocol.getXYvars()
                 if not type(protocol) in PKPDODEWizard._nonODE:
                     protocol.configureSource(protocol.createDrugSource())
                 protocol.setupModel()
@@ -346,7 +348,7 @@ class PKPDODEWizard(Wizard):
                     if i==0:
                         if not type(protocol) in PKPDODEWizard._nonODE:
                             protocol.model.drugSource.setDoses(sample.parsedDoseList,0,1) # Needed to correctly identify the parameters of the source
-                        protocol.setSample(sample)
+                        protocol.model.setSample(sample)
                         protocol.calculateParameterUnits(sample)
                     i+=1
 
@@ -371,6 +373,6 @@ class PKPDODEWizard(Wizard):
                         i += 1
                     if boundStr!="":
                         form.setVar(label, boundStr)
-            except Exception as e:
+            # except Exception as e:
                 # pass
-                form.showError("Error: %s" % str(e))
+                # form.showError("Error: %s" % str(e))
