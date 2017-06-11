@@ -133,7 +133,8 @@ DataSet(name='Gabrielsson_PK18', folder='Gabrielsson_PK18',
 
 DataSet(name='Gabrielsson_PK19', folder='Gabrielsson_PK19',
         files={
-               'experiment': 'experiment.pkpd'
+               'experiment': 'experiment.pkpd',
+               'experimentIndividual': 'experimentIndividual.pkpd'
                })
 
 DataSet(name='Gabrielsson_PK25', folder='Gabrielsson_PK25',
