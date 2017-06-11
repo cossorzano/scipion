@@ -832,8 +832,15 @@ class PKPDModelBase2(PKPDModelBase):
 
     def setConfidenceInterval(self,lowerBound,upperBound):
         yPredictedBackup = copy.copy(self.yPredicted)
-        self.yPredictedUpper = copy.copy(self.yPredicted)
-        self.yPredictedLower = copy.copy(self.yPredicted)
+        if type(self.yPredicted[0])==np.ndarray:
+            self.yPredictedLower=[]
+            self.yPredictedUpper=[]
+            for j in range(len(self.yPredicted)):
+                self.yPredictedLower.append(np.copy(self.yPredicted[j]))
+                self.yPredictedUpper.append(np.copy(self.yPredicted[j]))
+        else:
+            self.yPredictedUpper = copy.copy(self.yPredicted)
+            self.yPredictedLower = copy.copy(self.yPredicted)
         for i in range(0,int(math.pow(2,self.getNumberOfParameters()))):
             pattern = ("{0:0%db}"%(self.getNumberOfParameters())).format(i)
             p = np.where(np.array(list(pattern))=="1",upperBound,lowerBound)
@@ -854,13 +861,13 @@ class PKPDModelBase2(PKPDModelBase):
                 for j in range(len(y)):
                     yj=y[j]
                     for n in range(len(yj)):
-                        if yj[n]<self.yPredictedLower[j][n]:
+                        if yj[n]<(self.yPredictedLower[j][n]):
                             if yj[n]<0:
                                 self.yPredictedLower[j][n]=0
                             else:
-                                self.yPredictedLower[j][n]=yj[n]
-                        if yj[n]>self.yPredictedUpper[j][n]:
-                            self.yPredictedUpper[j][n]=yj[n]
+                                (self.yPredictedLower[j][n])=yj[n]
+                        if yj[n]>(self.yPredictedUpper[j][n]):
+                            (self.yPredictedUpper[j][n])=yj[n]
         self.yPredicted = yPredictedBackup
 
     def setConfidenceIntervalNA(self):
@@ -894,7 +901,7 @@ class PKPDODEModel(PKPDModelBase2):
         return 0
 
     def imposeConstraints(self, yt):
-        pass
+        yt[yt<0]=0
 
     def getResponseDimension(self):
         return None
@@ -947,6 +954,7 @@ class PKPDODEModel(PKPDModelBase2):
             # Update state
             yt += (0.5*(k1+k4)+k2+k3)*K+dyD
             # print("yt=",yt)
+            # print(" ")
 
             # Make sure it makes sense
             self.imposeConstraints(yt)
@@ -1113,8 +1121,12 @@ class PKPDOptimizer:
         if type(y[0])!=list and type(y[0])!=np.ndarray and (type(yp[0])==list or type(yp[0])==np.ndarray):
             yp=yp[0]
         self._evaluateQuality(x, y, yp)
-        if (not hasattr(self.model,"model") or self.model.model.getResponseDimension()==1) and type(x)==np.ndarray:
-            for n in range(0,x.shape[0]):
+        if (not hasattr(self.model,"model") or self.model.model.getResponseDimension()==1):
+            if type(x)==np.ndarray:
+                N=x.shape[0]
+            elif type(x)==list:
+                N=len(x)
+            for n in range(0,N):
                 print("%f %f %f %f"%(x[n],y[n],yp[n],y[n]-yp[n]))
         else:
             for j in range(len(x)):
@@ -1147,7 +1159,16 @@ class PKPDOptimizer:
                 ylog = smartLog(self.model.y)
                 yplog = smartLog(yPredicted)
                 idx = np.array(np.where(np.logical_and(np.isfinite(ylog),np.isfinite(yplog))))
-                x= self.model.x[idx].ravel()
+                if type(idx[0])==np.ndarray:
+                    idx=idx[0]
+                xToUse = self.model.x
+                if type(self.model.x)==list:
+                    xToUse=np.asarray(xToUse)
+                if type(ylog)==list:
+                    ylog=np.asarray(ylog)
+                if type(yplog)==list:
+                    yplog=np.asarray(yplog)
+                x= xToUse[idx].ravel()
                 y= ylog[idx].ravel()
                 yp=yplog[idx].ravel()
             else:
@@ -1170,7 +1191,16 @@ class PKPDOptimizer:
             ylog = smartLog(self.model.y)
             yplog = smartLog(yPredicted)
             idx = np.array(np.where(np.logical_and(np.isfinite(ylog),np.isfinite(yplog))))
-            self._printFitting(self.model.x[idx].ravel(), ylog[idx].ravel(), yplog[idx].ravel())
+            if type(idx[0])==np.ndarray:
+                idx=idx[0]
+            xToUse = self.model.x
+            if type(self.model.x)==list:
+                xToUse=np.asarray(xToUse)
+            if type(ylog)==list:
+                ylog=np.asarray(ylog)
+            if type(yplog)==list:
+                yplog=np.asarray(yplog)
+            self._printFitting(xToUse[idx].ravel(), ylog[idx].ravel(), yplog[idx].ravel())
         else:
             logY = [smartLog(y) for y in self.model.y]
             logYp = [smartLog(y) for y in yPredicted]
