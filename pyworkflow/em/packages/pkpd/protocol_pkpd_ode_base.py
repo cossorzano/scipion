@@ -24,6 +24,7 @@
 # *
 # **************************************************************************
 
+import copy
 import math
 from itertools import izip
 from collections import OrderedDict
@@ -35,7 +36,6 @@ from pyworkflow.em.data import PKPDDEOptimizer, PKPDLSOptimizer, PKPDFitting, PK
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 from utils import parseRange
 from pyworkflow.em.biopharmaceutics import DrugSource
-from pyworkflow.em.pkpd_units import PKPDUnit
 
 
 class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
@@ -118,13 +118,9 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         # Setup model
         self.model = self.createModel()
         self.model.setExperiment(self.experiment)
-        self.setupFromFormParameters()
-        self.getXYvars()
         self.model.setXVar(self.varNameX)
         self.model.setYVar(self.varNameY)
-
-    def setupFromFormParameters(self):
-        pass
+        self.modelList.append(self.model)
 
     def setBounds(self, sample):
         if hasattr(self,"bounds"):
@@ -139,13 +135,22 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
     def setTimeRange(self, sample):
         if self.t0.get()=="" or self.tF.get()=="":
             tmin, tmax = sample.getRange(self.varNameX)
+        if self.tmin==None:
+            self.tmin=tmin
+        else:
+            self.tmin=min(tmin,self.tmin)
+        if self.tmax==None:
+            self.tmax=tmax
+        else:
+            self.tmax=max(tmax,self.tmax)
+
         if self.t0.get()=="":
-            self.model.t0 = min(-10,tmin-10) # 10 minutes before
+            self.model.t0 = min(-10,self.tmin-10) # 10 minutes before
         else:
             self.model.t0 = min(-10,float(self.t0.get())*60)
 
         if self.tF.get()=="":
-            self.model.tF = tmax+10 # 10 minutes later
+            self.model.tF = self.tmax+10 # 10 minutes later
         else:
             self.model.tF = float(self.tF.get())*60
 
@@ -153,6 +158,15 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
             self.model.deltaT = self.deltaT.get()
 
     # As model --------------------------------------------
+    def clearGroupParameters(self):
+        self.tmin = None
+        self.tmax = None
+        self.sampleList = []
+        self.modelList = []
+        self.drugSourceList = []
+        self.XList = []
+        self.YList = []
+
     def parseBounds(self, boundsString):
         self.boundsList = []
 
@@ -201,26 +215,93 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def setParameters(self, parameters):
         self.parameters = parameters
-
-        if self.NparametersSource>0:
-            self.drugSource.setParameters(self.parameters[0:self.NparametersSource])
-
         self.parametersPK = self.parameters[-self.NparametersModel:]
-        self.model.setParameters(self.parametersPK)
+
+        for n in range(len(self.modelList)):
+            if self.NparametersSource>0:
+                self.drugSourceList[n].setParameters(self.parameters[0:self.NparametersSource])
+            self.modelList[n].setParameters(self.parametersPK)
 
     def setXYValues(self, x, y):
         PKPDModelBase.setXYValues(self,x,y)
         self.model.setXYValues(x, y)
+        self.XList.append(x)
+        self.YList.append(y)
 
-    def setSample(self, sample):
-        self.sample = sample
+    def mergeLists(self, iny):
+        if type(iny[0][0])==list or type(iny[0][0])==np.ndarray:
+            outy=[]
+            for m in range(len(iny[0])):
+                if type(iny[0][0])==list:
+                    outy.append([])
+                else:
+                    outy.append(np.empty(shape=[0]))
+            for m in range(len(outy)):
+                for n in range(len(iny)):
+                    if type(iny[n][m])==list:
+                        outy[m] += iny[n][m]
+                    else:
+                        outy[m]=np.concatenate((outy[m],iny[n][m]))
+        else:
+            outy = []
+            for n in range(len(iny)):
+                outy += iny[n]
+        return outy
+
+    def separateLists(self,iny):
+        outy=[]
+        Nsamples=len(self.YList)
+        if Nsamples==0:
+            return
+        Nmeasurements = self.model.getResponseDimension()
+        if Nmeasurements>1:
+            idx=[0]*Nmeasurements
+        else:
+            idx=0
+        for n in range(Nsamples):
+            yn=self.YList[n]
+            if Nmeasurements>1:
+                if Nmeasurements>1:
+                    perSampleIn = []
+                for j in range(Nmeasurements):
+                    if type(yn[j])==np.ndarray:
+                        ynDim = yn[j].size
+                    else:
+                        ynDim = len(yn[j])
+                    ysample = iny[j][idx[j]:(idx[j]+ynDim)]
+                    if Nmeasurements>1:
+                        perSampleIn.append(ysample)
+                    else:
+                        perSampleIn=ysample
+                    idx[j]+=ynDim
+                outy.append(perSampleIn)
+            else:
+                if type(yn)==np.ndarray:
+                    ynDim = yn.size
+                else:
+                    ynDim = len(yn)
+                ysample = iny[0][idx:(idx+ynDim)]
+                perSampleIn=ysample
+                idx+=ynDim
+                outy.append(perSampleIn)
+        return outy
+
+    def addSample(self, sample):
+        self.sampleList.append(sample)
         self.model.setSample(sample)
 
     def forwardModel(self, parameters, x=None):
         self.setParameters(parameters)
-        retval = self.model.forwardModel(self.parametersPK,x)
-        self.yPredicted = self.model.yPredicted
-        return retval
+
+        yPredictedList = []
+        for n in range(len(self.modelList)):
+            self.modelList[n].forwardModel(self.parametersPK,x)
+            yPredictedList.append(self.modelList[n].yPredicted)
+        self.yPredicted = self.mergeLists(yPredictedList)
+        return copy.copy(self.yPredicted)
+
+    def imposeConstraints(self,yt):
+        self.model.imposeConstraints(yt)
 
     def getEquation(self):
         return self.drugSource.getEquation()+" and "+self.model.getEquation()
@@ -263,6 +344,7 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def createDrugSource(self):
         self.drugSource = DrugSource()
+        self.drugSourceList.append(self.drugSource)
 
         return self.drugSource
 
@@ -271,11 +353,8 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         reportX = parseRange(self.reportX.get())
         self.setInputExperiment()
 
-        # Create drug source
-        self.createDrugSource()
-
         # Setup model
-        self.setupModel()
+        self.getXYvars()
 
         # Create output object
         self.fitting = PKPDFitting()
@@ -297,34 +376,43 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         elif self.fitType.get()==2:
             fitType = "relative"
 
-        for sampleName, sample in self.experiment.samples.iteritems():
-            self.printSection("Fitting "+sampleName)
+        for groupName, group in self.experiment.groups.iteritems():
+            self.printSection("Fitting "+groupName)
+            self.clearGroupParameters()
 
-            # Get the values to fit
-            x, y = sample.getXYValues(self.varNameX,self.varNameY)
-            print("X= "+str(x))
-            print("Y= "+str(y))
-            print(" ")
+            for sampleName in group.sampleList:
+                print("   Sample "+sampleName)
+                sample = self.experiment.samples[sampleName]
 
-            # Interpret the dose
-            self.setTimeRange(sample)
-            sample.interpretDose()
+                self.createDrugSource()
+                self.setupModel()
 
-            self.drugSource.setDoses(sample.parsedDoseList, self.model.t0, self.model.tF)
-            self.configureSource(self.drugSource)
-            self.model.drugSource = self.drugSource
+                # Get the values to fit
+                x, y = sample.getXYValues(self.varNameX,self.varNameY)
+                print("X= "+str(x))
+                print("Y= "+str(y))
+                print(" ")
 
-            # Prepare the model
-            self.setBounds(sample)
-            self.setXYValues(x, y)
-            self.setSample(sample)
-            self.prepareForSampleAnalysis(sampleName)
-            self.calculateParameterUnits(sample)
-            if self.fitting.modelParameterUnits==None:
-                self.fitting.modelParameterUnits = self.parameterUnits
+                # Interpret the dose
+                self.setTimeRange(sample)
+                sample.interpretDose()
+
+                self.drugSource.setDoses(sample.parsedDoseList, self.model.t0, self.model.tF)
+                self.configureSource(self.drugSource)
+                self.model.drugSource = self.drugSource
+
+                # Prepare the model
+                self.setBounds(sample)
+                self.setXYValues(x, y)
+                self.addSample(sample)
+                self.prepareForSampleAnalysis(sampleName)
+                self.calculateParameterUnits(sample)
+                if self.fitting.modelParameterUnits==None:
+                    self.fitting.modelParameterUnits = self.parameterUnits
+
             self.printSetup()
-
-            print(" ")
+            self.x = self.mergeLists(self.XList)
+            self.y = self.mergeLists(self.YList)
 
             if self.globalSearch:
                 optimizer1 = PKPDDEOptimizer(self,fitType)
@@ -347,44 +435,54 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
             self.setParameters(optimizer2.optimum)
             optimizer2.evaluateQuality()
 
-            # Keep this result
-            sampleFit = PKPDSampleFit()
-            sampleFit.sampleName = sample.sampleName
-            sampleFit.x = x
-            sampleFit.y = y
-            sampleFit.yp = self.yPredicted
-            sampleFit.yl = self.yPredictedLower
-            sampleFit.yu = self.yPredictedUpper
-            sampleFit.parameters = self.parameters
-            sampleFit.modelEquation = self.getEquation()
-            sampleFit.copyFromOptimizer(optimizer2)
-            self.fitting.sampleFits.append(sampleFit)
-            if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yp[0])==list or type(sampleFit.yp[0])==np.ndarray):
-                sampleFit.yp=sampleFit.yp[0]
-            if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yl[0])==list or type(sampleFit.yl[0])==np.ndarray):
-                sampleFit.yl=sampleFit.yl[0]
-            if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yu[0])==list or type(sampleFit.yu[0])==np.ndarray):
-                sampleFit.yu=sampleFit.yu[0]
+            self.yPredictedList=self.separateLists(self.yPredicted)
+            self.yPredictedLowerList=self.separateLists(self.yPredictedLower)
+            self.yPredictedUpperList=self.separateLists(self.yPredictedUpper)
 
-            # Add the parameters to the sample and experiment
-            for varName, varUnits, description, varValue in izip(self.getParameterNames(), self.parameterUnits, self.getParameterDescriptions(), self.parameters):
-                self.experiment.addParameterToSample(sampleName, varName, varUnits, description, varValue)
+            n=0
+            for sampleName in group.sampleList:
+                sample = self.experiment.samples[sampleName]
 
-            self.postSampleAnalysis(sampleName)
+                # Keep this result
+                sampleFit = PKPDSampleFit()
+                sampleFit.sampleName = sample.sampleName
+                sampleFit.x = self.XList[n]
+                sampleFit.y = self.YList[n]
+                sampleFit.yp = self.yPredictedList[n]
+                sampleFit.yl = self.yPredictedLowerList[n]
+                sampleFit.yu = self.yPredictedUpperList[n]
+                sampleFit.parameters = self.parameters
+                sampleFit.modelEquation = self.getEquation()
+                sampleFit.copyFromOptimizer(optimizer2)
+                self.fitting.sampleFits.append(sampleFit)
+                if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yp[0])==list or type(sampleFit.yp[0])==np.ndarray):
+                    sampleFit.yp=sampleFit.yp[0]
+                if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yl[0])==list or type(sampleFit.yl[0])==np.ndarray):
+                    sampleFit.yl=sampleFit.yl[0]
+                if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yu[0])==list or type(sampleFit.yu[0])==np.ndarray):
+                    sampleFit.yu=sampleFit.yu[0]
 
-            if reportX!=None:
-                print("Evaluation of the model at specified time points")
-                self.model.tF = np.max(reportX)
-                yreportX = self.model.forwardModel(self.model.parameters, reportX)
-                print("==========================================")
-                print("X     Ypredicted     log10(Ypredicted)")
-                print("==========================================")
-                for n in range(0,reportX.shape[0]):
-                    aux = 0
-                    if yreportX[n]>0:
-                        aux = math.log10(yreportX[n])
-                    print("%f %f %f"%(reportX[n],yreportX[n],aux))
-                print(' ')
+                # Add the parameters to the sample and experiment
+                for varName, varUnits, description, varValue in izip(self.getParameterNames(), self.parameterUnits, self.getParameterDescriptions(), self.parameters):
+                    self.experiment.addParameterToSample(sampleName, varName, varUnits, description, varValue)
+
+                self.postSampleAnalysis(sampleName)
+
+                if reportX!=None:
+                    print("Evaluation of the model at specified time points")
+                    self.model.tF = np.max(reportX)
+                    yreportX = self.model.forwardModel(self.model.parameters, reportX)
+                    print("==========================================")
+                    print("X     Ypredicted     log10(Ypredicted)")
+                    print("==========================================")
+                    for n in range(0,reportX.shape[0]):
+                        aux = 0
+                        if yreportX[n]>0:
+                            aux = math.log10(yreportX[n])
+                        print("%f %f %f"%(reportX[n],yreportX[n],aux))
+                    print(' ')
+
+                n+=1
 
         self.fitting.modelParameters = self.getParameterNames()
         self.fitting.modelDescription=self.getDescription()
