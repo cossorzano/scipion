@@ -89,20 +89,15 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
         self.experiment = self.readExperiment(self.protODE.outputExperiment.fnPKPD)
         self.fitting = self.readFitting(self.protODE.outputFitting.fnFitting)
 
-        # Create drug source
-        self.drugSource = DrugSource()
-
-        # Setup model
-        self.model = self.protODE.createModel()
-        self.model.deltaT = self.deltaT.get()
-        self.model.setExperiment(self.experiment)
+        # Get the X and Y variable names
         self.varNameX = self.fitting.predictor.varName
         if type(self.fitting.predicted)==list:
             self.varNameY = [v.varName for v in self.fitting.predicted]
         else:
             self.varNameY = self.fitting.predicted.varName
-        self.model.setXVar(self.varNameX)
-        self.model.setYVar(self.varNameY)
+        self.protODE.experiment = self.experiment
+        self.protODE.varNameX = self.varNameX
+        self.protODE.varNameY = self.varNameY
 
         # Create output object
         self.fitting = PKPDFitting("PKPDSampleFitBootstrap")
@@ -123,100 +118,122 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
             fitType = "relative"
 
         parameterNames = None
-        for sampleName, sample in self.experiment.samples.iteritems():
-            self.printSection("Fitting "+sampleName)
+        for groupName, group in self.experiment.groups.iteritems():
+            self.printSection("Fitting "+groupName)
+            self.protODE.clearGroupParameters()
+            self.clearGroupParameters()
 
-            # Get the values to fit
-            x, y = sample.getXYValues(self.varNameX,self.varNameY)
-            print("X= "+str(x))
-            print("Y= "+str(y))
+            for sampleName in group.sampleList:
+                print("   Sample "+sampleName)
+                sample = self.experiment.samples[sampleName]
 
-            # Interpret the dose
-            self.protODE.varNameX = self.varNameX
-            self.protODE.varNameY = self.varNameY
-            self.protODE.model = self.model
-            self.protODE.setTimeRange(sample)
-            sample.interpretDose()
+                self.protODE.createDrugSource()
+                self.protODE.setupModel()
 
-            self.drugSource.setDoses(sample.parsedDoseList, self.model.t0, self.model.tF)
-            self.protODE.configureSource(self.drugSource)
-            self.model.drugSource = self.drugSource
+                # Setup self model
+                self.drugSource = self.protODE.drugSource
+                self.drugSourceList = self.protODE.drugSourceList
+                self.model = self.protODE.model
+                self.modelList = self.protODE.modelList
+                self.model.deltaT = self.deltaT.get()
+                self.model.setXVar(self.varNameX)
+                self.model.setYVar(self.varNameY)
 
-            # Prepare the model
-            self.model.setSample(sample)
-            self.calculateParameterUnits(sample)
-            if self.fitting.modelParameterUnits==None:
-                self.fitting.modelParameterUnits = self.parameterUnits
+                # Get the values to fit
+                x, y = sample.getXYValues(self.varNameX,self.varNameY)
+                print("X= "+str(x))
+                print("Y= "+str(y))
 
-            # Get the initial parameters
-            if parameterNames==None:
-                parameterNames = self.getParameterNames()
-            parameters0 = []
-            for parameterName in parameterNames:
-                parameters0.append(float(sample.descriptors[parameterName]))
-            print("Initial solution: %s"%str(parameters0))
-            print(" ")
+                # Interpret the dose
+                self.protODE.varNameX = self.varNameX
+                self.protODE.varNameY = self.varNameY
+                self.protODE.model = self.model
+                self.protODE.setTimeRange(sample)
+                sample.interpretDose()
 
-            # Set bounds
-            self.setBounds(sample)
+                self.drugSource.setDoses(sample.parsedDoseList, self.model.t0, self.model.tF)
+                self.protODE.configureSource(self.drugSource)
+                self.model.drugSource = self.drugSource
 
-            # Output object
-            sampleFit = PKPDSampleFitBootstrap()
-            sampleFit.sampleName = sample.sampleName
-            sampleFit.parameters = np.zeros((self.Nbootstrap.get(),len(parameters0)),np.double)
-            sampleFit.xB = []
-            sampleFit.yB = []
+                # Prepare the model
+                self.model.setSample(sample)
+                self.calculateParameterUnits(sample)
+                if self.fitting.modelParameterUnits==None:
+                    self.fitting.modelParameterUnits = self.parameterUnits
 
-            # Bootstrap samples
-            if type(x[0])==list:
-                idx = [[k for k in range(0,len(xj))] for xj in x]
-            else:
-                idx = [k for k in range(0,len(x))]
-            for n in range(0,self.Nbootstrap.get()):
-                ok = False
-                while not ok:
-                    if type(x[0])==list:
-                        idxB = [sorted(np.random.choice(idxj,len(idxj))) for idxj in idx]
-                        xB=[]
-                        yB=[]
-                        for j in range(len(idxB)):
-                            idxBj = idxB[j]
-                            xj=x[j]
-                            yj=y[j]
-                            xB.append([xj[i] for i in idxBj])
-                            yB.append([yj[i] for i in idxBj])
-                    else:
-                        idxB = sorted(np.random.choice(idx,len(idx)))
-                        xB = [x[i] for i in idxB]
-                        yB = [y[i] for i in idxB]
-                    print("Bootstrap sample %d"%n)
-                    print("X= "+str(xB))
-                    print("Y= "+str(yB))
-                    self.setXYValues(xB, yB)
-                    self.parameters = parameters0
+                # Get the initial parameters
+                if parameterNames==None:
+                    parameterNames = self.getParameterNames()
+                parameters0 = []
+                for parameterName in parameterNames:
+                    parameters0.append(float(sample.descriptors[parameterName]))
+                print("Initial solution: %s"%str(parameters0))
+                print(" ")
 
-                    optimizer2 = PKPDLSOptimizer(self,fitType)
-                    optimizer2.verbose = 0
-                    try:
-                        optimizer2.optimize()
-                        ok=True
-                    except:
-                        ok=False
+                # Set bounds
+                self.setBounds(sample)
 
-                # Evaluate the quality on the whole data set
-                self.setXYValues(x, y)
-                optimizer2.evaluateQuality()
-                print(optimizer2.optimum)
-                print("   R2 = %f R2Adj=%f AIC=%f AICc=%f BIC=%f"%(optimizer2.R2,optimizer2.R2adj,optimizer2.AIC,\
-                                                                   optimizer2.AICc,optimizer2.BIC))
+                # Output object
+                sampleFit = PKPDSampleFitBootstrap()
+                sampleFit.sampleName = sample.sampleName
+                sampleFit.parameters = np.zeros((self.Nbootstrap.get(),len(parameters0)),np.double)
+                sampleFit.xB = []
+                sampleFit.yB = []
 
-                # Keep this result
-                sampleFit.parameters[n,:] = optimizer2.optimum
-                sampleFit.xB.append(str(xB))
-                sampleFit.yB.append(str(yB))
-                sampleFit.copyFromOptimizer(optimizer2)
+                # Bootstrap samples
+                if type(x[0])==list:
+                    idx = [[k for k in range(0,len(xj))] for xj in x]
+                else:
+                    idx = [k for k in range(0,len(x))]
+                for n in range(0,self.Nbootstrap.get()):
+                    ok = False
+                    while not ok:
+                        if type(x[0])==list:
+                            idxB = [sorted(np.random.choice(idxj,len(idxj))) for idxj in idx]
+                            xB=[]
+                            yB=[]
+                            for j in range(len(idxB)):
+                                idxBj = idxB[j]
+                                xj=x[j]
+                                yj=y[j]
+                                xB.append([xj[i] for i in idxBj])
+                                yB.append([yj[i] for i in idxBj])
+                        else:
+                            idxB = sorted(np.random.choice(idx,len(idx)))
+                            xB = [x[i] for i in idxB]
+                            yB = [y[i] for i in idxB]
+                        print("Bootstrap sample %d"%n)
+                        print("X= "+str(xB))
+                        print("Y= "+str(yB))
+                        self.clearXYLists()
+                        self.setXYValues(xB, yB)
+                        self.parameters = parameters0
 
-            self.fitting.sampleFits.append(sampleFit)
+                        optimizer2 = PKPDLSOptimizer(self,fitType)
+                        optimizer2.verbose = 0
+                        try:
+                            optimizer2.optimize()
+                            ok=True
+                        except Exception as e:
+                            print(e)
+                            raise(e)
+                            ok=False
+
+                    # Evaluate the quality on the whole data set
+                    self.clearXYLists()
+                    self.setXYValues(x, y)
+                    optimizer2.evaluateQuality()
+                    print(optimizer2.optimum)
+                    print("   R2 = %f R2Adj=%f AIC=%f AICc=%f BIC=%f"%(optimizer2.R2,optimizer2.R2adj,optimizer2.AIC,\
+                                                                       optimizer2.AICc,optimizer2.BIC))
+
+                    # Keep this result
+                    sampleFit.parameters[n,:] = optimizer2.optimum
+                    sampleFit.xB.append(str(xB))
+                    sampleFit.yB.append(str(yB))
+                    sampleFit.copyFromOptimizer(optimizer2)
+
+                self.fitting.sampleFits.append(sampleFit)
 
         self.fitting.modelParameters = self.getParameterNames()
         self.fitting.modelDescription = self.getDescription()
