@@ -901,7 +901,11 @@ class PKPDODEModel(PKPDModelBase2):
         return 0
 
     def imposeConstraints(self, yt):
-        yt[yt<0]=0
+        if type(yt)==np.ndarray:
+            yt[yt<0]=0
+        elif type(yt)==np.float64:
+            if yt<0:
+                yt=0
 
     def getResponseDimension(self):
         return None
@@ -1121,7 +1125,12 @@ class PKPDOptimizer:
         if type(y[0])!=list and type(y[0])!=np.ndarray and (type(yp[0])==list or type(yp[0])==np.ndarray):
             yp=yp[0]
         self._evaluateQuality(x, y, yp)
-        if (not hasattr(self.model,"model") or self.model.model.getResponseDimension()==1):
+
+        if type(x[0])==list:
+            mode="ListOfLists"
+        else:
+            mode="ListOfFloats"
+        if mode=="ListOfFloats":
             if type(x)==np.ndarray:
                 N=x.shape[0]
             elif type(x)==list:
