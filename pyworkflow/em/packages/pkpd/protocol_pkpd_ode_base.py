@@ -164,6 +164,9 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         self.sampleList = []
         self.modelList = []
         self.drugSourceList = []
+        self.clearXYLists()
+
+    def clearXYLists(self):
         self.XList = []
         self.YList = []
 
@@ -229,24 +232,27 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         self.YList.append(y)
 
     def mergeLists(self, iny):
-        if type(iny[0][0])==list or type(iny[0][0])==np.ndarray:
-            outy=[]
-            for m in range(len(iny[0])):
-                if type(iny[0][0])==list:
-                    outy.append([])
-                else:
-                    outy.append(np.empty(shape=[0]))
-            for m in range(len(outy)):
-                for n in range(len(iny)):
-                    if type(iny[n][m])==list:
-                        outy[m] += iny[n][m]
+        if len(self.XList)>1:
+            if type(iny[0][0])==list or type(iny[0][0])==np.ndarray:
+                outy=[]
+                for m in range(len(iny[0])):
+                    if type(iny[0][0])==list:
+                        outy.append([])
                     else:
-                        outy[m]=np.concatenate((outy[m],iny[n][m]))
+                        outy.append(np.empty(shape=[0]))
+                for m in range(len(outy)):
+                    for n in range(len(iny)):
+                        if type(iny[n][m])==list:
+                            outy[m] += iny[n][m]
+                        else:
+                            outy[m]=np.concatenate((outy[m],iny[n][m]))
+            else:
+                outy = []
+                for n in range(len(iny)):
+                    outy += iny[n]
+            return outy
         else:
-            outy = []
-            for n in range(len(iny)):
-                outy += iny[n]
-        return outy
+            return iny
 
     def separateLists(self,iny):
         outy=[]
