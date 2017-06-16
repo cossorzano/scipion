@@ -68,8 +68,8 @@ class NCAObsIVModel(SAModel):
         return self.parameterUnits
 
     def calculateParameters(self, show=True):
-        t = self.x
-        C = self.y
+        t = self.x[0] # From [array(...)] to array(...)
+        C = self.y[0]
 
         # AUC0t, AUMC0t
         AUC0t = 0
@@ -244,8 +244,8 @@ class NCAEVModel(SAModel):
         self.parameterUnits = [AUCunits, AUCunits, AUMCunits, AUMCunits, tunits, Vunits, Vunits, CLunits, CLunits, tunits]
 
     def calculateParameters(self, show=True):
-        t = np.concatenate([[0],self.x])
-        C = np.concatenate([[0],self.y])
+        t = np.concatenate([[0],self.x[0]]) # From [array(...)] to array(...)
+        C = np.concatenate([[0],self.y[0]])
 
         # AUC0t, AUMC0t
         AUC0t = 0

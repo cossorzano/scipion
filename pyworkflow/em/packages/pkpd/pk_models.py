@@ -44,20 +44,22 @@ class PKPDExponentialModel(PKGenericModel):
     def forwardModel(self, parameters, x=None):
         if x==None:
             x=self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
         proceed=True
         for k in range(1,self.Nexp):
             ck = parameters[2*k]
             ck_1 = parameters[2*(k-1)]
             if ck_1<ck:
                 proceed=False
-                self.yPredicted = -1000*np.ones(x.shape[0])
+                self.yPredicted = -1000*np.ones(xToUse.shape[0])
                 break
         if proceed:
             for k in range(0,self.Nexp):
                 ck = parameters[2*k]
                 lk = parameters[2*k+1]
-                self.yPredicted += ck*np.exp(-lk*x)
+                self.yPredicted += ck*np.exp(-lk*xToUse)
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -65,7 +67,9 @@ class PKPDExponentialModel(PKGenericModel):
 
     def prepare(self):
         if self.bounds == None:
-            p = np.polyfit(self.x,self.ylog,1)
+            xToUse = self.x[0] # From [array(...)] to array(...)
+            ylogToUse = self.ylog[0]
+            p = np.polyfit(xToUse,ylogToUse,1)
             print("First estimate of 1 exponential term: ")
             print("Y=%f*exp(-%f*X)"%(math.exp(p[1]),-p[0]))
 
@@ -140,6 +144,7 @@ class PKPDSimpleEVModel(PKModel):
     def forwardModel(self, parameters, x=None):
         if x==None:
             x=self.x
+        xToUse = x[0] # From [array(...)] to array(...)
 
         Ka=parameters[0]
         Vd=parameters[1]
@@ -148,11 +153,12 @@ class PKPDSimpleEVModel(PKModel):
         else:
             tlag = 0.0
 
-        self.yPredicted = np.zeros(len(x))
-        for i in range(len(x)):
+        self.yPredicted = np.zeros(xToUse.shape[0])
+        for i in range(xToUse.shape[0]):
             if x[i]>=tlag:
-                td=x[i]-tlag
+                td=xToUse[i]-tlag
                 self.yPredicted[i] = Ka*self.F*self.D/(Vd*(Ka-self.Ke))*(np.exp(-self.Ke*td)-np.exp(-Ka*td))
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -160,18 +166,20 @@ class PKPDSimpleEVModel(PKModel):
 
     def prepare(self):
         if self.bounds == None:
+            xToUse = self.x[0] # From [array(...)] to array(...)
+            yToUse = self.y[0]
             # Keep only the ascending part of the curve
             idx = []
-            for i in range(1,self.y.shape[0]):
+            for i in range(1,yToUse.shape[0]):
                 idx.append(i-1)
-                if self.y[i-1]>self.y[i]:
+                if yToUse[i-1]>yToUse[i]:
                     break
             if len(idx)<=1:
                 print("The first estimate of Ka and Vd cannot be determined")
                 self.bounds = None
                 return
-            xAscending = self.x[idx]
-            yAscending = self.y[idx]
+            xAscending = xToUse[idx]
+            yAscending = yToUse[idx]
 
             ylogE = np.polyval(np.asarray([-self.Ke,math.log(self.C0)],np.double),xAscending)
             ylogToFit = np.log(yAscending)-ylogE
