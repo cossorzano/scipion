@@ -143,6 +143,8 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
                 x, y = sample.getXYValues(self.varNameX,self.varNameY)
                 print("X= "+str(x))
                 print("Y= "+str(y))
+                firstX=x[0] # From [array(...)] to array(...)
+                firstY=y[0] # From [array(...)] to array(...)
 
                 # Interpret the dose
                 self.protODE.varNameX = self.varNameX
@@ -181,27 +183,13 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
                 sampleFit.yB = []
 
                 # Bootstrap samples
-                if type(x[0])==list:
-                    idx = [[k for k in range(0,len(xj))] for xj in x]
-                else:
-                    idx = [k for k in range(0,len(x))]
+                idx = [k for k in range(0,len(firstX))]
                 for n in range(0,self.Nbootstrap.get()):
                     ok = False
                     while not ok:
-                        if type(x[0])==list:
-                            idxB = [sorted(np.random.choice(idxj,len(idxj))) for idxj in idx]
-                            xB=[]
-                            yB=[]
-                            for j in range(len(idxB)):
-                                idxBj = idxB[j]
-                                xj=x[j]
-                                yj=y[j]
-                                xB.append([xj[i] for i in idxBj])
-                                yB.append([yj[i] for i in idxBj])
-                        else:
-                            idxB = sorted(np.random.choice(idx,len(idx)))
-                            xB = [x[i] for i in idxB]
-                            yB = [y[i] for i in idxB]
+                        idxB = sorted(np.random.choice(idx,len(idx)))
+                        xB = [np.asarray([firstX[i] for i in idxB])]
+                        yB = [np.asarray([firstY[i] for i in idxB])]
                         print("Bootstrap sample %d"%n)
                         print("X= "+str(xB))
                         print("Y= "+str(yB))
@@ -229,8 +217,8 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
 
                     # Keep this result
                     sampleFit.parameters[n,:] = optimizer2.optimum
-                    sampleFit.xB.append(str(xB))
-                    sampleFit.yB.append(str(yB))
+                    sampleFit.xB.append(str(xB[0]))
+                    sampleFit.yB.append(str(yB[0]))
                     sampleFit.copyFromOptimizer(optimizer2)
 
                 self.fitting.sampleFits.append(sampleFit)
