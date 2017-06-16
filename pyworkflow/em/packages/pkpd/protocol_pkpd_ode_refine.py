@@ -84,17 +84,15 @@ class ProtPKPDODERefine(ProtPKPDODEBase):
         self.experiment = self.readExperiment(self.protODE.outputExperiment.fnPKPD)
         self.fitting = self.readFitting(self.protODE.outputFitting.fnFitting)
 
-        # Create drug source
-        self.drugSource = DrugSource()
-
-        # Setup model
-        self.model = self.protODE.createModel()
-        self.model.deltaT = self.deltaT.get()
-        self.model.setExperiment(self.experiment)
+        # Get the X and Y variable names
         self.varNameX = self.fitting.predictor.varName
-        self.varNameY = self.fitting.predicted.varName
-        self.model.setXVar(self.varNameX)
-        self.model.setYVar(self.varNameY)
+        if type(self.fitting.predicted)==list:
+            self.varNameY = [v.varName for v in self.fitting.predicted]
+        else:
+            self.varNameY = self.fitting.predicted.varName
+        self.protODE.experiment = self.experiment
+        self.protODE.varNameX = self.varNameX
+        self.protODE.varNameY = self.varNameY
 
         # Create output object
         self.fitting = PKPDFitting()
@@ -112,72 +110,94 @@ class ProtPKPDODERefine(ProtPKPDODEBase):
             fitType = "relative"
 
         parameterNames = None
-        for sampleName, sample in self.experiment.samples.iteritems():
-            self.printSection("Fitting "+sampleName)
+        for groupName, group in self.experiment.groups.iteritems():
+            self.printSection("Fitting "+groupName)
+            self.protODE.clearGroupParameters()
+            self.clearGroupParameters()
 
-            # Get the values to fit
-            x, y = sample.getXYValues(self.varNameX,self.varNameY)
-            print("X= "+str(x))
-            print("Y= "+str(y))
+            for sampleName in group.sampleList:
+                print("   Sample "+sampleName)
+                sample = self.experiment.samples[sampleName]
 
-            # Interpret the dose
-            self.protODE.varNameX = self.varNameX
-            self.protODE.varNameY = self.varNameY
-            self.protODE.model = self.model
-            self.protODE.setTimeRange(sample)
-            sample.interpretDose()
+                self.protODE.createDrugSource()
+                self.protODE.setupModel()
 
-            self.drugSource.setDoses(sample.parsedDoseList, self.model.t0, self.model.tF)
-            self.protODE.configureSource(self.drugSource)
-            self.model.drugSource = self.drugSource
+                # Setup self model
+                self.drugSource = self.protODE.drugSource
+                self.drugSourceList = self.protODE.drugSourceList
+                self.model = self.protODE.model
+                self.modelList = self.protODE.modelList
+                self.model.deltaT = self.deltaT.get()
+                self.model.setXVar(self.varNameX)
+                self.model.setYVar(self.varNameY)
 
-            # Prepare the model
-            self.model.setSample(sample)
-            self.calculateParameterUnits(sample)
-            if self.fitting.modelParameterUnits==None:
-                self.fitting.modelParameterUnits = self.parameterUnits
+                # Get the values to fit
+                x, y = sample.getXYValues(self.varNameX,self.varNameY)
+                print("X= "+str(x))
+                print("Y= "+str(y))
 
-            # Get the initial parameters
-            if parameterNames==None:
-                parameterNames = self.getParameterNames()
-            parameters0 = []
-            for parameterName in parameterNames:
-                parameters0.append(float(sample.descriptors[parameterName]))
-            print("Initial solution: %s"%str(parameters0))
-            print(" ")
+                # Interpret the dose
+                self.protODE.varNameX = self.varNameX
+                self.protODE.varNameY = self.varNameY
+                self.protODE.model = self.model
+                self.protODE.setTimeRange(sample)
+                sample.interpretDose()
 
-            # Set bounds
-            self.setBounds(sample)
-            self.setXYValues(x, y)
-            self.parameters = parameters0
+                self.drugSource.setDoses(sample.parsedDoseList, self.model.t0, self.model.tF)
+                self.protODE.configureSource(self.drugSource)
+                self.model.drugSource = self.drugSource
+
+                # Prepare the model
+                self.model.setSample(sample)
+                self.calculateParameterUnits(sample)
+                if self.fitting.modelParameterUnits==None:
+                    self.fitting.modelParameterUnits = self.parameterUnits
+
+                # Get the initial parameters
+                if parameterNames==None:
+                    parameterNames = self.getParameterNames()
+                parameters0 = []
+                for parameterName in parameterNames:
+                    parameters0.append(float(sample.descriptors[parameterName]))
+                print("Initial solution: %s"%str(parameters0))
+                print(" ")
+
+                # Set bounds
+                self.setBounds(sample)
+                self.setXYValues(x, y)
+                self.parameters = parameters0
+
+            self.printSetup()
+            self.x = self.mergeLists(self.XList)
+            self.y = self.mergeLists(self.YList)
 
             optimizer2 = PKPDLSOptimizer(self,fitType)
             optimizer2.optimize()
             optimizer2.setConfidenceInterval(self.protODE.confidenceInterval.get())
             self.setParameters(optimizer2.optimum)
 
-            # Keep this result
-            sampleFit = PKPDSampleFit()
-            sampleFit.sampleName = sample.sampleName
-            sampleFit.x = x
-            sampleFit.y = y
-            sampleFit.yp = self.yPredicted
-            sampleFit.yl = self.yPredictedLower
-            sampleFit.yu = self.yPredictedUpper
-            sampleFit.parameters = self.parameters
-            sampleFit.modelEquation = self.getEquation()
-            sampleFit.copyFromOptimizer(optimizer2)
-            self.fitting.sampleFits.append(sampleFit)
-            if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yp[0])==list or type(sampleFit.yp[0])==np.ndarray):
-                sampleFit.yp=sampleFit.yp[0]
-            if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yl[0])==list or type(sampleFit.yl[0])==np.ndarray):
-                sampleFit.yl=sampleFit.yl[0]
-            if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yu[0])==list or type(sampleFit.yu[0])==np.ndarray):
-                sampleFit.yu=sampleFit.yu[0]
+            n=0
+            for sampleName in group.sampleList:
+                sample = self.experiment.samples[sampleName]
 
-            # Add the parameters to the sample and experiment
-            for varName, varUnits, description, varValue in izip(self.getParameterNames(), self.parameterUnits, self.getParameterDescriptions(), self.parameters):
-                self.experiment.addParameterToSample(sampleName, varName, varUnits, description, varValue)
+                # Keep this result
+                sampleFit = PKPDSampleFit()
+                sampleFit.sampleName = sample.sampleName
+                sampleFit.x = x
+                sampleFit.y = y
+                sampleFit.yp = self.yPredicted
+                sampleFit.yl = self.yPredictedLower
+                sampleFit.yu = self.yPredictedUpper
+                sampleFit.parameters = self.parameters
+                sampleFit.modelEquation = self.getEquation()
+                sampleFit.copyFromOptimizer(optimizer2)
+                self.fitting.sampleFits.append(sampleFit)
+
+                # Add the parameters to the sample and experiment
+                for varName, varUnits, description, varValue in izip(self.getParameterNames(), self.parameterUnits, self.getParameterDescriptions(), self.parameters):
+                    self.experiment.addParameterToSample(sampleName, varName, varUnits, description, varValue)
+
+                n+=1
 
         self.fitting.modelParameters = self.getParameterNames()
         self.fitting.modelDescription = self.getDescription()
