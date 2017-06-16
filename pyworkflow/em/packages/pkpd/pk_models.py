@@ -153,9 +153,9 @@ class PKPDSimpleEVModel(PKModel):
         else:
             tlag = 0.0
 
-        self.yPredicted = np.zeros(xToUse.shape[0])
+        self.yPredicted = np.zeros(xToUse.shape)
         for i in range(xToUse.shape[0]):
-            if x[i]>=tlag:
+            if xToUse[i]>=tlag:
                 td=xToUse[i]-tlag
                 self.yPredicted[i] = Ka*self.F*self.D/(Vd*(Ka-self.Ke))*(np.exp(-self.Ke*td)-np.exp(-Ka*td))
         self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]

@@ -107,7 +107,7 @@ class ProtPKPDAbsorptionRate(ProtPKPDFitBase):
         tmax = math.log(Ka/Ke)/(Ka-Ke)
 
         self.experiment.addParameterToSample(sampleName, "tmax", xunits, "Estimated time of the Maximum of the non-iv peak", tmax)
-        Cmax = self.model.forwardModel(self.model.parameters,x=[tmax])[0]
+        Cmax = self.model.forwardModel(self.model.parameters,x=[np.atleast_1d(np.array(tmax))])[0][0]
         self.experiment.addParameterToSample(sampleName, "Cmax", Cunits, "Estimated concentration of the Maximum of the non-iv peak", Cmax)
         print("tmax = %f [%s]"%(tmax,strUnit(xunits)))
         print("Cmax = %f [%s]"%(Cmax,strUnit(Cunits)))
