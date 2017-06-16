@@ -482,6 +482,8 @@ class ExperimentWindow(gui.Window):
     def getPlotValues(self, sample):
         xValues, yValues = sample.getXYValues(self.getTimeVarName(),
                                   self.getMeasureVarName())
+        xValues=xValues[0] # From [array(...)] to array(...)
+        yValues=yValues[0]
 
         useMeasureLog = self.useMeasureLog()
         useTimeLog = self.useTimeLog()
