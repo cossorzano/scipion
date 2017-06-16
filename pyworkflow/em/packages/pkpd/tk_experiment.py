@@ -654,7 +654,7 @@ class ExperimentWindow(gui.Window):
             else:
                 varLabelY = self.getLabel(self.fitting.predicted.varName,
                                           self.useMeasureLog())
-                _plot(varLabelX, varLabelY, fit.x, fit.y, fit.yp)
+                _plot(varLabelX, varLabelY, fit.x[0], fit.y[0], fit.yp[0])
 
         else:
             self.showInfo("Please select some sample(s) to plot.")

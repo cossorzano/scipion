@@ -241,8 +241,6 @@ class PKPDResponsiveDialog(dialog.Dialog):
 
         self.targetProtocol.setParameters(currentParams)
         self.ypValues = self.targetProtocol.forwardModel(currentParams, self.xpValues)
-        if type(self.ypValues[0])==list or type(self.ypValues[0])==np.ndarray:
-            self.ypValues = self.ypValues[0]
 
     def getBoundsList(self):
         boundList = []
@@ -316,8 +314,8 @@ class PKPDResponsiveDialog(dialog.Dialog):
             self.sample = self.experiment.samples[sampleKeys[0]]
             self.xValues, self.yValues = self.sample.getXYValues(self.varNameX,
                                                                  self.varNameY)
-            self.newXValues, self.newYValues = self.computePlotValues(self.xValues,
-                                                                      self.yValues)
+            self.newXValues, self.newYValues = self.computePlotValues(self.xValues[0],
+                                                                      self.yValues[0])
             self._updateModel()
             self.computeFit()
             self.plotResults()
@@ -336,8 +334,8 @@ class PKPDResponsiveDialog(dialog.Dialog):
         ax = self.plotter.createSubPlot("Sample: %s" % self.sample.sampleName,
                                         self.getTimeLabel(),
                                         self.getMeasureLabel())
-        self.newXPValues, self.newYPValues = self.computePlotValues(self.xpValues,
-                                                                    self.ypValues)
+        self.newXPValues, self.newYPValues = self.computePlotValues(self.xpValues[0],
+                                                                    self.ypValues[0])
         ax.plot(self.newXValues, self.newYValues, 'x', label="Observations")
         ax.plot(self.newXPValues, self.newYPValues, label="Fit")
         ax.legend()
@@ -356,7 +354,7 @@ class PKPDResponsiveDialog(dialog.Dialog):
 
 class PKPDODEDialog(PKPDResponsiveDialog):
     def _updateModel(self):
-        self.xpValues = np.asarray([x for x in np.arange(0,np.max(self.xValues),4)])
+        self.xpValues = [np.asarray([x for x in np.arange(0,np.max(self.xValues),4)])]
         self.targetProtocol.model.t0 = 0
         self.targetProtocol.model.tF = np.max(self.xValues)
         self.targetProtocol.drugSource.setDoses(self.sample.parsedDoseList,

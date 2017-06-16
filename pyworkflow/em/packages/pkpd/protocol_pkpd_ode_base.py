@@ -122,6 +122,12 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         self.model.setYVar(self.varNameY)
         self.modelList.append(self.model)
 
+    def getResponseDimension(self):
+        return self.model.getResponseDimension()
+
+    def getStateDimension(self):
+        return self.model.getStateDimension()
+
     def setBounds(self, sample):
         if hasattr(self,"bounds"):
             self.model.setBounds(self.bounds.get())
@@ -233,26 +239,15 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
 
     def mergeLists(self, iny):
         if len(self.XList)>1:
-            if type(iny[0][0])==list or type(iny[0][0])==np.ndarray:
-                outy=[]
-                for m in range(len(iny[0])):
-                    if type(iny[0][0])==list:
-                        outy.append([])
-                    else:
-                        outy.append(np.empty(shape=[0]))
-                for m in range(len(outy)):
-                    for n in range(len(iny)):
-                        if type(iny[n][m])==list:
-                            outy[m] += iny[n][m]
-                        else:
-                            outy[m]=np.concatenate((outy[m],iny[n][m]))
-            else:
-                outy = []
+            outy=[]
+            for m in range(len(iny[0])):
+                outy.append(np.empty(shape=[0]))
+            for m in range(len(outy)):
                 for n in range(len(iny)):
-                    outy += iny[n]
+                    outy[m]=np.concatenate((outy[m],iny[n][m]))
             return outy
         else:
-            return iny
+            return iny[0]
 
     def separateLists(self,iny):
         outy=[]
@@ -260,36 +255,16 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
         if Nsamples==0:
             return
         Nmeasurements = self.model.getResponseDimension()
-        if Nmeasurements>1:
-            idx=[0]*Nmeasurements
-        else:
-            idx=0
+        idx=[0]*Nmeasurements
         for n in range(Nsamples):
             yn=self.YList[n]
-            if Nmeasurements>1:
-                if Nmeasurements>1:
-                    perSampleIn = []
-                for j in range(Nmeasurements):
-                    if type(yn[j])==np.ndarray:
-                        ynDim = yn[j].size
-                    else:
-                        ynDim = len(yn[j])
-                    ysample = iny[j][idx[j]:(idx[j]+ynDim)]
-                    if Nmeasurements>1:
-                        perSampleIn.append(ysample)
-                    else:
-                        perSampleIn=ysample
-                    idx[j]+=ynDim
-                outy.append(perSampleIn)
-            else:
-                if type(yn)==np.ndarray:
-                    ynDim = yn.size
-                else:
-                    ynDim = len(yn)
-                ysample = iny[0][idx:(idx+ynDim)]
-                perSampleIn=ysample
-                idx+=ynDim
-                outy.append(perSampleIn)
+            perSampleIn = []
+            for j in range(Nmeasurements):
+                ynDim = yn[j].size
+                ysample = iny[j][idx[j]:(idx[j]+ynDim)]
+                perSampleIn.append(ysample)
+                idx[j]+=ynDim
+            outy.append(perSampleIn)
         return outy
 
     def addSample(self, sample):
@@ -461,12 +436,6 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
                 sampleFit.modelEquation = self.getEquation()
                 sampleFit.copyFromOptimizer(optimizer2)
                 self.fitting.sampleFits.append(sampleFit)
-                if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yp[0])==list or type(sampleFit.yp[0])==np.ndarray):
-                    sampleFit.yp=sampleFit.yp[0]
-                if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yl[0])==list or type(sampleFit.yl[0])==np.ndarray):
-                    sampleFit.yl=sampleFit.yl[0]
-                if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yu[0])==list or type(sampleFit.yu[0])==np.ndarray):
-                    sampleFit.yu=sampleFit.yu[0]
 
                 # Add the parameters to the sample and experiment
                 for varName, varUnits, description, varValue in izip(self.getParameterNames(), self.parameterUnits, self.getParameterDescriptions(), self.parameters):

@@ -391,14 +391,18 @@ class PKPDSample:
                     if x != "NA" and x!="LLOQ" and y!="ULOQ" and y != "NA" and y!= "LLOQ" and y!="ULOQ":
                         xPartial.append(float(x))
                         yPartial.append(float(y))
-                xl.append(xPartial)
-                yl.append(yPartial)
+                xl.append(np.array(xPartial))
+                yl.append(np.array(yPartial))
         else:
             ys = self.getValues(varNameY)
+            xPartial =[]
+            yPartial = []
             for x, y in izip(xs, ys):
                 if x != "NA" and x!="LLOQ" and y!="ULOQ" and y != "NA" and y!= "LLOQ" and y!="ULOQ":
-                    xl.append(float(x))
-                    yl.append(float(y))
+                    xPartial.append(float(x))
+                    yPartial.append(float(y))
+            xl.append(np.array(xPartial))
+            yl.append(np.array(yPartial))
         return xl, yl
 
     def getSampleMeasurements(self):
@@ -750,16 +754,16 @@ class PKPDModelBase(object):
             self.yRange = self.experiment.getRange(y)
 
     def setXYValues(self, x, y):
-        self.x = np.array(x)
-        if type(y[0])!=list and type(y[0])!=np.ndarray:
-            self.y = np.array(y)
-            idx = np.logical_and(np.isfinite(self.x), np.isfinite(self.y))
-            self.x = self.x[idx]
-            self.y = self.y[idx]
-            self.ylog = [math.log10(yi) if yi>0 else float("inf") for yi in self.y]
-        else:
-            self.y = [np.array(yi) for yi in y]
-            self.ylog = [np.log10(yi) for yi in self.y]
+        self.x = []
+        self.y = []
+        self.ylog = []
+        for n in range(len(x)):
+            idx = np.logical_and(np.isfinite(x[n]), np.isfinite(y[n]))
+            xidx=x[n][idx]
+            yidx=y[n][idx]
+            self.x.append(xidx)
+            self.y.append(yidx)
+            self.ylog.append(np.array([math.log10(yidxi) if yidxi>0 else float("inf") for yidxi in yidx]))
 
     def getNumberOfParameters(self):
         return len(self.getParameterNames())
@@ -832,15 +836,11 @@ class PKPDModelBase2(PKPDModelBase):
 
     def setConfidenceInterval(self,lowerBound,upperBound):
         yPredictedBackup = copy.copy(self.yPredicted)
-        if type(self.yPredicted[0])==np.ndarray:
-            self.yPredictedLower=[]
-            self.yPredictedUpper=[]
-            for j in range(len(self.yPredicted)):
-                self.yPredictedLower.append(np.copy(self.yPredicted[j]))
-                self.yPredictedUpper.append(np.copy(self.yPredicted[j]))
-        else:
-            self.yPredictedUpper = copy.copy(self.yPredicted)
-            self.yPredictedLower = copy.copy(self.yPredicted)
+        self.yPredictedLower=[]
+        self.yPredictedUpper=[]
+        for j in range(len(self.yPredicted)):
+            self.yPredictedLower.append(np.copy(self.yPredicted[j]))
+            self.yPredictedUpper.append(np.copy(self.yPredicted[j]))
         for i in range(0,int(math.pow(2,self.getNumberOfParameters()))):
             pattern = ("{0:0%db}"%(self.getNumberOfParameters())).format(i)
             p = np.where(np.array(list(pattern))=="1",upperBound,lowerBound)
@@ -848,38 +848,24 @@ class PKPDModelBase2(PKPDModelBase):
             if not self.areParametersValid(p):
                 continue
             y = self.forwardModel(p)
-            if type(y[0])!=list and type(y[0])!=np.ndarray:
-                for n in range(len(y)):
-                    if y[n]<self.yPredictedLower[n]:
-                        if y[n]<0:
-                            self.yPredictedLower[n]=0
+            for j in range(len(y)):
+                yj=y[j]
+                for n in range(len(yj)):
+                    if yj[n]<(self.yPredictedLower[j][n]):
+                        if yj[n]<0:
+                            self.yPredictedLower[j][n]=0
                         else:
-                            self.yPredictedLower[n]=y[n]
-                    if y[n]>self.yPredictedUpper[n]:
-                        self.yPredictedUpper[n]=y[n]
-            else:
-                for j in range(len(y)):
-                    yj=y[j]
-                    for n in range(len(yj)):
-                        if yj[n]<(self.yPredictedLower[j][n]):
-                            if yj[n]<0:
-                                self.yPredictedLower[j][n]=0
-                            else:
-                                (self.yPredictedLower[j][n])=yj[n]
-                        if yj[n]>(self.yPredictedUpper[j][n]):
-                            (self.yPredictedUpper[j][n])=yj[n]
+                            (self.yPredictedLower[j][n])=yj[n]
+                    if yj[n]>(self.yPredictedUpper[j][n]):
+                        (self.yPredictedUpper[j][n])=yj[n]
         self.yPredicted = yPredictedBackup
 
     def setConfidenceIntervalNA(self):
-        if type(self.yPredicted[0])!=np.ndarray:
-            self.yPredictedUpper = ["NA"]*len(self.yPredicted)
-            self.yPredictedLower = ["NA"]*len(self.yPredicted)
-        else:
-            self.yPredictedUpper = []
-            self.yPredictedLower = []
-            for y in self.yPredicted:
-                self.yPredictedUpper.append(["NA"]*len(y))
-                self.yPredictedLower.append(["NA"]*len(y))
+        self.yPredictedUpper = []
+        self.yPredictedLower = []
+        for y in self.yPredicted:
+            self.yPredictedUpper.append(["NA"]*y.shape[0])
+            self.yPredictedLower.append(["NA"]*y.shape[0])
 
 class PKPDModel(PKPDModelBase2):
     def prepare(self):
@@ -893,6 +879,24 @@ class PKPDODEModel(PKPDModelBase2):
         self.deltaT = 0.25 # (min)
         self.drugSource = None
         # self.show = False
+
+    def setXYValues(self, x, y):
+        if type(x)!=list or (type(x) and type(x[0])!=np.ndarray):
+            x = [np.array(x)]*self.getResponseDimension()
+
+        if type(y)!=list or (type(y)==list and type(y[0])!=np.ndarray):
+            y = [np.array(y)]
+
+        self.x=[]
+        self.y=[]
+        self.ylog=[]
+        for n in range(self.getResponseDimension()):
+            idx = np.logical_and(np.isfinite(x[n]), np.isfinite(y[n]))
+            xidx=x[n][idx]
+            yidx=y[n][idx]
+            self.x.append(xidx)
+            self.y.append(yidx)
+            self.ylog.append(np.array([math.log10(yidxi) if yidxi>0 else float("inf") for yidxi in yidx]))
 
     def F(self, t, y):
         return 0
@@ -976,16 +980,11 @@ class PKPDODEModel(PKPDModelBase2):
         if x==None:
             x = self.x
 
-        if type(x[0])!=list and type(x[0])!=np.ndarray:
+        self.yPredicted = []
+        for j in range(0,self.getResponseDimension()):
             if self.getStateDimension()==1:
-                self.yPredicted = np.interp(x,Xt,Yt)
+                self.yPredicted.append(np.interp(x[j],Xt,Yt))
             else:
-                self.yPredicted = []
-                for j in range(0,self.getResponseDimension()):
-                    self.yPredicted.append(np.interp(x,Xt,Yt[:,j]))
-        else:
-            self.yPredicted = []
-            for j in range(0,self.getResponseDimension()):
                 self.yPredicted.append(np.interp(x[j],Xt,Yt[:,j]))
         return self.yPredicted
 
@@ -996,12 +995,8 @@ class PKPDOptimizer:
         self.Nevaluations = 0
         self.bestRmse=1e38
 
-        if type(model.y[0])!=list and type(model.y[0])!=np.ndarray:
-            self.yTarget = [np.array(model.y, dtype=np.float32)]
-            self.yTargetLogs = [np.array([math.log10(yi) if np.isfinite(yi) and yi>0 else float("inf") for yi in model.y],dtype=np.float32)]
-        else:
-            self.yTarget = [np.array(yi, dtype=np.float32) for yi in model.y]
-            self.yTargetLogs = [np.log10(yi) for yi in self.yTarget]
+        self.yTarget = [np.array(yi, dtype=np.float32) for yi in model.y]
+        self.yTargetLogs = [np.log10(yi) for yi in self.yTarget]
 
         if fitType=="linear":
             self.takeYLogs = False
@@ -1031,40 +1026,41 @@ class PKPDOptimizer:
                 return False
         return True
 
-    def getResiduals(self,parameters):
-        if not self.inBounds(parameters):
-            if type(self.yTarget[0])==list or type(self.yTarget[0])==np.ndarray:
-                allDiffs = None
-                for yTarget in self.yTarget:
-                    diff = 1e38*np.ones(yTarget.shape)
-                    if allDiffs==None:
-                        allDiffs = diff
-                    else:
-                        allDiffs = np.concatenate([allDiffs, diff])
-                return allDiffs
-            else:
-                return 1e38*np.ones(self.yTarget.shape)
-        yPredicted = flattenArray(self.model.forwardModel(parameters))
-
+    def hugeError(self):
         allDiffs = None
-        for y, yTarget in izip(yPredicted,self.yTarget):
-            if self.takeYLogs:
-                idx = np.array([np.isfinite(yi) and yi>=1e-20 for yi in y])
-                nonIdx = np.logical_not(idx)
-                y = np.log10(y[idx])
-                yTarget = yTarget[idx]
-            diff = yTarget - y
-            if self.takeRelative:
-                diff = diff/yTarget
+        for yTarget in self.yTarget:
+            diff = 1e38*np.ones(yTarget.shape)
             if allDiffs==None:
                 allDiffs = diff
             else:
                 allDiffs = np.concatenate([allDiffs, diff])
+        return allDiffs
+
+    def getResiduals(self,parameters):
+        if not self.inBounds(parameters):
+            return self.hugeError()
+        yPredicted = self.model.forwardModel(parameters)
+
+        allDiffs = None
+        for y, yTarget,yTargetLog in izip(yPredicted,self.yTarget,self.yTargetLogs):
+            if self.takeYLogs:
+                idx = np.logical_and(np.isfinite(y),y>=1e-20)
+                diff = yTargetLog[idx]-np.log10(y[idx])
+            else:
+                diff = yTarget - y
+            if self.takeRelative:
+                diff = diff/yTarget
+
+            if allDiffs==None:
+                allDiffs = diff
+            else:
+                allDiffs = np.concatenate([allDiffs, diff])
+
             idx = np.logical_not(np.isfinite(allDiffs))
             allDiffs[idx]=1e38
-        e = allDiffs[np.isfinite(allDiffs)]
+        e = allDiffs
         if e.size<parameters.size:
-            e=1e38*np.ones(len(yPredicted))
+            return self.hugeError()
 
         rmse = math.sqrt(np.power(e,2).mean())
         if rmse<self.bestRmse:
@@ -1085,24 +1081,20 @@ class PKPDOptimizer:
 
     def _evaluateQuality(self, x, y, yp):
         # Spiess and Neumeyer, BMC Pharmacology 2010, 10:6
-        if type(y[0])==list or type(y[0])==np.ndarray:
-            self.e = None
-            yToUse = None
-            for yi, ypi in izip(y,yp):
-                diff = []
-                for yii, ypii in izip(yi,ypi):
-                    if np.isfinite(yii) and np.isfinite(ypii):
-                        diff.append(yii-ypii)
-                diff = np.asarray(diff)
-                if self.e==None:
-                    self.e = diff
-                    yToUse = np.asarray(yi)
-                else:
-                    self.e = np.concatenate([self.e, diff])
-                    yToUse = np.concatenate([yToUse, yi])
-        else:
-            yToUse = np.asarray(y).flatten()
-            self.e = yToUse-np.asarray(yp).flatten()
+        self.e = None
+        yToUse = None
+        for yi, ypi in izip(y,yp):
+            diff = []
+            for yii, ypii in izip(yi,ypi):
+                if np.isfinite(yii) and np.isfinite(ypii):
+                    diff.append(yii-ypii)
+            diff = np.asarray(diff)
+            if self.e==None:
+                self.e = diff
+                yToUse = np.asarray(yi)
+            else:
+                self.e = np.concatenate([self.e, diff])
+                yToUse = np.concatenate([yToUse, yi])
 
         self.R2 = (1-np.var(self.e)/np.var(yToUse))
         n=len(self.e) # Number of samples
@@ -1120,31 +1112,16 @@ class PKPDOptimizer:
         self.BIC = p*math.log(n)-2*logL
 
     def _printFitting(self, x, y, yp):
-        if type(y)==np.ndarray and y.size==0:
-            return
-        if type(y[0])!=list and type(y[0])!=np.ndarray and (type(yp[0])==list or type(yp[0])==np.ndarray):
-            yp=yp[0]
         self._evaluateQuality(x, y, yp)
 
-        if type(x[0])==list:
-            mode="ListOfLists"
-        else:
-            mode="ListOfFloats"
-        if mode=="ListOfFloats":
-            if type(x)==np.ndarray:
-                N=x.shape[0]
-            elif type(x)==list:
-                N=len(x)
-            for n in range(0,N):
-                print("%f %f %f %f"%(x[n],y[n],yp[n],y[n]-yp[n]))
-        else:
-            for j in range(len(x)):
+        for j in range(len(x)):
+            if len(x)>1:
                 print("Series %d ---------"%j)
-                xj=np.asarray(x[j])
-                yj=y[j]
-                ypj=yp[j]
-                for n in range(0,xj.shape[0]):
-                    print("%f %f %f %f"%(xj[n],yj[n],ypj[n],yj[n]-ypj[n]))
+            xj=x[j]
+            yj=y[j]
+            ypj=yp[j]
+            for n in range(0,xj.shape[0]):
+                print("%f %f %f %f"%(xj[n],yj[n],ypj[n],yj[n]-ypj[n]))
         print("------------------------")
         print("Mean error = %f"%np.mean(self.e))
         print("Std error = %f"%np.std(self.e))
@@ -1341,18 +1318,14 @@ class PKPDSampleFit:
                                                           self.significance):
             fh.write("%f [%s,%s] %s\n"%(parameter,str(lower),str(upper),significance))
         fh.write("X   Y   Ypredicted [Ylower,Yupper] -------\n")
-        if  any(isinstance(el, list) for el in self.x):
-            for j in range(len(self.x)):
-                fh.write("Series %d -----\n"%j)
-                xj = self.x[j]
-                yj = self.y[j]
-                ypj = self.yp[j]
-                ylj = self.yl[j]
-                yuj = self.yu[j]
-                for x,y,yp,yl,yu in izip(xj,yj,ypj,ylj,yuj):
-                    fh.write("%f %s %s [%s,%s]\n"%(x,str(y),str(yp),str(yl),str(yu)))
-        else:
-            for x,y,yp,yl,yu in izip(self.x,self.y,self.yp,self.yl,self.yu):
+        for j in range(len(self.x)):
+            fh.write("Series %d -----\n"%j)
+            xj = self.x[j]
+            yj = self.y[j]
+            ypj = self.yp[j]
+            ylj = self.yl[j]
+            yuj = self.yu[j]
+            for x,y,yp,yl,yu in izip(xj,yj,ypj,ylj,yuj):
                 fh.write("%f %s %s [%s,%s]\n"%(x,str(y),str(yp),str(yl),str(yu)))
         fh.write("\n")
 
