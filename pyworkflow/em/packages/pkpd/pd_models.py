@@ -46,10 +46,12 @@ class PDLinear(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x==None:
             x=self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         s = parameters[1]
-        self.yPredicted = e0+s*x
+        self.yPredicted = e0+s*xToUse
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -57,7 +59,9 @@ class PDLinear(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
-            p = np.polyfit(self.x,self.y,1)
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            p = np.polyfit(xToUse,yToUse,1)
             print("First estimate of linear term: ")
             print("Y=%f+%f*X"%(p[1],p[0]))
 
@@ -100,15 +104,16 @@ class PDLinear(PDGenericModel):
 
 
 class PDLogLinear(PDGenericModel):
-
     def forwardModel(self, parameters, x=None):
         if x==None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
 
         m = parameters[0]
         C0 = parameters[1]
-        self.yPredicted = [m*math.log(xi - C0) if np.isfinite(xi) and xi>C0 else float("inf") for xi in x]
+        self.yPredicted = [m*math.log(xi - C0) if np.isfinite(xi) and xi>C0 else float("inf") for xi in xToUse]
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -116,10 +121,12 @@ class PDLogLinear(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
-            Cmin=np.min(self.x)
-            xprime = self.x - 0.9*Cmin
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            Cmin=np.min(xToUse)
+            xprime = xToUse - 0.9*Cmin
             idx = np.where(xprime>0)[0]
-            p = np.polyfit(np.log(xprime[idx]), self.y[idx], 1)
+            p = np.polyfit(np.log(xprime[idx]), yToUse[idx], 1)
             C0=0.9*Cmin
             m=p[0]
             print("First estimate of log-linear term: ")
@@ -166,14 +173,15 @@ class PDSaturated(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
 
         e0 = parameters[0]
         emax = parameters[1]
         eC50 = parameters[2]
 
-        self.yPredicted = e0 + (emax*x / (eC50 + x))
-
+        self.yPredicted = e0 + (emax*xToUse / (eC50 + xToUse))
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -181,9 +189,11 @@ class PDSaturated(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
-            e0 = np.min(self.y)
-            emax = np.max(self.y-e0)
-            eC50 = 0.5*(np.max(self.x)+np.min(self.x))
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            e0 = np.min(yToUse)
+            emax = np.max(yToUse-e0)
+            eC50 = 0.5*(np.max(xToUse)+np.min(xToUse))
             print("First estimate of saturated term: ")
             print("Y=(%f) + ( (%f)*X / ((%f) + X) )" % (e0, emax, eC50))
 
@@ -230,14 +240,16 @@ class PDSigmoid(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         emax = parameters[1]
         eC50 = parameters[2]
         h = parameters[3]
         eC50prime = eC50**h
-        xprime = x**h
+        xprime = xToUse**h
         self.yPredicted = e0  + ( (emax*(xprime)) / ( (eC50prime) + (xprime)))
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -245,9 +257,11 @@ class PDSigmoid(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
-            e0 = np.min(self.y)
-            emax = np.max(self.y - e0)
-            eC50 = 0.5 * (np.max(self.x) + np.min(self.x))
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            e0 = np.min(yToUse)
+            emax = np.max(yToUse - e0)
+            eC50 = 0.5 * (np.max(xToUse) + np.min(xToUse))
             h = 1 #por defecto
             print("First estimate of saturated term: ")
             print("Y = (%f) + ( (%f)*(X**(%f)) / ( ((%f)**(%f)) + (X**(%f))))" % (e0, emax, h, eC50, h, h))
@@ -299,16 +313,17 @@ class PDGompertz(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x==None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
 
         e0 = parameters[0]
         a = parameters[1]
         b = parameters[2]
         g = parameters[3]
 
-        d = np.exp(b - (g*x))
+        d = np.exp(b - (g*xToUse))
         self.yPredicted = e0 + a * np.exp(-d)
-
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
 
@@ -317,14 +332,16 @@ class PDGompertz(PDGenericModel):
 
     def prepare(self):
         if self.bounds==None:
-            e0 = np.min(self.y)
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            e0 = np.min(yToUse)
 
-            emax = np.max(self.y - e0 )
+            emax = np.max(yToUse - e0 )
             a=emax
 
             emin = 0.9*e0+0.1*(emax+e0)
             b = math.log(-math.log((emin-e0)/emax))
-            g = (b + 5) / np.max(self.x)
+            g = (b + 5) / np.max(xToUse)
 
 
             print("First estimate of Gompertz term: ")
@@ -375,16 +392,17 @@ class PDLogistic1(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         a = parameters[1]
         b = parameters[2]
         g = parameters[3]
 
-        d = np.exp(b - (g * x))
+        d = np.exp(b - (g * xToUse))
 
         self.yPredicted = e0 + (a / (1 + d))
-
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -392,14 +410,16 @@ class PDLogistic1(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
-            e0 = np.min(self.y)
-            emax = np.max(self.y - e0)
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            e0 = np.min(yToUse)
+            emax = np.max(yToUse - e0)
             a = emax
 
             emin = 0.9 * e0 + 0.1 * (emax + e0)
 
             b = math.log(emax/(emin-e0) - 1)
-            g = (b + 5)/np.max(self.x)
+            g = (b + 5)/np.max(xToUse)
 
             print("First estimate of Logistic 1 term: ")
             print("Y = (%f) + ( (%f) / (1+exp((%f) - (%f) * X)) )" % (e0,a,b,g))
@@ -452,16 +472,17 @@ class PDLogistic2(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         a = parameters[1]
         b = parameters[2]
         g = parameters[3]
 
-        d = np.exp(b - (g * x))
+        d = np.exp(b - (g * xToUse))
 
         self.yPredicted =  e0 + (1 / (a + d))
-
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -469,15 +490,17 @@ class PDLogistic2(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
-            e0 = np.min(self.y)
-            emax = np.max(self.y - e0)
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            e0 = np.min(yToUse)
+            emax = np.max(yToUse - e0)
 
             a = (1 / emax)
 
             emin = 0.9*e0 + 0.1*(emax + e0)
 
             b = math.log((1/(emin-e0)) - a)
-            g = (b + 5) / np.max(self.x)
+            g = (b + 5) / np.max(xToUse)
 
             print("First estimate of Logistic 2 term: ")
             print("Y = (%f) + ( 1 / ((%f) + exp((%f) - (%f) * X)) )" % (e0, a, b, g))
@@ -529,17 +552,18 @@ class PDLogistic3(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
 
         e0 = parameters[0]
         a = parameters[1]
         b = parameters[2]
         g = parameters[3]
 
-        d = np.exp(-(g * x))
+        d = np.exp(-(g * xToUse))
 
         self.yPredicted = e0 + ( a / (1 + b*d) )
-
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -547,14 +571,16 @@ class PDLogistic3(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
-            e0 = np.min(self.y)
-            emax = np.max(self.y - e0)
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            e0 = np.min(yToUse)
+            emax = np.max(yToUse - e0)
             a = emax
 
             emin = 0.9*e0 + 0.1*(emax + e0)
 
             b = (emax/(emin - e0)) - 1
-            g = 5 / np.max(self.x)
+            g = 5 / np.max(xToUse)
 
             print("First estimate of Logistic 3 term: ")
             print("Y = (%f) + ( (%f) / (1 + (%f) * exp(-(%f) * X)) )" % (e0, a, b, g))
@@ -606,16 +632,17 @@ class PDLogistic4(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         a = parameters[1]
         b = parameters[2]
         g = parameters[3]
 
-        d = np.exp(-(g * x))
+        d = np.exp(-(g * xToUse))
 
         self.yPredicted = e0 + ( 1 / (a + b*d) )
-
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -623,13 +650,15 @@ class PDLogistic4(PDGenericModel):
 
     def prepare(self):
         if self.bounds == None:
-            e0 = np.min(self.y)
-            emax = np.max(self.y -e0)
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            e0 = np.min(yToUse)
+            emax = np.max(yToUse - e0)
             a = 1 / emax
 
             emin = 0.9 * e0 + 0.1 * (emax + e0)
             b = (1 / (emin-e0)) - emax
-            g = 5 / np.max(self.x)
+            g = 5 / np.max(xToUse)
 
             print("First estimate of Logistic 4 term: ")
             print("Y = (%f) + ( 1 / ((%f)+ (%f)*exp(-(%f)*X)) )" % (e0, a, b, g))
@@ -681,17 +710,18 @@ class PDRichards(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         a = parameters[1]
         b = parameters[2]
         g = parameters[3]
         d = parameters[4]
 
-        p = np.exp(b-(g * x))
+        p = np.exp(b-(g * xToUse))
 
         self.yPredicted = e0 + ( a / ((1+p)**(1/d)) )
-
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -701,14 +731,16 @@ class PDRichards(PDGenericModel):
         if self.bounds == None:
             d = 1
 
-            e0 = np.min(self.y)
-            emax = np.max(self.y - e0)
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            e0 = np.min(yToUse)
+            emax = np.max(yToUse - e0)
             a = emax
 
             emin = 0.9 * e0 + 0.1 * (emax + e0)
 
             b = math.log(emax/(emin-e0) -1)
-            g = (b + 5) / np.max(self.x)
+            g = (b + 5) / np.max(xToUse)
 
             print("First estimate of Richards term: ")
             print("Y = (%f) + ( (%f)/ ((1 + exp((%f) - (%f)*X))^(1/(%f))) ) " % (e0, a, b, g, d))
@@ -763,17 +795,18 @@ class PDMorgan(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         b = parameters[1]
         g = parameters[2]
         a = parameters[3]
         d = parameters[4]
 
-        xprime = x**d
+        xprime = xToUse**d
 
         self.yPredicted = e0 + ( ((b*g) + (a*xprime)) / (g + xprime) )
-
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -784,8 +817,10 @@ class PDMorgan(PDGenericModel):
             d = 1
             g = 1
 
-            e0 = np.min(self.y)
-            emax = np.max(self.y - e0)
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            e0 = np.min(yToUse)
+            emax = np.max(yToUse - e0)
             a = emax
 
             emin = 0.9 * e0 + 0.1 * (emax + e0)
@@ -845,16 +880,17 @@ class PDWeibull(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
         a = parameters[0]
         b = parameters[1]
         g = parameters[2]
         d = parameters[3]
 
-        xprime = x**d
+        xprime = xToUse**d
 
         self.yPredicted = a - (b*(np.exp(- g * xprime)))
-
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -864,12 +900,14 @@ class PDWeibull(PDGenericModel):
         if self.bounds == None:
             d = 1
 
-            emin = np.min(self.y)
-            emax = np.max(self.y)
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            emin = np.min(yToUse)
+            emax = np.max(yToUse)
             a = emax
 
             b = emax - emin
-            g = 5 / np.max(self.x)
+            g = 5 / np.max(xToUse)
 
             print("First estimate of Weibull term: ")
             print("Y  = (%f) - (%f)*exp(-(%f)*(X^(%f))) " % (a, b, g, d))
@@ -919,16 +957,17 @@ class PDHill(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        self.yPredicted = np.zeros(x.shape[0])
+        xToUse = x[0] # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         b = parameters[1]
         g = parameters[2]
         d = parameters[3]
 
-        xprime = x**d
+        xprime = xToUse**d
 
         self.yPredicted = e0 + (b*xprime)/(g**d+xprime)
-
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
         return self.yPredicted
 
     def getDescription(self):
@@ -938,12 +977,14 @@ class PDHill(PDGenericModel):
         if self.bounds == None:
             d = 1
 
-            emin = np.min(self.y)
-            emax = np.max(self.y)
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            emin = np.min(yToUse)
+            emax = np.max(yToUse)
             e0 = emin
 
             b = emax - emin
-            g = 5 / np.max(self.x)
+            g = 5 / np.max(xToUse)
 
             print("First estimate of Hill term: ")
             print("Y  = (%f) + (%f)*exp(-(%f)*(X^(%f))) " % (e0, b, g, d))
