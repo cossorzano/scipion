@@ -74,7 +74,7 @@ class TestGabrielssonPK11Workflow(TestWorkflow):
         protPKPDPOTwoCompartments = self.newProtocol(ProtPKPDTwoCompartments,
                                                      objLabel='pkpd - ev1 two-compartments',
                                                      globalSearch=False,
-                                                     bounds='(0.0, 25.0); (0.0, 0.3); (0.0, 0.2); (0.0, 20.0); (0.0, 0.05); (0.0, 20.0)')
+                                                     bounds='(13, 20.0); (0.0, 0.03); (0.05, 0.15); (0.5, 11); (0.01, 0.04); (9, 15)')
         protPKPDPOTwoCompartments.inputExperiment.set(protFilterTime.outputExperiment)
         self.launchProtocol(protPKPDPOTwoCompartments)
         self.assertIsNotNone(protPKPDPOTwoCompartments.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
@@ -93,7 +93,7 @@ class TestGabrielssonPK11Workflow(TestWorkflow):
         self.assertTrue(V>8 and V<11)
         self.assertTrue(Vp>10 and Vp<14)
         self.assertTrue(Ka>0.008 and Ka<0.02)
-        self.assertTrue(tlag>10 and tlag<15)
+        self.assertTrue(tlag>10 and tlag<17)
         fitting = PKPDFitting()
         fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.99)
