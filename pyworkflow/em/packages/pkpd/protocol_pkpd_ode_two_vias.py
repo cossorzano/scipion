@@ -81,12 +81,12 @@ class ProtPKPDODETwoVias(ProtPKPD,PKPDModelBase2):
     def setXYValues(self, x1, y1, x2, y2):
         self.prot1.setXYValues(x1,y1)
         self.prot2.setXYValues(x2,y2)
-        self.x = [x1, x2]
-        self.y = [y1, y2]
+        self.x = x1+x2
+        self.y = y1+y2
 
-    def setSample(self, sample1, sample2):
-        self.prot1.setSample(sample1)
-        self.prot2.setSample(sample2)
+    def addSample(self, sample1, sample2):
+        self.prot1.addSample(sample1)
+        self.prot2.addSample(sample2)
 
     def prepareForSampleAnalysis(self, sampleName):
         self.prot1.prepareForSampleAnalysis(sampleName)
@@ -248,8 +248,8 @@ class ProtPKPDODETwoVias(ProtPKPD,PKPDModelBase2):
 
     def forwardModel(self, parameters, x=None):
         self.setParameters(parameters)
-        self.yp1 = flattenArray(self.prot1.forwardModel(self.parameters1,x))
-        self.yp2 = flattenArray(self.prot2.forwardModel(self.parameters2,x))
+        self.yp1 = self.prot1.forwardModel(self.parameters1,x)
+        self.yp2 = self.prot2.forwardModel(self.parameters2,x)
         self.yPredicted = self.yp1+self.yp2 # Merge two lists
         return self.yPredicted
 
@@ -269,17 +269,13 @@ class ProtPKPDODETwoVias(ProtPKPD,PKPDModelBase2):
         sampleFit.upperBound = prmUpperBound
 
         fitting.sampleFits.append(sampleFit)
-        if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yp[0])==list or type(sampleFit.yp[0])==np.ndarray):
-            sampleFit.yp=sampleFit.yp[0]
-        if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yl[0])==list or type(sampleFit.yl[0])==np.ndarray):
-            sampleFit.yl=sampleFit.yl[0]
-        if type(sampleFit.y[0])!=list and type(sampleFit.y[0])!=np.ndarray and (type(sampleFit.yu[0])==list or type(sampleFit.yu[0])==np.ndarray):
-            sampleFit.yu=sampleFit.yu[0]
 
     # Really fit ---------------------------------------------------------
     def setupUnderlyingProtocol(self,prot):
+        prot.getXYvars()
         prot.experiment=PKPDExperiment()
         prot.experiment.load(prot.outputExperiment.fnPKPD.get())
+        prot.clearGroupParameters()
         prot.createDrugSource()
         prot.setupModel()
         return prot.experiment
@@ -339,6 +335,7 @@ class ProtPKPDODETwoVias(ProtPKPD,PKPDModelBase2):
         elif self.fitType.get()==2:
             fitType = "relative"
 
+        # The fitting is performed by sampleName and not by groupName
         for sample2name, sample2 in self.experiment2.samples.iteritems():
             if sample2name in self.experiment1.samples:
                 self.setupSample(prot2,sample2,"")
@@ -363,7 +360,7 @@ class ProtPKPDODETwoVias(ProtPKPD,PKPDModelBase2):
             # Prepare the model
             self.setBounds(sample1,sample2)
             self.setXYValues(x1, y1, x2, y2)
-            self.setSample(sample1,sample2)
+            self.addSample(sample1,sample2)
             self.prepareForSampleAnalysis(sample2name)
             self.mergeModelParameters()
             self.calculateParameterUnits(sample1, sample2)
