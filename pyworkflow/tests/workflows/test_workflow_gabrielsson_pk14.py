@@ -63,8 +63,8 @@ class TestGabrielssonPK14Workflow(TestWorkflow):
         print "Fitting a two-compartment model ..."
         protPKPDPOTwoCompartments = self.newProtocol(ProtPKPDTwoCompartments,
                                                      objLabel='pkpd - iv two-compartments',
-                                                     globalSearch=False,
-                                                     bounds='(0.0, 30.0); (0.1, 0.3); (0.8, 1.2); (60, 110); (0.1, 0.3); (100, 120)')
+                                                     globalSearch=True,
+                                                     bounds='(0.0, 30.0); (0.1, 0.3); (0.8, 1.2); (60, 110); (0.15, 0.25); (100, 120)')
         protPKPDPOTwoCompartments.inputExperiment.set(protChangeTimeUnit.outputExperiment)
         self.launchProtocol(protPKPDPOTwoCompartments)
         self.assertIsNotNone(protPKPDPOTwoCompartments.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
@@ -78,12 +78,12 @@ class TestGabrielssonPK14Workflow(TestWorkflow):
         Clp = float(experiment.samples['Individual'].descriptors['Clp'])
         V = float(experiment.samples['Individual'].descriptors['V'])
         Vp = float(experiment.samples['Individual'].descriptors['Vp'])
-        self.assertTrue(Ka>0.185 and Ka<0.2) # Gabrielsson p. 613: k01=10 h^-1=0.166 min^-1
-        self.assertTrue(tlag>12 and tlag<18) # Gabrielsson p. 613: Tlag=0.078 h=4.7 min
-        self.assertTrue(Clp>0.18 and Clp<0.22) # Gabrielsson p. 613: k12=0.13
-        self.assertTrue(Cl>0.9 and Cl<1.1) # Gabrielsson p. 613: k10=0.66
-        self.assertTrue(V>83 and V<86) # Gabrielsson p. 613: Vc=83
-        self.assertTrue(Vp>108 and Vp<113)
+        self.assertTrue(Ka>0.185 and Ka<0.25) # Gabrielsson p. 613: k01=10 h^-1=0.166 min^-1
+        self.assertTrue(tlag>5 and tlag<18) # Gabrielsson p. 613: Tlag=0.078 h=4.7 min
+        self.assertTrue(Clp>0.165 and Clp<0.22) # Gabrielsson p. 613: k12=0.13
+        self.assertTrue(Cl>0.85 and Cl<1.1) # Gabrielsson p. 613: k10=0.66
+        self.assertTrue(V>82 and V<86) # Gabrielsson p. 613: Vc=83
+        self.assertTrue(Vp>95 and Vp<113)
         fitting = PKPDFitting()
         fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.99)

@@ -103,7 +103,7 @@ class TestGabrielssonPK11Workflow(TestWorkflow):
         protPKPDPOTwoCompartments = self.newProtocol(ProtPKPDTwoCompartments,
                                                      objLabel='pkpd - ev1 two-compartments',
                                                      globalSearch=False,
-                                                     bounds='(0.0, 25.0); (0.0, 0.3); (0.0, 0.2); (0.0, 20.0); (0.0, 0.05); (0.0, 20.0)')
+                                                     bounds='(13, 20.0); (0.0, 0.03); (0.05, 0.15); (0.5, 11); (0.01, 0.04); (9, 18)')
         protPKPDPOTwoCompartments.inputExperiment.set(protChangeTimeUnit.outputExperiment)
         self.launchProtocol(protPKPDPOTwoCompartments)
         self.assertIsNotNone(protPKPDPOTwoCompartments.outputExperiment.fnPKPD, "There was a problem with the two-compartmental model ")
@@ -119,10 +119,10 @@ class TestGabrielssonPK11Workflow(TestWorkflow):
         tlag = float(experiment.samples['Individual'].descriptors['Oral_tlag'])
         self.assertTrue(Cl>0.08 and Cl<0.09)
         self.assertTrue(Clp>0.01 and Clp<0.03)
-        self.assertTrue(V>15 and V<20)
+        self.assertTrue(V>3.5 and V<4.5)
         self.assertTrue(Vp>10 and Vp<15)
-        self.assertTrue(Ka>0.01 and Ka<0.03) # Gabrielsson p.590 K01=1.934 h^-1=0.032 min^-1
-        self.assertTrue(tlag>10 and tlag<15) # Gabrielsson p.590, tlag=0.327 h=19.6 min
+        self.assertTrue(Ka>0.004 and Ka<0.03) # Gabrielsson p.590 K01=1.934 h^-1=0.032 min^-1
+        self.assertTrue(tlag>10 and tlag<19) # Gabrielsson p.590, tlag=0.327 h=19.6 min
         fitting = PKPDFitting()
         fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.98)
