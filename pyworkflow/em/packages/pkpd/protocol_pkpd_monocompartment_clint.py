@@ -29,6 +29,7 @@ from protocol_pkpd_ode_base import ProtPKPDODEBase
 from pk_models import PK_MonocompartmentClint
 
 # TESTED in test_workflow_gabrielsson_pk17.py
+# TESTED in test_workflow_gabrielsson_pk20.py
 
 class ProtPKPDMonoCompartmentClint(ProtPKPDODEBase):
     """ Fit a monocompartmental model to a set of measurements obtained by oral doses (any arbitrary dosing regimen is allowed)\n
