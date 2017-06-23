@@ -1,6 +1,7 @@
 ## devel
 - Allows fitting the same model to multiple samples
 - Two-Compartments with intrinsic clearance and metabolites added
+- Two-Compartments with autoinduction added
 
 ## v17.05 Chlorine 32
 

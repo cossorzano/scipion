@@ -770,6 +770,130 @@ class PK_TwocompartmentsClintMetabolite(PKPDODEModel):
     def areParametersValid(self, p):
         return np.sum(p[0:1]<0)==0
 
+class PK_TwocompartmentsAutoinduction(PKPDODEModel):
+    def F(self, t, y):
+        E0=self.parameters[0]
+        a=self.parameters[1]
+        kout=self.parameters[2]
+        V=self.parameters[3]
+        Clp=self.parameters[4]
+        Vp=self.parameters[5]
+        C=y[0]
+        Cp=y[1]
+        E=y[2]
+
+        Cl=a*(1+E)
+        Q12 = Clp * (C-Cp)
+        return np.array([-(Cl*C + Q12)/V, Q12/Vp, kout*(E0+C-E)],np.double)
+
+    def G(self, t, dD):
+        V=self.parameters[3]
+        return np.array([dD/V,0.0,0.0],np.double)
+
+    def getResponseDimension(self):
+        return 1
+
+    def getStateDimension(self):
+        return 3
+
+    def getDescription(self):
+        return "Two-compartments model with autoinduction (%s)"%self.__class__.__name__
+
+    def getModelEquation(self):
+        return "dC/dt = -Cl/V * C - Clp/V * (C-Cp) + 1/V * dD/dt, dCp/dt = Clp/Vp * (C-Cp), dE/dt=kout*(E0+C-E) and Cl=a*(1+E)"
+
+    def getEquation(self):
+        E0=self.parameters[0]
+        a=self.parameters[1]
+        kout=self.parameters[2]
+        V=self.parameters[3]
+        Clp=self.parameters[4]
+        Vp=self.parameters[5]
+        return "dC/dt = -Cl/(%f) * C - (%f)/(%f) * (C-Cp) + 1/(%f) * dD/dt; dCp/dt = (%f)/(%f) * (C-Cp); dE/dt=(%f)*(%f+C-E) and Cl=(%f)*(1+E)"%(V,Clp,V,V,Clp,Vp,kout,E0,a)
+
+    def getParameterNames(self):
+        return ['E0', 'a', 'kout', 'V','Clp','Vp']
+
+    def calculateParameterUnits(self,sample):
+        xunits = unitFromString("min")
+        yunits = self.experiment.getVarUnits(self.yName)
+        Vunits = divideUnits(self.Dunits,yunits)
+        Clunits = divideUnits(Vunits,xunits)
+        self.parameterUnits = [PKPDUnit.UNIT_NONE,Clunits,PKPDUnit.UNIT_NONE,Vunits,Clunits,Vunits]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        # E0
+        E0Lower = lowerBound[0]
+        E0Upper = upperBound[0]
+        if E0Lower<0 and E0Upper>0:
+            retval.append("Suspicious, Cl looks like a constant")
+        elif E0Lower<0:
+            retval.append("Suspicious, Cl may be unstable")
+        elif E0Lower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # A
+        ALower = lowerBound[1]
+        AUpper = upperBound[1]
+        if ALower<0 and AUpper>0:
+            retval.append("Suspicious, A looks like a constant")
+        elif ALower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # kout
+        koutLower = lowerBound[2]
+        koutUpper = upperBound[2]
+        if koutLower<0 and koutUpper>0:
+            retval.append("Suspicious, A looks like a constant")
+        elif koutLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # V
+        VLower = lowerBound[3]
+        VUpper = upperBound[3]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, V looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, V seems to be negative")
+        else:
+            retval.append("True")
+
+        # Clp
+        ClLower = lowerBound[4]
+        ClUpper = upperBound[4]
+        if ClLower<0 and ClUpper>0:
+            retval.append("Suspicious, Clp looks like a constant")
+        elif ClLower<0:
+            retval.append("Suspicious, Clp may be unstable")
+        elif ClLower>0:
+            retval.append("True")
+        else:
+            retval.append("NA")
+
+        # Vp
+        VLower = lowerBound[5]
+        VUpper = upperBound[5]
+        if VLower<0 and VUpper>0:
+            retval.append("Suspicious, Vp looks like 0")
+        elif VUpper<0:
+            retval.append("Suspicious, Vp seems to be negative")
+        else:
+            retval.append("True")
+
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p[0:1]<0)==0
+
+
 class PK_MonocompartmentUrine(PKPDODEModel):
     def F(self, t, y):
         C = y[0]

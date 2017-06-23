@@ -142,6 +142,11 @@ DataSet(name='Gabrielsson_PK20', folder='Gabrielsson_PK20',
                'experiment': 'experiment.pkpd'
                })
 
+DataSet(name='Gabrielsson_PK22', folder='Gabrielsson_PK22',
+        files={
+               'experiment': 'experiment.pkpd'
+               })
+
 DataSet(name='Gabrielsson_PK25', folder='Gabrielsson_PK25',
         files={
                'experiment': 'experiment.pkpd'

@@ -178,6 +178,10 @@ Protocols = [{
 		"text": "two compartments (intrinsic, metabolite)"
 	},{
 		"tag": "protocol",
+		"value": "ProtPKPDTwoCompartmentsAutoinduction",
+		"text": "two compartments (autoinduction)"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDODERefine",
 		"text": "ode refinement"
 	},{
