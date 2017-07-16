@@ -96,12 +96,15 @@ class ProtPKPDImportFromText(ProtPKPD):
         self.experiment.general["title"]=self.title.get()
         self.experiment.general["comment"]=self.comment.get()
 
+        ok = True
+
         # Read the variables
         self.listOfVariables = []
         for line in self.variables.get().replace('\n',';;').split(';;'):
             tokens = line.split(';')
             if len(tokens)!=5:
                 print("Skipping variable: ",line)
+                ok = False
                 continue
             varname = tokens[0].strip()
             self.listOfVariables.append(varname)
@@ -114,6 +117,7 @@ class ProtPKPDImportFromText(ProtPKPD):
                 tokens = line.split(';')
                 if len(tokens)<2:
                     print("Skipping via: ",line)
+                    ok = False
                     continue
                 vianame = tokens[0].strip()
                 self.experiment.vias[vianame] = PKPDVia()
@@ -125,6 +129,7 @@ class ProtPKPDImportFromText(ProtPKPD):
                 tokens = line.split(';')
                 if len(tokens)<5:
                     print("Skipping dose: ",line)
+                    ok = False
                     continue
                 dosename = tokens[0].strip()
                 self.experiment.doses[dosename] = PKPDDose()
@@ -132,19 +137,24 @@ class ProtPKPDImportFromText(ProtPKPD):
 
         # Read the sample doses
         for line in self.dosesToSamples.get().replace('\n',';;').split(';;'):
-            tokens = line.split(';')
-            samplename = tokens[0].strip()
-            if len(tokens)>1:
-                tokens[1]="dose="+tokens[1]
-            self.experiment.samples[samplename] = PKPDSample()
-            self.experiment.samples[samplename].parseTokens(tokens,self.experiment.variables, self.experiment.doses)
+            try:
+                tokens = line.split(';')
+                samplename = tokens[0].strip()
+                if len(tokens)>1:
+                    tokens[1]="dose="+tokens[1]
+                self.experiment.samples[samplename] = PKPDSample()
+                self.experiment.samples[samplename].parseTokens(tokens, self.experiment.variables, self.experiment.doses,
+                                                                self.experiment.groups)
+            except Exception as e:
+                ok = False
+                print("Problem with line: ",line,str(e))
 
-        # Read the measurements
-        self.readTextFile()
-
-        self.experiment.write(self._getPath("experiment.pkpd"))
-        self.experiment._printToStream(sys.stdout)
-        self._defineOutputs(outputExperiment=self.experiment)
+        if ok:
+            # Read the measurements
+            self.readTextFile()
+            self.experiment.write(self._getPath("experiment.pkpd"))
+            self.experiment._printToStream(sys.stdout)
+            self._defineOutputs(outputExperiment=self.experiment)
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
