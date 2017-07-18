@@ -336,83 +336,89 @@ class ProtPKPDODETwoVias(ProtPKPD,PKPDModelBase2):
             fitType = "relative"
 
         # The fitting is performed by sampleName and not by groupName
+        self.someInCommon = False
         for sample2name, sample2 in self.experiment2.samples.iteritems():
             if sample2name in self.experiment1.samples:
+                self.someInCommon = True
                 self.setupSample(prot2,sample2,"")
 
                 sample1=self.experiment1.samples[sample2name]
                 self.setupSample(prot1,sample1,"")
 
-            # Get the values to fit
-            x1, y1 = sample1.getXYValues(prot1.varNameX,prot1.varNameY)
-            x2, y2 = sample2.getXYValues(prot2.varNameX,prot2.varNameY)
-            print("Sample: "+sample2name)
-            print("X1= "+str(x1))
-            print("Y1= "+str(y1))
-            print("X2= "+str(x2))
-            print("Y2= "+str(y2))
-            print(" ")
+                # Get the values to fit
+                x1, y1 = sample1.getXYValues(prot1.varNameX,prot1.varNameY)
+                x2, y2 = sample2.getXYValues(prot2.varNameX,prot2.varNameY)
+                print("Sample: "+sample2name)
+                print("X1= "+str(x1))
+                print("Y1= "+str(y1))
+                print("X2= "+str(x2))
+                print("Y2= "+str(y2))
+                print(" ")
 
-            # Interpret the dose
-            self.prepareDoseForSample(prot1,sample1)
-            self.prepareDoseForSample(prot2,sample2)
+                # Interpret the dose
+                self.prepareDoseForSample(prot1,sample1)
+                self.prepareDoseForSample(prot2,sample2)
 
-            # Prepare the model
-            self.setBounds(sample1,sample2)
-            self.setXYValues(x1, y1, x2, y2)
-            self.addSample(sample1,sample2)
-            self.prepareForSampleAnalysis(sample2name)
-            self.mergeModelParameters()
-            self.calculateParameterUnits(sample1, sample2)
-            if self.fitting1.modelParameterUnits==None:
-                self.splitParameterUnits()
-            self.printSetup()
+                # Prepare the model
+                self.setBounds(sample1,sample2)
+                self.setXYValues(x1, y1, x2, y2)
+                self.addSample(sample1,sample2)
+                self.prepareForSampleAnalysis(sample2name)
+                self.mergeModelParameters()
+                self.calculateParameterUnits(sample1, sample2)
+                if self.fitting1.modelParameterUnits==None:
+                    self.splitParameterUnits()
+                self.printSetup()
 
-            print(" ")
+                print(" ")
 
-            # Optimize
-            if self.globalSearch:
-                optimizer1 = PKPDDEOptimizer(self,fitType)
-                optimizer1.optimize()
-            else:
-                self.setInitialSolution(sample2name)
-            optimizer2 = PKPDLSOptimizer(self,fitType)
-            optimizer2.optimize()
-            optimizer2.setConfidenceInterval(self.prot1.confidenceInterval.get())
-            self.setParameters(optimizer2.optimum)
-            optimizer2.evaluateQuality()
+                # Optimize
+                if self.globalSearch:
+                    optimizer1 = PKPDDEOptimizer(self,fitType)
+                    optimizer1.optimize()
+                else:
+                    self.setInitialSolution(sample2name)
+                optimizer2 = PKPDLSOptimizer(self,fitType)
+                optimizer2.optimize()
+                optimizer2.setConfidenceInterval(self.prot1.confidenceInterval.get())
+                self.setParameters(optimizer2.optimum)
+                optimizer2.evaluateQuality()
 
-            # Set the variables back to the experiments
-            self.updateUnderlyingExperiments(sample2name)
+                # Set the variables back to the experiments
+                self.updateUnderlyingExperiments(sample2name)
 
-            # Update fittings
-            self.keepSampleFit(self.fitting1, self.prot1, sample2name,
-                               x1,y1,self.prot1.yPredicted,
-                               self.prot1.yPredictedLower,self.prot1.yPredictedUpper,
-                               self.lower1,self.upper1,optimizer2)
-            self.keepSampleFit(self.fitting2, self.prot2, sample2name,
-                               x2,y2,self.prot2.yPredicted,
-                               self.prot2.yPredictedLower,self.prot2.yPredictedUpper,
-                               self.lower2,self.upper2,optimizer2)
+                # Update fittings
+                self.keepSampleFit(self.fitting1, self.prot1, sample2name,
+                                   x1,y1,self.prot1.yPredicted,
+                                   self.prot1.yPredictedLower,self.prot1.yPredictedUpper,
+                                   self.lower1,self.upper1,optimizer2)
+                self.keepSampleFit(self.fitting2, self.prot2, sample2name,
+                                   x2,y2,self.prot2.yPredicted,
+                                   self.prot2.yPredictedLower,self.prot2.yPredictedUpper,
+                                   self.lower2,self.upper2,optimizer2)
 
-        self.experiment1.write(self._getPath("experiment1.pkpd"))
-        self.experiment2.write(self._getPath("experiment2.pkpd"))
-        self.fitting1.write(self._getPath("fitting1.pkpd"))
-        self.fitting2.write(self._getPath("fitting2.pkpd"))
+        if self.someInCommon:
+            self.experiment1.write(self._getPath("experiment1.pkpd"))
+            self.experiment2.write(self._getPath("experiment2.pkpd"))
+            self.fitting1.write(self._getPath("fitting1.pkpd"))
+            self.fitting2.write(self._getPath("fitting2.pkpd"))
 
     def createOutputStep(self):
-        self._defineOutputs(outputExperiment1=self.experiment1)
-        self._defineOutputs(outputExperiment2=self.experiment2)
-        self._defineOutputs(outputFitting1=self.fitting1)
-        self._defineOutputs(outputFitting2=self.fitting2)
-        self._defineSourceRelation(self.prot1ptr.get().outputExperiment, self.experiment1)
-        self._defineSourceRelation(self.prot2ptr.get().outputExperiment, self.experiment1)
-        self._defineSourceRelation(self.prot1ptr.get().outputExperiment, self.experiment2)
-        self._defineSourceRelation(self.prot2ptr.get().outputExperiment, self.experiment2)
-        self._defineSourceRelation(self.prot1ptr.get().outputExperiment, self.fitting1)
-        self._defineSourceRelation(self.prot2ptr.get().outputExperiment, self.fitting1)
-        self._defineSourceRelation(self.prot1ptr.get().outputExperiment, self.fitting2)
-        self._defineSourceRelation(self.prot2ptr.get().outputExperiment, self.fitting2)
+        if self.someInCommon:
+            self._defineOutputs(outputExperiment1=self.experiment1)
+            self._defineOutputs(outputExperiment2=self.experiment2)
+            self._defineOutputs(outputFitting1=self.fitting1)
+            self._defineOutputs(outputFitting2=self.fitting2)
+            self._defineSourceRelation(self.prot1ptr.get().outputExperiment, self.experiment1)
+            self._defineSourceRelation(self.prot2ptr.get().outputExperiment, self.experiment1)
+            self._defineSourceRelation(self.prot1ptr.get().outputExperiment, self.experiment2)
+            self._defineSourceRelation(self.prot2ptr.get().outputExperiment, self.experiment2)
+            self._defineSourceRelation(self.prot1ptr.get().outputExperiment, self.fitting1)
+            self._defineSourceRelation(self.prot2ptr.get().outputExperiment, self.fitting1)
+            self._defineSourceRelation(self.prot1ptr.get().outputExperiment, self.fitting2)
+            self._defineSourceRelation(self.prot2ptr.get().outputExperiment, self.fitting2)
+        else:
+            print("Error: There are no samples in common, nothing is produced")
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
