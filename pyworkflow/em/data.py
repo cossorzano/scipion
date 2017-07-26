@@ -34,6 +34,7 @@ from pyworkflow.em.pkpd_units import PKPDUnit, convertUnits, changeRateToMinutes
 from pyworkflow.object import *
 from pyworkflow.utils.path import writeMD5, verifyMD5
 from pyworkflow.em.biopharmaceutics import PKPDDose, PKPDVia
+from pyworkflow.em.scanf import sscanf
 
 class EMObject(OrderedObject):
     """Base object for all EM classes"""
@@ -427,6 +428,11 @@ class PKPDSample:
         expressionPython=self.substituteValuesInExpression(expression,prefix)
         return eval(expressionPython, {"__builtins__" : {"True": True, "False": False, "None": None} }, {})
 
+    def getDescriptorValue(self,descriptorName):
+        if descriptorName in self.descriptors.keys():
+            return self.descriptors[descriptorName]
+        else:
+            return None
 
 class PKPDSampleMeasurement():
     def __init__(self, sample, n):
@@ -1885,6 +1891,150 @@ class PKPDSignalAnalysis(EMObject):
             if sampleAnalysis.sampleName == sampleName:
                 return sampleAnalysis
         return None
+
+class PKPDAllometricScale(EMObject):
+    READING_PREDICTOR = 1
+    READING_MODELS = 2
+    READING_X = 3
+    READING_Y = 4
+
+    def __init__(self, **args):
+        EMObject.__init__(self, **args)
+        self.fnScale = String()
+        self.predictor = ""
+        self.scaled_vars = []
+        self.averaged_vars = []
+        self.models = {}
+        self.qualifiers = {}
+        self.confidence = 0
+        self.X = None
+        self.Y = None
+
+    def write(self, fnScale):
+        fh=open(fnScale,'w')
+        self._printToStream(fh)
+        fh.close()
+        self.fnScale.set(fnScale)
+        writeMD5(fnScale)
+
+    def _printToStream(self,fh):
+        fh.write("[ALLOMETRIC SCALING] ===========================\n")
+        fh.write("Predictor (X): %s\n"%self.predictor)
+        for varName in self.scaled_vars:
+            model = self.models[varName]
+            qualifiers = self.qualifiers[varName]
+            # fh.write("Scale model: %s=(%f)*%s^(%f) %f%% Confidence interval=[%f,%f]"%\
+            #          (varName,model[0],model[1],self.confidence,qualifiers[0],qualifiers[1]))
+            fh.write("Scale model: %s=(%f)*%s^(%f); R2=%f; %f%% Confidence intervals (y=k*x^a) k=[%f,%f] a=[%f,%f]\n" % \
+                     (varName, model[0], self.predictor, model[1], qualifiers[0], self.confidence,
+                      qualifiers[1], qualifiers[2], qualifiers[3], qualifiers[4]))
+        for varName in self.averaged_vars:
+            model = self.models[varName]
+            qualifiers = self.qualifiers[varName]
+            fh.write("Average model: %s=%f Std=%f\n"%(varName,model[0],qualifiers[0]))
+
+        fh.write("\n")
+        fh.write("[DATA] =========================================\n")
+        fh.write("%s= %s\n"%(self.predictor,str(self.X)))
+        for varName, y in self.Y.iteritems():
+            fh.write("%s= %s\n"%(varName,str(y)))
+
+    def load(self,fnScale):
+        fh=open(fnScale)
+        if not fh:
+            raise Exception("Cannot open %s"%fnScale)
+        if not verifyMD5(fnScale):
+            raise Exception("The file %s has been modified since its creation"%fnScale)
+        self.fnScale.set(fnScale)
+
+        for line in fh.readlines():
+            line=line.strip()
+            if line=="":
+                continue
+            if line.startswith('[') and line.endswith('='):
+                section = line.split('=')[0].strip().lower()
+                if section=="[allometric scaling]":
+                    state=PKPDAllometricScale.READING_PREDICTOR
+                elif section=="[data]":
+                    state=PKPDAllometricScale.READING_X
+                else:
+                    print("Skipping: ",line)
+
+            elif state==PKPDAllometricScale.READING_PREDICTOR:
+                tokens = line.split(':')
+                self.predictor = tokens[1].strip()
+                state = PKPDAllometricScale.READING_MODELS
+
+            elif state==PKPDAllometricScale.READING_MODELS:
+                tokens = line.split(':')
+                if tokens[0]=="Scale model":
+                    tokens = tokens[1].split(';')
+                    # "%s=(%f)*%s^(%f); R2=%f; %f%% Confidence intervals (y=k*x^a) k=[%f,%f] a=[%f,%f]"
+                    idxL=0
+                    idxR=tokens[0].find('=')
+                    varName=tokens[0][idxL:idxR].strip()
+                    self.scaled_vars.append(varName)
+                    idxL=idxR+2
+                    idxR=tokens[0].find(')',idxL)
+                    k=float(tokens[0][idxL:idxR])
+                    idxL=tokens[0].find('(',idxR)
+                    idxR=tokens[0].find(')',idxL)
+                    a=float(tokens[0][idxL+1:idxR])
+                    self.models[varName]=[k, a]
+
+                    idxL=tokens[1].find('=')
+                    R2=float(tokens[1][idxL+1:])
+
+                    idxR=tokens[2].find('%')
+                    self.confidence=float(tokens[2][:idxR])
+
+                    idxL=tokens[2].find('[',idxR+1)
+                    idxR=tokens[2].find(',',idxL+1)
+                    kl=float(tokens[2][idxL+1:idxR])
+                    idxL=idxR
+                    idxR=tokens[2].find(']',idxL+1)
+                    ku=float(tokens[2][idxL+1:idxR])
+
+                    idxL=tokens[2].find('[',idxR+1)
+                    idxR=tokens[2].find(',',idxL+1)
+                    al=float(tokens[2][idxL+1:idxR])
+                    idxL=idxR
+                    idxR=tokens[2].find(']',idxL+1)
+                    au=float(tokens[2][idxL+1:idxR])
+
+                    self.qualifiers[varName]=[R2,kl,ku,al,au]
+
+                elif tokens[0]=="Average model":
+                    # Average model: %s=%f Std=%f
+                    idxR=tokens[1].find('=')
+                    varName=tokens[1][:idxR].strip()
+                    self.averaged_vars.append(varName)
+                    idxL=idxR
+                    idxR=tokens[1].find(' ',idxL)
+                    mean=float(tokens[1][idxL+1:idxR])
+                    idxL=tokens[1].find('=',idxR+1)
+                    std=float(tokens[1][idxL+1:])
+                    self.models[varName]=[mean]
+                    self.qualifiers[varName]=[std]
+                else:
+                    print("Skipping: ",line)
+
+            elif state==PKPDAllometricScale.READING_X:
+                tokens = line.split('=')
+                self.X = []
+                for x in tokens[1].strip()[1:-1].split(','):
+                    self.X.append(float(x))
+                self.Y = {}
+                state = PKPDAllometricScale.READING_Y
+
+            elif state==PKPDAllometricScale.READING_Y:
+                tokens = line.split('=')
+                varName = tokens[0].strip()
+                self.Y[varName] = []
+                for y in tokens[1].strip()[1:-1].split(','):
+                    self.Y[varName].append(float(y))
+
+        fh.close()
 
 def flattenArray(y):
     if type(y[0])!=list and type(y[0])!=np.ndarray:

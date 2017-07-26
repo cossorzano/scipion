@@ -86,6 +86,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDFilterPopulation",
 		"text": "filter population"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDAllometricScaling",
+		"text": "allometric scaling"
 	}]
     },
     {
