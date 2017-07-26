@@ -189,11 +189,12 @@ class PKPDPopulationViewer(Viewer):
     _environments = [DESKTOP_TKINTER]
 
     def visualize(self, obj, **kwargs):
-        population = PKPDFitting("PKPDSampleFitBootstrap")
-        population.load(obj.outputPopulation.fnFitting)
+        if hasattr(obj,"outputPopulation"):
+            population = PKPDFitting("PKPDSampleFitBootstrap")
+            population.load(obj.outputPopulation.fnFitting)
 
-        self.populationWindow = self.tkWindow(PopulationWindow,
-                                              title='Population Viewer',
-                                              population=population)
-        self.populationWindow.show()
+            self.populationWindow = self.tkWindow(PopulationWindow,
+                                                  title='Population Viewer',
+                                                  population=population)
+            self.populationWindow.show()
 
