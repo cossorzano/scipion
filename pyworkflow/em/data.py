@@ -1902,6 +1902,7 @@ class PKPDAllometricScale(EMObject):
         EMObject.__init__(self, **args)
         self.fnScale = String()
         self.predictor = ""
+        self.predictorUnits = ""
         self.scaled_vars = []
         self.averaged_vars = []
         self.models = {}
@@ -1919,19 +1920,19 @@ class PKPDAllometricScale(EMObject):
 
     def _printToStream(self,fh):
         fh.write("[ALLOMETRIC SCALING] ===========================\n")
-        fh.write("Predictor (X): %s\n"%self.predictor)
-        for varName in self.scaled_vars:
+        fh.write("Predictor (X): %s %s\n"%(self.predictor,self.predictorUnits))
+        for varName, varUnits in self.scaled_vars:
             model = self.models[varName]
             qualifiers = self.qualifiers[varName]
             # fh.write("Scale model: %s=(%f)*%s^(%f) %f%% Confidence interval=[%f,%f]"%\
             #          (varName,model[0],model[1],self.confidence,qualifiers[0],qualifiers[1]))
-            fh.write("Scale model: %s=(%f)*%s^(%f); R2=%f; %f%% Confidence intervals (y=k*x^a) k=[%f,%f] a=[%f,%f]\n" % \
+            fh.write("Scale model: %s=(%f)*%s^(%f); R2=%f; %f%% Confidence intervals (y=k*x^a) k=[%f,%f] a=[%f,%f]; %s\n" % \
                      (varName, model[0], self.predictor, model[1], qualifiers[0], self.confidence,
-                      qualifiers[1], qualifiers[2], qualifiers[3], qualifiers[4]))
-        for varName in self.averaged_vars:
+                      qualifiers[1], qualifiers[2], qualifiers[3], qualifiers[4], varUnits))
+        for varName, varUnits in self.averaged_vars:
             model = self.models[varName]
             qualifiers = self.qualifiers[varName]
-            fh.write("Average model: %s=%f Std=%f\n"%(varName,model[0],qualifiers[0]))
+            fh.write("Average model: %s=%f Std=%f; %s\n"%(varName,model[0],qualifiers[0],varUnits))
 
         fh.write("\n")
         fh.write("[DATA] =========================================\n")
@@ -1961,8 +1962,10 @@ class PKPDAllometricScale(EMObject):
                     print("Skipping: ",line)
 
             elif state==PKPDAllometricScale.READING_PREDICTOR:
-                tokens = line.split(':')
-                self.predictor = tokens[1].strip()
+                tokens = line.split(':')[1]
+                tokens = tokens.split()
+                self.predictor = tokens[0].strip()
+                self.predictorUnits = tokens[1].strip()
                 state = PKPDAllometricScale.READING_MODELS
 
             elif state==PKPDAllometricScale.READING_MODELS:
@@ -1973,7 +1976,6 @@ class PKPDAllometricScale(EMObject):
                     idxL=0
                     idxR=tokens[0].find('=')
                     varName=tokens[0][idxL:idxR].strip()
-                    self.scaled_vars.append(varName)
                     idxL=idxR+2
                     idxR=tokens[0].find(')',idxL)
                     k=float(tokens[0][idxL:idxR])
@@ -2004,18 +2006,23 @@ class PKPDAllometricScale(EMObject):
 
                     self.qualifiers[varName]=[R2,kl,ku,al,au]
 
+                    varUnits = tokens[3].strip()
+                    self.scaled_vars.append((varName,varUnits))
+
                 elif tokens[0]=="Average model":
                     # Average model: %s=%f Std=%f
                     idxR=tokens[1].find('=')
                     varName=tokens[1][:idxR].strip()
-                    self.averaged_vars.append(varName)
                     idxL=idxR
                     idxR=tokens[1].find(' ',idxL)
                     mean=float(tokens[1][idxL+1:idxR])
                     idxL=tokens[1].find('=',idxR+1)
-                    std=float(tokens[1][idxL+1:])
+                    idxR=tokens[1].find(';',idxL+1)
+                    std=float(tokens[1][idxL+1:idxR])
+                    varUnits = tokens[1][idxR+1:]
                     self.models[varName]=[mean]
                     self.qualifiers[varName]=[std]
+                    self.averaged_vars.append((varName,varUnits))
                 else:
                     print("Skipping: ",line)
 
