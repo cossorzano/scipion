@@ -49,6 +49,13 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
                       help='Select a run of an ODE model')
         form.addParam('Nbootstrap', params.IntParam, label="Bootstrap samples", default=200, expertLevel=LEVEL_ADVANCED,
                       help='Number of bootstrap realizations for each sample')
+        form.addParam('sampleLength', params.IntParam, label="Sample length", default=-1, expertLevel=LEVEL_ADVANCED,
+                      help='If the input experiment represents a population, the bootstrap sample is so overdetermined '\
+                           'that the bootstrap parameter estimate seldom moves from the original values. In this case, '\
+                           'you may use the sample length to generate bootstrap samples of the same length as the indiviudals '\
+                           'taking part of the population. If this value is set to -1, then the length of the bootstrap sample '\
+                           'will be the same as the one in the input experiment. If set to any other value, e.g. 8, then '\
+                           'each bootstrap sample will have this length')
         form.addParam('confidenceInterval', params.FloatParam, label="Confidence interval", default=95, expertLevel=LEVEL_ADVANCED,
                       help='Confidence interval for the fitted parameters')
         form.addParam('deltaT', params.FloatParam, default=2, label='Step (min)', expertLevel=LEVEL_ADVANCED)
@@ -189,9 +196,14 @@ class ProtPKPDODEBootstrap(ProtPKPDODEBase):
                 for n in range(0,self.Nbootstrap.get()):
                     ok = False
                     while not ok:
-                        idxB = sorted(np.random.choice(idx,len(idx)))
+                        if self.sampleLength.get()>0:
+                            lenToUse = self.sampleLength.get()
+                        else:
+                            lenToUse = len(idx)
+                        idxB = sorted(np.random.choice(idx,lenToUse))
                         xB = [np.asarray([firstX[i] for i in idxB])]
                         yB = [np.asarray([firstY[i] for i in idxB])]
+
                         print("Bootstrap sample %d"%n)
                         print("X= "+str(xB))
                         print("Y= "+str(yB))
