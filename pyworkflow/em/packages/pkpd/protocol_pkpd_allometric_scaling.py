@@ -24,12 +24,14 @@
 # *
 # **************************************************************************
 
+import copy
 import math
 import numpy as np
 
 import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDExperiment, PKPDAllometricScale
+from pyworkflow.em.pkpd_units import strUnit
 from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
 
@@ -102,6 +104,16 @@ class ProtPKPDAllometricScaling(ProtPKPD):
                 else:
                     raise Exception("Cannot find %s in %s"%(varName,experiment.fnPKPD))
 
+        self.scaleModel.predictorUnits = strUnit(experiment.variables[self.predictor.get()].units.unit)
+        varList = []
+        for varName in self.scaleModel.scaled_vars:
+            varList.append((varName,strUnit(experiment.variables[varName].units.unit)))
+        self.scaleModel.scaled_vars = copy.copy(varList)
+        varList = []
+        for varName in self.scaleModel.averaged_vars:
+            varList.append((varName,strUnit(experiment.variables[varName].units.unit)))
+        self.scaleModel.averaged_vars = copy.copy(varList)
+
         print("X: %s"%str(X))
         logx=np.log10(np.asarray(X))
         self.scaleModel.X = X
@@ -111,7 +123,7 @@ class ProtPKPDAllometricScaling(ProtPKPD):
         fhSummary.write("Predictor variable: %s\n"%self.predictor.get())
         fhSummary.write("Parameters to average: %s\n"%self.avgParameters.get())
         fhSummary.write("Confidence interval: %f\n"%self.confidenceInterval.get())
-        for varName in self.scaleModel.scaled_vars:
+        for varName, varUnits in self.scaleModel.scaled_vars:
             print("%s: %s"%(varName,str(Y[varName])))
             y = np.asarray(Y[varName])
             logy = np.log10(y)
@@ -145,16 +157,17 @@ class ProtPKPDAllometricScaling(ProtPKPD):
             self.scaleModel.models[varName] = [p[1],p[0]]
             self.scaleModel.qualifiers[varName] = [R2,lowerBound[1],upperBound[1],lowerBound[0],upperBound[0]]
             self.doublePrint(fhSummary,
-                "%s=(%f)*%s^(%f) R2=%f %f%% Confidence intervals (y=k*x^a): k=[%f,%f] a=[%f,%f]" % \
-                (varName, p[1], self.predictor, p[0], R2, self.confidenceInterval, lowerBound[1],upperBound[1],lowerBound[0],upperBound[0]))
+                "%s=(%f)*%s^(%f) R2=%f %f%% Confidence intervals (y=k*x^a): k=[%f,%f] a=[%f,%f]; %s" % \
+                (varName, p[1], self.predictor, p[0], R2, self.confidenceInterval, lowerBound[1],upperBound[1],lowerBound[0],upperBound[0],
+                 varUnits))
 
-        for varName in self.scaleModel.averaged_vars:
+        for varName, varUnits in self.scaleModel.averaged_vars:
             print("%s: %s"%(varName,str(Y[varName])))
             y = np.asarray(Y[varName])
             self.scaleModel.models[varName] = [np.mean(y)]
             self.scaleModel.qualifiers[varName] = [np.std(y)]
             self.doublePrint(fhSummary,
-                             "%s avg=%f std=%f"%(varName,self.scaleModel.models[varName][0],self.scaleModel.qualifiers[varName][0]))
+                             "%s avg=%f std=%f; %s"%(varName,self.scaleModel.models[varName][0],self.scaleModel.qualifiers[varName][0],varUnits))
 
         fhSummary.close()
         self.scaleModel.write(self._getPath("allometricScale.pkpd"))
