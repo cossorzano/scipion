@@ -28,7 +28,7 @@ from os.path import basename, join, exists
 import numpy as np
 
 from pyworkflow.viewer import Viewer, DESKTOP_TKINTER
-from pyworkflow.em.data import PKPDExperiment
+from pyworkflow.em.data import PKPDExperiment, PKPDAllometricScale
 from pyworkflow.gui.text import openTextFileEditor
 from pyworkflow.em.plotter import EmPlotter
 from pyworkflow.em.data import PKPDFitting, PKPDSignalAnalysis
@@ -197,4 +197,40 @@ class PKPDPopulationViewer(Viewer):
                                                   title='Population Viewer',
                                                   population=population)
             self.populationWindow.show()
+
+class PKPDAllometricScalingViewer(Viewer):
+    """ Visualization of an allometric scaling
+    """
+    _targets = [PKPDAllometricScale]
+    _environments = [DESKTOP_TKINTER]
+
+    def visualize(self, obj, **kwargs):
+        model = PKPDAllometricScale()
+        model.load(obj.fnScale.get())
+
+        x = np.log10(np.asarray(model.X))
+        xlabel = "%s [%s]" % (model.predictor, model.predictorUnits)
+        for varName, varUnits in model.scaled_vars:
+            plotter = EmPlotter()
+            y = np.log10(np.asarray(model.Y[varName]))
+            ylabel = "%s [%s]" % (varName, varUnits)
+            ax = plotter.createSubPlot(varName, xlabel, ylabel)
+            ax.plot(x, y, '.', label='Species')
+            ax.plot(x, np.log10(model.models[varName][0])+x*model.models[varName][1],'r', label='R2=%f'%model.qualifiers[varName][0])
+            leg = ax.legend(loc='upper right')
+            if leg:
+                leg.draggable()
+            plotter.show()
+
+        for varName, varUnits in model.averaged_vars:
+            plotter = EmPlotter()
+            y = np.asarray(model.Y[varName])
+            ylabel = "%s [%s]" % (varName, varUnits)
+            ax = plotter.createSubPlot("Scatter Plot", xlabel, ylabel)
+            ax.plot(x, y, '.', label='Species')
+            ax.plot(x, model.models[varName][0]*np.ones(x.shape),'r',label='Std=%f'%model.qualifiers[varName][0])
+            leg = ax.legend(loc='upper right')
+            if leg:
+                leg.draggable()
+            plotter.show()
 
