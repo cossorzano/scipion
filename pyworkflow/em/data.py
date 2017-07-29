@@ -679,7 +679,7 @@ class PKPDExperiment(EMObject):
         else:
             return PKPDUnit.UNIT_NONE
 
-    def addParameterToSample(self, sampleName, varName, varUnits, varDescr, varValue):
+    def addParameterToSample(self, sampleName, varName, varUnits, varDescr, varValue, rewrite=False):
         if not varName in self.variables:
             varX = PKPDVariable()
             varX.varName = varName
@@ -692,8 +692,15 @@ class PKPDExperiment(EMObject):
             self.variables[varName] = varX
         else:
             varPresent = self.variables[varName]
-            if varPresent.role!=PKPDVariable.ROLE_LABEL or varPresent.comment!=varDescr or varPresent.units.unit!=varUnits:
-                raise Exception("%s is already a variable in the experiment with a different purpose"%varName)
+            if varPresent.role!=PKPDVariable.ROLE_LABEL:
+                raise Exception("Only labels can be reused (%s)"%varName)
+
+            if rewrite:
+                varPresent.comment = varDescr
+                varPresent.units.unit = varUnits
+            else:
+                if varPresent.comment!=varDescr or varPresent.units.unit!=varUnits:
+                    raise Exception("%s is already a variable in the experiment with a different purpose"%varName)
 
         if sampleName in self.samples:
             sample = self.samples[sampleName]
