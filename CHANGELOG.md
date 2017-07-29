@@ -3,6 +3,7 @@
 - Two-Compartments with intrinsic clearance and metabolites added
 - Two-Compartments with autoinduction added
 - Allometric scaling added
+- Labels can be rewritten and several labels added at the same time
 
 ## v17.05 Chlorine 32
 
