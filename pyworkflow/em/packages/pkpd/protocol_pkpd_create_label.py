@@ -28,6 +28,7 @@ import pyworkflow.protocol.params as params
 from pyworkflow.em.protocol.protocol_pkpd import ProtPKPD
 from pyworkflow.em.data import PKPDExperiment
 from pyworkflow.em.pkpd_units import PKPDUnit
+from itertools import izip_longest
 
 
 class ProtPKPDCreateLabel(ProtPKPD):
@@ -42,14 +43,18 @@ class ProtPKPDCreateLabel(ProtPKPD):
         form.addParam('inputExperiment', params.PointerParam, label="Input experiment", important=True,
                       pointerClass='PKPDExperiment',
                       help='Select an experiment with samples')
-        form.addParam('labelToAdd', params.StringParam, label="Label to add", default="",
-                      help='Name of the variable to add')
-        form.addParam('expression', params.StringParam, label="Expression to calculate", default="",
-                      help='For example, to normalize the apparent volume of distribution by the animal weight use $(Vd)/$(weight)')
+        form.addParam('labelToAdd', params.StringParam, label="Label(s) to add", default="",
+                      help='Name of the variable to add. If several names are given, separated by semicolons.')
+        form.addParam('rewrite', params.BooleanParam, label="Rewrite labels", default=False,
+                      help='Set this flag to true if you want to rewrite the content of existing labels.')
+        form.addParam('expression', params.StringParam, label="Expression(s) to calculate", default="",
+                      help='For example, to normalize the apparent volume of distribution by the animal weight use $(Vd)/$(weight). '\
+                           'If several labels are created, separated by semicolons.')
         form.addParam('units', params.StringParam, label="Units", default="None",
-                      help='For example, L/kg')
-        form.addParam('comment', params.StringParam, label="Label comment", default="",
-                      help='For example, apparent volume of distribution per kilogram')
+                      help='For example, L/kg. If several labels are created, separated by semicolons.')
+        form.addParam('comment', params.StringParam, label="Label comment(s)", default="",
+                      help='For example, apparent volume of distribution per kilogram. '\
+                            'If several labels are created, separated by semicolons.')
 
     #--------------------------- INSERT steps functions --------------------------------------------
 
@@ -62,11 +67,18 @@ class ProtPKPDCreateLabel(ProtPKPD):
     def runCreate(self, objId, labelToAdd, expression, comment):
         self.experiment = self.readExperiment(self.inputExperiment.get().fnPKPD)
 
-        labelToAdd = self.labelToAdd.get().replace(' ',"_")
-        units = PKPDUnit(self.units.get())
-        for sampleName, sample in self.experiment.samples.iteritems():
-            varValue = sample.evaluateExpression(self.expression.get())
-            self.experiment.addParameterToSample(sampleName, labelToAdd, units.unit, self.comment.get(), varValue)
+        labels = self.labelToAdd.get().split(';')
+        expressions = self.expression.get().split(';')
+        units = self.units.get().split(';')
+        comments = self.comment.get().split(';')
+
+        for label, expression, unit, comment in izip_longest(labels,expressions,units,comments,fillvalue=""):
+            labelToAdd = label.strip().replace(' ',"_")
+            units = PKPDUnit(unit.strip())
+            for sampleName, sample in self.experiment.samples.iteritems():
+                varValue = sample.evaluateExpression(expression.strip())
+                self.experiment.addParameterToSample(sampleName, labelToAdd, units.unit, comment.strip(), varValue,
+                                                     self.rewrite.get())
 
         self.writeExperiment(self.experiment,self._getPath("experiment.pkpd"))
 
@@ -76,5 +88,9 @@ class ProtPKPDCreateLabel(ProtPKPD):
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
-        msg=["%s created as %s"%(self.labelToAdd.get(),self.expression.get())]
+        msg=[]
+        labels = self.labelToAdd.get().split(';')
+        expressions = self.expression.get().split(';')
+        for label, expression in izip_longest(labels,expressions,fillvalue=""):
+            msg.append("%s created as %s"%(label.strip(),expression.strip()))
         return msg
