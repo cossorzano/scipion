@@ -1481,17 +1481,30 @@ class PKPDSampleFitBootstrap:
         if self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_NAME:
             tokens = line.split(':')
             self.sampleName = tokens[1].strip()
+            self.strRead = ""
             self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_XB
 
         elif self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_XB:
-            tokens = line.split(':')
-            self.xB.append(tokens[1].strip())
-            self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_YB
+            if ":" in line:
+                tokens = line.split(':')
+                self.strRead += tokens[1].strip()
+            else:
+                self.strRead += line
+            if "]" in self.strRead:
+                self.xB.append(self.strRead.strip())
+                self.strRead=""
+                self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_YB
 
         elif self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_YB:
-            tokens = line.split(':')
-            self.yB.append(tokens[1].strip())
-            self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_PARAMETERS
+            if ":" in line:
+                tokens = line.split(':')
+                self.strRead += tokens[1].strip()
+            else:
+                self.strRead += line
+            if "]" in self.strRead:
+                self.yB.append(self.strRead.strip())
+                self.strRead=""
+                self.state = PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_PARAMETERS
 
         elif self.state==PKPDSampleFitBootstrap.READING_SAMPLEFITTINGS_PARAMETERS:
             tokens = line.split('#')
