@@ -90,6 +90,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDAllometricScaling",
 		"text": "allometric scaling"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDApplyAllometricScaling",
+		"text": "apply allometric"
 	}]
     },
     {
