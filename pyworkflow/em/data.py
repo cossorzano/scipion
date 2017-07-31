@@ -434,6 +434,10 @@ class PKPDSample:
         else:
             return None
 
+    def setDescriptorValue(self, descriptorName, descriptorValue):
+        self.descriptors[descriptorName] = descriptorValue
+
+
 class PKPDSampleMeasurement():
     def __init__(self, sample, n):
         self.sample = sample
