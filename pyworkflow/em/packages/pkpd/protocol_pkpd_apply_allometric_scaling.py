@@ -70,14 +70,12 @@ class ProtPKPDApplyAllometricScaling(ProtPKPD):
             sample = self.experiment.samples[sampleFit.sampleName]
             sampleWeight = float(sample.getDescriptorValue(scaleModel.predictor))
             sample.setDescriptorValue(scaleModel.predictor,targetWeight)
-            print(sampleFit.sampleName)
 
             for varName, varUnits in scaleModel.averaged_vars:
                 if varName in self.population.modelParameters:
                     idx = self.population.modelParameters.index(varName)
                     targetValue = scaleModel.models[varName][0]
                     sampleFit.parameters[0][idx] = targetValue
-                    print("Setting ",varName,idx,targetValue)
 
             for varName, varUnits in scaleModel.scaled_vars:
                 if varName in self.population.modelParameters:
@@ -87,7 +85,6 @@ class ProtPKPDApplyAllometricScaling(ProtPKPD):
                     targetValue = k*math.pow(targetWeight,a)
                     currentValue = k*math.pow(sampleWeight,a)
                     sampleFit.parameters[0][idx] *= targetValue/currentValue
-                    print("Multiplying ",varName,idx,targetValue/currentValue)
 
         self.experiment.write(self._getPath("experiment.pkpd"))
         self.population.fnExperiment.set(self._getPath("experiment.pkpd"))
