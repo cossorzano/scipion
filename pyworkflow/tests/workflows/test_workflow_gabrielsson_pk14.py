@@ -82,8 +82,8 @@ class TestGabrielssonPK14Workflow(TestWorkflow):
         self.assertTrue(tlag>5 and tlag<22) # Gabrielsson p. 613: Tlag=0.078 h=4.7 min
         self.assertTrue(Clp>0.165 and Clp<0.22) # Gabrielsson p. 613: k12=0.13
         self.assertTrue(Cl>0.85 and Cl<1.1) # Gabrielsson p. 613: k10=0.66
-        self.assertTrue(V>82 and V<91) # Gabrielsson p. 613: Vc=83
-        self.assertTrue(Vp>95 and Vp<120)
+        self.assertTrue(V>82 and V<93) # Gabrielsson p. 613: Vc=83
+        self.assertTrue(Vp>95 and Vp<121)
         fitting = PKPDFitting()
         fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.99)

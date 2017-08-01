@@ -80,11 +80,11 @@ class TestGabrielssonPK12Workflow(TestWorkflow):
         tlag = float(experiment.samples['Individual'].descriptors['Oral_tlag'])
         bioavailability = float(experiment.samples['Individual'].descriptors['Oral_bioavailability'])
         self.assertTrue(Cl>0.0125 and Cl<0.015) # Gabrielsson p. 598: Cl=0.0145
-        self.assertTrue(Clp>0.008 and Clp<0.011) # Gabrielsson p. 598: Cld=0.0208
-        self.assertTrue(V>0.20 and V<0.23) # Gabrielsson p. 598: Vc=0.120
-        self.assertTrue(Vp>0.25 and Vp<0.32) # Gabrielsson p. 598: Vt=0.2759
-        self.assertTrue(Ka>0.09 and Ka<0.14) # Gabrielsson p. 598: Ka=0.103
-        self.assertTrue(tlag>0 and tlag<5) # Gabrielsson p. 598: tlag=4.67
+        self.assertTrue(Clp>0.008 and Clp<0.013) # Gabrielsson p. 598: Cld=0.0208
+        self.assertTrue(V>0.19 and V<0.23) # Gabrielsson p. 598: Vc=0.120
+        self.assertTrue(Vp>0.24 and Vp<0.32) # Gabrielsson p. 598: Vt=0.2759
+        self.assertTrue(Ka>0.09 and Ka<0.17) # Gabrielsson p. 598: Ka=0.103
+        self.assertTrue(tlag>0 and tlag<6) # Gabrielsson p. 598: tlag=4.67
         fitting = PKPDFitting()
         fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.98)

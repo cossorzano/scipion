@@ -204,8 +204,8 @@ class TestGabrielssonPD11Workflow(TestWorkflow):
         self.assertTrue(e0==0)
         self.assertTrue(a>21.8 and a<22.3) # Gabrielsson p 998: 22.1
         self.assertTrue(b>1.6 and b<1.8) # Gabrielsson p 998: 1.64
-        self.assertTrue(g>5000 and g<7000) # Gabrielsson p 998: 5303
-        self.assertTrue(d>4.5 and d<4.7) # Gabrielsson p 998: 4.5
+        self.assertTrue(g>4000 and g<7000) # Gabrielsson p 998: 5303
+        self.assertTrue(d>4.3 and d<4.7) # Gabrielsson p 998: 4.5
         fitting = PKPDFitting()
         fitting.load(protPDfitting.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.99)
