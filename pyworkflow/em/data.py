@@ -34,7 +34,6 @@ from pyworkflow.em.pkpd_units import PKPDUnit, convertUnits, changeRateToMinutes
 from pyworkflow.object import *
 from pyworkflow.utils.path import writeMD5, verifyMD5
 from pyworkflow.em.biopharmaceutics import PKPDDose, PKPDVia
-from pyworkflow.em.scanf import sscanf
 
 class EMObject(OrderedObject):
     """Base object for all EM classes"""
