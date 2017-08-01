@@ -1,4 +1,6 @@
 ## devel
+
+## v17.08 Chlorine 35
 - Allows fitting the same model to multiple samples
 - Two-Compartments with intrinsic clearance and metabolites added
 - Two-Compartments with autoinduction added
