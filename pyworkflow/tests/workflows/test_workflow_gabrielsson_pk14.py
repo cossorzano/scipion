@@ -78,12 +78,12 @@ class TestGabrielssonPK14Workflow(TestWorkflow):
         Clp = float(experiment.samples['Individual'].descriptors['Clp'])
         V = float(experiment.samples['Individual'].descriptors['V'])
         Vp = float(experiment.samples['Individual'].descriptors['Vp'])
-        self.assertTrue(Ka>0.185 and Ka<0.25) # Gabrielsson p. 613: k01=10 h^-1=0.166 min^-1
-        self.assertTrue(tlag>5 and tlag<18) # Gabrielsson p. 613: Tlag=0.078 h=4.7 min
+        self.assertTrue(Ka>0.185 and Ka<0.29) # Gabrielsson p. 613: k01=10 h^-1=0.166 min^-1
+        self.assertTrue(tlag>5 and tlag<22) # Gabrielsson p. 613: Tlag=0.078 h=4.7 min
         self.assertTrue(Clp>0.165 and Clp<0.22) # Gabrielsson p. 613: k12=0.13
         self.assertTrue(Cl>0.85 and Cl<1.1) # Gabrielsson p. 613: k10=0.66
-        self.assertTrue(V>82 and V<86) # Gabrielsson p. 613: Vc=83
-        self.assertTrue(Vp>95 and Vp<113)
+        self.assertTrue(V>82 and V<91) # Gabrielsson p. 613: Vc=83
+        self.assertTrue(Vp>95 and Vp<120)
         fitting = PKPDFitting()
         fitting.load(protPKPDPOTwoCompartments.outputFitting.fnFitting)
         self.assertTrue(fitting.sampleFits[0].R2>0.99)
