@@ -141,6 +141,9 @@ class ProtPKPDODEBase(ProtPKPD,PKPDModelBase2):
     def setTimeRange(self, sample):
         if self.t0.get()=="" or self.tF.get()=="":
             tmin, tmax = sample.getRange(self.varNameX)
+        else:
+            tmin = self.t0.get()
+            tmax = self.tF.get()
         if self.tmin==None:
             self.tmin=tmin
         else:
