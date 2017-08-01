@@ -60,16 +60,17 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
                            'prm1, prm2, prm3, prm4\n'
                            'prmA, prmB, prmC, prmD')
         form.addParam('doses', params.TextParam, label="Doses", height=5, width=50,
-                      default="RepeatedBolus ; repeated_bolus t=0:24:120 d=60; h; mg",
-                      help="Structure: [Dose Name] ; [Description] ; [Units] \n"\
+                      default="RepeatedBolus ; via=Oral; repeated_bolus; t=0:24:120 h; d=60 mg",
+                      help="Structure: [Dose Name] ; [Via] ; [Dose type] ; [time] ; [dose] \n"\
                            "The dose name should have no space or special character\n"\
+                           "The via should be one present in the input experiment to the ODE model.\n"\
                            "Valid units are: h, mg, ug, ...\n"\
                            "The description is either a bolus or an infusion as shown in the examples\n"\
                            "\nIt is important that there are two semicolons.\n"\
                            "Examples:\n"\
-                           "Infusion0 ; infusion t=0.500000...0.750000 d=60; h; mg\n"\
-                           "Bolus0 ; bolus t=0.000000 d=60; min; mg\n"\
-                           "RepeatedBolus ; repeated_bolus t=0:24:120 d=60; h; mg")
+                           "Infusion0; via=Intravenous; infusion; t=0.500000...0.750000 h; d=60 mg\n"\
+                           "Bolus0; via=Oral; bolus; t=0.000000 min; d=60 mg\n"\
+                           "RepeatedBolus; via=Oral; repeated_bolus; t=0:24:120 h; d=60 mg")
         form.addParam('t0', params.FloatParam, label="Initial time (h)", default=0)
         form.addParam('tF', params.FloatParam, label="Final time (h)", default=24*7)
         form.addParam('Nsimulations', params.IntParam, label="Simulation samples", default=200, condition="paramsSource==0", expertLevel=LEVEL_ADVANCED,
@@ -195,7 +196,8 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         self.varNameY = self.fitting.predicted.varName
 
         # Create drug source
-        self.drugSource = DrugSource()
+        self.clearGroupParameters()
+        self.createDrugSource()
 
         # Create output object
         self.outputExperiment = PKPDExperiment()
@@ -209,6 +211,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         self.outputExperiment.variables[self.varNameY] = self.experiment.variables[self.varNameY]
         self.outputExperiment.general["title"]="Simulated ODE response"
         self.outputExperiment.general["comment"]="Simulated ODE response"
+        self.outputExperiment.vias = self.experiment.vias
 
         # Setup model
         self.model = self.protODE.createModel()
@@ -219,6 +222,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         self.model.setYVar(self.varNameY)
         Nsamples = int(60*math.ceil((self.tF.get()-self.t0.get())/self.model.deltaT))+1
         self.model.x = [self.t0.get()+i*self.model.deltaT for i in range(0,Nsamples)]
+        self.modelList.append(self.model)
 
         # Read the doses
         for line in self.doses.get().replace('\n',';;').split(';;'):
@@ -228,13 +232,15 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
                 continue
             dosename = tokens[0].strip()
             self.outputExperiment.doses[dosename] = PKPDDose()
-            self.outputExperiment.doses[dosename].parseTokens(tokens)
+            self.outputExperiment.doses[dosename].parseTokens(tokens,self.experiment.vias)
         auxSample = PKPDSample()
         auxSample.descriptors = {}
         auxSample.doseDictPtr = self.outputExperiment.doses
         auxSample.variableDictPtr = self.outputExperiment.variables
         auxSample.doseList = [dosename]
         auxSample.interpretDose()
+        self.drugSource.setDoses(auxSample.parsedDoseList, self.t0.get()-10, self.tF.get()+10)
+        self.model.drugSource = self.drugSource
 
         # Check units
         # Dunits = self.outputExperiment.doses[dosename].dunits
@@ -283,7 +289,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
 
             # Prepare the model
             self.setParameters(parameters)
-            y = self.forwardModel(parameters, simulationsX)
+            y = self.forwardModel(parameters, [simulationsX])
 
             # Create AUC, AUMC, MRT variables and units
             if i == 0:
@@ -315,10 +321,10 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
                     self.outputExperiment.variables["MRT"] = MRTvar
 
             # Evaluate AUC, AUMC and MRT in the last full period
-            self.NCA(simulationsX,y)
+            self.NCA(self.model.x,y[0])
 
             # Keep results
-            simulationsY[i,:] = y
+            simulationsY[i,:] = y[0]
             AUCarray[i] = self.AUC0t
             AUMCarray[i] = self.AUMC0t
             MRTarray[i] = self.MRT
@@ -328,7 +334,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
             fluctuationArray[i] = self.fluctuation
             percentageAccumulationArray[i] = self.percentageAccumulation
             if self.addIndividuals or self.paramsSource==ProtPKPDODESimulate.PRM_USER_DEFINED:
-                self.addSample("Simulation_%d"%i, dosename, simulationsX, y)
+                self.addSample("Simulation_%d"%i, dosename, simulationsX, y[0])
 
         # Report NCA statistics
         alpha_2 = (100-self.confidenceLevel.get())/2
