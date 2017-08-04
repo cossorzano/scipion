@@ -385,7 +385,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         msg.append("Dose: %s"%self.doses.get())
         if self.paramsSource ==  ProtPKPDODESimulate.PRM_POPULATION:
             msg.append("Number of simulations: %d"%self.Nsimulations.get())
-            msg.append("Confidence interval: %f"%self.confidenceInterval.get())
+            msg.append("Confidence level: %f"%self.confidenceLevel.get())
         else:
             msg.append("Parameters:\n"+self.prmUSer.get())
         return msg
