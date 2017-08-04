@@ -72,10 +72,10 @@ class ProtPKPDFilterPopulation(ProtPKPD):
         self.fitting.modelDescription = self.population.modelDescription
 
         newSampleFit = PKPDSampleFitBootstrap()
-        newSampleFit.sampleName = "Filtered population"
         newSampleFit.parameters = None
         filterType = self.filterType.get()
         for sampleFit in self.population.sampleFits:
+            newSampleFit.sampleName = sampleFit.sampleName
             if newSampleFit.parameters == None:
                 newSampleFit.parameters = np.empty((0,sampleFit.parameters.shape[1]))
                 newSampleFit.xB = []
