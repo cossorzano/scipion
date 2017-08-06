@@ -84,7 +84,8 @@ class ProtPKPDApplyAllometricScaling(ProtPKPD):
                     a = scaleModel.models[varName][1]
                     targetValue = k*math.pow(targetWeight,a)
                     currentValue = k*math.pow(sampleWeight,a)
-                    sampleFit.parameters[0][idx] *= targetValue/currentValue
+                    for j in range(sampleFit.parameters.shape[0]):
+                        sampleFit.parameters[j][idx] *= targetValue/currentValue
 
         self.experiment.write(self._getPath("experiment.pkpd"))
         self.population.fnExperiment.set(self._getPath("experiment.pkpd"))
