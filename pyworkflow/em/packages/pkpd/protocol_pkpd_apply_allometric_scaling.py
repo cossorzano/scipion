@@ -37,7 +37,9 @@ from pyworkflow.protocol.constants import LEVEL_ADVANCED
 
 class ProtPKPDApplyAllometricScaling(ProtPKPD):
     """ Apply an allometric scaling previously calculated to an incoming experiment. The labels specified by the
-        allometric scaling model will be rescaled to the target weight. """
+        allometric scaling model will be rescaled to the target weight. Note that depending on the exponent of the
+        fitting you may want to use a different predictor (weight*maximum lifespan potential, or weight*brain weight)
+        see the rule of exponents (Mahmood and Balian 1996). """
 
     _label = 'apply allometric'
 
@@ -103,3 +105,6 @@ class ProtPKPDApplyAllometricScaling(ProtPKPD):
     def _summary(self):
         msg = ["Target weight: %f"%self.targetWeight.get()]
         return msg
+
+    def _citations(self):
+        return ['Sharma2009','Mahmood1996']

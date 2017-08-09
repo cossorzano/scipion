@@ -70,6 +70,17 @@ _bibtexStr = """
   Url                      = {http://link.springer.com/article/10.1023/A:1007572803027}
 }
 
+@Article{Mahmood1996,
+  Title                    = {Quantitative prediction of in vivo drug-drug interactions from in vitro data based on physiological pharmacokinetics: use of maximum unbound concentration of inhibitor at the inlet to the liver},
+  Author                   = {Mahmood, I. and Balian, J. D.},
+  Journal                  = {J. Pharmaceutical sciences},
+  Pages                    = {411-414},
+  Volume                   = {85},
+  Year                     = {1996},
+  Doi                      = {http://dx.doi.org/10.1021/js950400y},
+  Url                      = {http://onlinelibrary.wiley.com/doi/10.1021/js950400y/full}
+}
+
 @Article{Rostami2004,
   Title                    = {In silico simulations to assess the in vivo consequences of in vitro metabolic drug?drug interactions},
   Author                   = {Rostami-Hodjegan, A. and Tucker, G. T.},
@@ -79,6 +90,17 @@ _bibtexStr = """
   Volume                   = {4},
   Doi                      = {http://dx.doi.org/10.1016/j.ddtec.2004.10.002},
   Url                      = {http://www.sciencedirect.com/science/article/pii/S174067490400037X}
+}
+
+@Article{Sharma2009,
+  Title                    = {To scale or not to scale: the principles of dose extrapolation.},
+  Author                   = {Sharma, V. and McNeill, J. H.},
+  Journal                  = {British J. Pharmacology},
+  Year                     = {2009},
+  Pages                    = {907-921},
+  Volume                   = {157},
+  Doi                      = {http://dx.doi.org/10.1111/j.1476-5381.2009.00267.x},
+  Url                      = {https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2737649/pdf/bph0157-0907.pdf}
 }
 
 @Article{Spiess2010,
