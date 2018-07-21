@@ -27,7 +27,6 @@
 PD models
 """
 
-import math
 import numpy as np
 
 from pyworkflow.em.data import PKPDModel
@@ -46,7 +45,7 @@ class PDLinear(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x==None:
             x=self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         s = parameters[1]
@@ -107,7 +106,7 @@ class PDLogLinear(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x==None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
 
         m = parameters[0]
@@ -173,7 +172,7 @@ class PDSaturated(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
 
         e0 = parameters[0]
@@ -240,7 +239,7 @@ class PDSigmoid(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         emax = parameters[1]
@@ -313,7 +312,7 @@ class PDGompertz(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x==None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
 
         e0 = parameters[0]
@@ -392,7 +391,7 @@ class PDLogistic1(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         a = parameters[1]
@@ -472,7 +471,7 @@ class PDLogistic2(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         a = parameters[1]
@@ -552,7 +551,7 @@ class PDLogistic3(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
 
         e0 = parameters[0]
@@ -632,7 +631,7 @@ class PDLogistic4(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         a = parameters[1]
@@ -710,7 +709,7 @@ class PDRichards(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         a = parameters[1]
@@ -795,7 +794,7 @@ class PDMorgan(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         b = parameters[1]
@@ -880,7 +879,7 @@ class PDWeibull(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
         a = parameters[0]
         b = parameters[1]
@@ -957,7 +956,7 @@ class PDHill(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
             x = self.x
-        xToUse = x[0] # From [array(...)] to array(...)
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
         self.yPredicted = np.zeros(xToUse.shape[0])
         e0 = parameters[0]
         b = parameters[1]
@@ -1026,6 +1025,123 @@ class PDHill(PDGenericModel):
         retval.append(lowerBound[1] > 0 or upperBound[1] < 0)
         retval.append(lowerBound[2] > 0 or upperBound[2] < 0)
         retval.append(lowerBound[3] > 0 or upperBound[3] < 0)
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+class PDOQuigley1(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
+        x0 = parameters[0]
+        a = parameters[1]
+
+        self.yPredicted = ((np.tanh(xToUse-x0)+1)/2)**a
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
+        return self.yPredicted
+
+    def getDescription(self):
+        return "OQuigley1 (%s)" % self.__class__.__name__
+
+    def prepare(self):
+        if self.bounds == None:
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            a = 1
+            x0=min(xToUse)
+
+            print("First estimate of OQuigley1 term: ")
+            print("Y  = ((tanh(X-(%f))+1)/2)^(%f) " % (x0,a))
+
+            self.bounds = []
+            self.bounds.append((min(0.1*x0), max(max(xToUse),1e3*x0)))
+            self.bounds.append((-5, 5))
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y=((tanh(X-X0)+1)/2)^a"
+
+    def getEquation(self):
+        toPrint = "Y  = ((tanh(X-(%f))+1)/2)^(%f)" % (self.parameters[0], self.parameters[1])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['x0', 'a']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=((tanh(X-X0)+1)/2)^a'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
+class PDOQuigley2(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
+        x0 = parameters[0]
+        g = parameters[1]
+        expx = np.exp(g * (xToUse - x0))
+
+        self.yPredicted = expx/(1+expx)
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
+        return self.yPredicted
+
+    def getDescription(self):
+        return "OQuigley2 (%s)" % self.__class__.__name__
+
+    def prepare(self):
+        if self.bounds == None:
+            xToUse=self.x[0] # From [array(...)] to array(...)
+            yToUse=self.y[0] # From [array(...)] to array(...)
+            g = 1
+            x0=min(xToUse)
+
+            print("First estimate of OQuigley2 term: ")
+            print("Y  = exp(g*(X-(%f)))/(1+exp((%f)*(X-(%f))) " % (x0,g,x0))
+
+            self.bounds = []
+            self.bounds.append((min(0.1*x0), max(max(xToUse),1e3*x0)))
+            self.bounds.append((-5, 5))
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y=exp(g*(X-X0))/(1+exp(g*(X-X0))"
+
+    def getEquation(self):
+        toPrint = "Y=exp(g*(X-(%f)))/(1+exp((%f)*(X-(%f)))" % (self.parameters[0], self.parameters[1], self.parameters[0])
+        return toPrint
+
+    def getParameterNames(self):
+        return ['x0', 'g']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=exp(g*(X-X0))/(1+exp(g*(X-X0))'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE, PKPDUnit.UNIT_NONE]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
         return retval
 
     def areParametersValid(self, p):
