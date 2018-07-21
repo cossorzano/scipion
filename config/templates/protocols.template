@@ -174,6 +174,10 @@ Protocols = [{
 		"text": "two compartments"
 	},{
 		"tag": "protocol",
+		"value": "ProtPKPDTwoCompartmentsBoth",
+		"text": "two compartments (both)"
+	},{
+		"tag": "protocol",
 		"value": "ProtPKPDTwoCompartmentsUrine",
 		"text": "two compartments (urine)"
 	},{
@@ -224,6 +228,34 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDSimulateLiverFlow",
 		"text": "simulate liver flow"
+	}]
+    },
+    {
+	"tag": "section",
+	"text": "PKPD",
+	"icon": "bookmark.png",
+	"children": [{
+		"tag": "protocol",
+		"value": "ProtPKPDMonoCompartmentPD",
+		"text": "monocompartment (pd)"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDMonoCompartmentLinkPD",
+		"text": "monocompartment (link pd)"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDTwoCompartmentsBothPD",
+		"text": "two-compartments (both, pd)"
+	}]
+    },
+    {
+	"tag": "section",
+	"text": "Dose Escalation",
+	"icon": "bookmark.png",
+	"children": [{
+		"tag": "protocol",
+		"value": "ProtPKPDSimulateDoseEscalation",
+		"text": "simulate"
 	}]
     },
     {
