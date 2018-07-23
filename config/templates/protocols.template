@@ -256,6 +256,10 @@ Protocols = [{
 		"tag": "protocol",
 		"value": "ProtPKPDSimulateDoseEscalation",
 		"text": "simulate"
+	},{
+		"tag": "protocol",
+		"value": "ProtPKPDDoseEscalation",
+		"text": "estimate dose"
 	}]
     },
     {

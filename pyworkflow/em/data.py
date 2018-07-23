@@ -927,6 +927,9 @@ class PKPDODEModel(PKPDModelBase2):
             if yt<0:
                 yt=0
 
+    def H(self, y):
+        pass
+
     def getResponseDimension(self):
         return None
 
@@ -972,7 +975,7 @@ class PKPDODEModel(PKPDModelBase2):
             # print("k3=",k3," dD=",dD," dyD=",dyD," y3=",y3)
 
             k4 = self.F(t+self.deltaT,y3)
-            y4 = yt+k4*self.deltaT+dyD
+            # y4 = yt+k4*self.deltaT+dyD
             # print("k4=",k4," y4=",y4)
 
             # Update state
@@ -982,6 +985,9 @@ class PKPDODEModel(PKPDModelBase2):
 
             # Make sure it makes sense
             self.imposeConstraints(yt)
+
+            # Apply measurement transformation
+            self.H(yt)
 
             # if self.show:
             #     print("t=%f dD=%s dyD=%s dy=%s"%(t,str(dD),str(dyD),str((0.5*(k1+k4)+k2+k3)*K)))
@@ -2065,6 +2071,70 @@ class PKPDAllometricScale(EMObject):
                     self.Y[varName].append(float(y))
 
         fh.close()
+
+class PKPDDoseResponse(EMObject):
+    def __init__(self, **args):
+        EMObject.__init__(self, **args)
+        self.doses=[]
+        self.Nresponses=[]
+        self.Npatients=[]
+        self.responses=[]
+
+    def read(self,inputStr,isFn=False):
+        if isFn:
+            fh=open(inputStr)
+            inputStr=fh.readlines()
+            fh.close()
+        else:
+            inputStr=inputStr.split("\n")
+        for line in inputStr:
+            line=line.strip()
+            if line!="":
+                tokens=line.split(":")
+                dose=float(tokens[0].strip())
+                self.doses.append(dose)
+                self.responses.append(tokens[1].strip())
+
+                k=0
+                n=0
+                for token in tokens[1].split():
+                    n+=1
+                    if token.strip()=="1":
+                        k+=1
+                self.Nresponses.append(k)
+                self.Npatients.append(n)
+
+    def write(self,fnOut):
+        fh=open(fnOut,"w")
+        for i in range(len(self.doses)):
+            fh.write("%f: %s\n"%(self.doses[i],self.responses[i]))
+        fh.close()
+
+    def findDose(self,dose):
+        # for n in range(len(self.doses)):
+        #     if abs(self.doses[n]-dose)<1e-6:
+        #         return n
+        if len(self.doses)>0 and abs(self.doses[-1]-dose)<1e-6:
+            return len(self.doses)-1
+        else:
+            return None
+
+    def appendResponse(self,dose,response):
+        # response must be Boolean
+        n = self.findDose(dose)
+        if n is None:
+            n=len(self.doses)
+            self.doses.append(dose)
+            self.responses.append("")
+            self.Nresponses.append(0)
+            self.Npatients.append(0)
+
+        responseStr=" 1" if response else " 0"
+        self.responses[n]=(self.responses[n]+responseStr).strip()
+        self.Npatients[n]+=1
+        if response:
+            self.Nresponses[n]+=1
+
 
 def flattenArray(y):
     if type(y[0])!=list and type(y[0])!=np.ndarray:
