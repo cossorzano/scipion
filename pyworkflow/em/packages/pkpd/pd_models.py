@@ -1030,6 +1030,59 @@ class PDHill(PDGenericModel):
     def areParametersValid(self, p):
         return True
 
+class PDOQuigley0(PDGenericModel):
+    def forwardModel(self, parameters, x=None):
+        if x == None:
+            x = self.x
+        xToUse = x[0] if type(x)==list else x # From [array(...)] to array(...)
+        self.yPredicted = np.zeros(xToUse.shape[0])
+        a = parameters[0]
+
+        self.yPredicted = ((np.tanh(xToUse)+1)/2)**a
+        self.yPredicted = [self.yPredicted] # From array(...) to [array(...)]
+        return self.yPredicted
+
+    def getDescription(self):
+        return "OQuigley0 (%s)" % self.__class__.__name__
+
+    def prepare(self):
+        if self.bounds == None:
+            a = 1
+
+            print("First estimate of OQuigley0 term: ")
+            print("Y  = ((tanh(X)+1)/2)^(%f) " % (a))
+
+            self.bounds = []
+            self.bounds.append((-5, 5))
+
+    def printSetup(self):
+        print("Model: %s" % self.getModelEquation())
+        print("Bounds: " + str(self.bounds))
+
+    def getModelEquation(self):
+        return "Y=((tanh(X)+1)/2)^a"
+
+    def getEquation(self):
+        toPrint = "Y  = ((tanh(X)+1)/2)^(%f)" % self.parameters[0]
+        return toPrint
+
+    def getParameterNames(self):
+        return ['a']
+
+    def getParameterDescriptions(self):
+        return ['Automatically fitted model of the form Y=((tanh(X)+1)/2)^a'] * self.getNumberOfParameters()
+
+    def calculateParameterUnits(self, sample):
+        self.parameterUnits = [PKPDUnit.UNIT_NONE]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval = []
+        return retval
+
+    def areParametersValid(self, p):
+        return True
+
 class PDOQuigley1(PDGenericModel):
     def forwardModel(self, parameters, x=None):
         if x == None:
