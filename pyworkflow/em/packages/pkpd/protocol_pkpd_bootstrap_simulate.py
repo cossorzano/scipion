@@ -49,7 +49,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
     def _defineParams(self, form):
         form.addSection('Input')
         form.addParam('inputODE', params.PointerParam, label="Input ODE model",
-                      pointerClass='ProtPKPDMonoCompartment, ProtPKPDTwoCompartments', help='Select a run of an ODE model')
+                      pointerClass='ProtPKPDMonoCompartment, ProtPKPDTwoCompartments, ProtPKPDMonoCompartmentPD, ProtPKPDTwoCompartmentsBothPD', help='Select a run of an ODE model')
         form.addParam('paramsSource', params.EnumParam, label="Source of parameters", choices=['ODE Bootstrap','User defined'], default=0,
                       help="Choose a population of parameters or your own")
         form.addParam('inputPopulation', params.PointerParam, label="Input population", condition="paramsSource==0",
@@ -96,9 +96,16 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         newSample.doseDictPtr = self.outputExperiment.doses
         newSample.descriptors = {}
         newSample.doseList = [doseName]
-        newSample.addMeasurementPattern([self.varNameY])
-        newSample.addMeasurementColumn("t",simulationsX)
-        newSample.addMeasurementColumn(self.varNameY,y)
+        if type(self.varNameY)!=list:
+            newSample.addMeasurementPattern([self.varNameY])
+            newSample.addMeasurementColumn("t", simulationsX)
+            newSample.addMeasurementColumn(self.varNameY,y)
+        else:
+            for j in range(len(self.varNameY)):
+                newSample.addMeasurementPattern([self.varNameY[j]])
+            newSample.addMeasurementColumn("t", simulationsX)
+            for j in range(len(self.varNameY)):
+                newSample.addMeasurementColumn(self.varNameY[j], y[j])
         newSample.descriptors["AUC0t"] = self.AUC0t
         newSample.descriptors["AUMC0t"] = self.AUMC0t
         newSample.descriptors["MRT"] = self.MRT
@@ -190,10 +197,24 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
 
     def runSimulate(self, objId, Nsimulations, confidenceInterval, doses):
         self.protODE = self.inputODE.get()
-        self.experiment = self.readExperiment(self.protODE.outputExperiment.fnPKPD)
-        self.fitting = self.readFitting(self.inputPopulation.get().fnFitting,cls="PKPDSampleFitBootstrap")
+        if hasattr(self.protODE,"outputExperiment"):
+            self.experiment = self.readExperiment(self.protODE.outputExperiment.fnPKPD)
+        elif hasattr(self.protODE,"outputExperiment1"):
+            self.experiment = self.readExperiment(self.protODE.outputExperiment1.fnPKPD)
+        else:
+            raise Exception("Cannot find an outputExperiment in the input ODE")
+        if self.paramsSource==ProtPKPDODESimulate.PRM_POPULATION:
+            self.fitting = self.readFitting(self.inputPopulation.get().fnFitting, cls="PKPDSampleFitBootstrap")
+        else:
+            if hasattr(self.protODE, "outputFitting"):
+                self.fitting = self.readFitting(self.protODE.outputFitting.fnFitting)
+            elif hasattr(self.protODE, "outputFitting1"):
+                self.fitting = self.readFitting(self.protODE.outputFitting1.fnFitting)
         self.varNameX = self.fitting.predictor.varName
-        self.varNameY = self.fitting.predicted.varName
+        if type(self.fitting.predicted)!=list:
+            self.varNameY = self.fitting.predicted.varName
+        else:
+            self.varNameY = [var.varName for var in self.fitting.predicted]
 
         # Create drug source
         self.clearGroupParameters()
@@ -208,7 +229,11 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
         tvar.units = createUnit("min")
 
         self.outputExperiment.variables[self.varNameX] = tvar
-        self.outputExperiment.variables[self.varNameY] = self.experiment.variables[self.varNameY]
+        if type(self.fitting.predicted)!=list:
+            self.outputExperiment.variables[self.varNameY] = self.experiment.variables[self.varNameY]
+        else:
+            for varName in self.varNameY:
+                self.outputExperiment.variables[varName] = self.experiment.variables[varName]
         self.outputExperiment.general["title"]="Simulated ODE response"
         self.outputExperiment.general["comment"]="Simulated ODE response"
         self.outputExperiment.vias = self.experiment.vias
@@ -259,7 +284,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
 
         # Simulate the different responses
         simulationsX = self.model.x
-        simulationsY = np.zeros((Nsimulations,len(simulationsX)))
+        simulationsY = np.zeros((Nsimulations,len(simulationsX),self.getResponseDimension()))
         AUCarray = np.zeros(Nsimulations)
         AUMCarray = np.zeros(Nsimulations)
         MRTarray = np.zeros(Nsimulations)
@@ -289,13 +314,16 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
 
             # Prepare the model
             self.setParameters(parameters)
-            y = self.forwardModel(parameters, [simulationsX])
+            y = self.forwardModel(parameters, [simulationsX]*self.getResponseDimension())
 
             # Create AUC, AUMC, MRT variables and units
             if i == 0:
-                self.Cunits = self.experiment.variables[self.varNameY].units
-                self.AUCunits = multiplyUnits(tvar.units.unit,self.Cunits.unit)
-                self.AUMCunits = multiplyUnits(tvar.units.unit,self.AUCunits)
+                if type(self.varNameY)!=list:
+                    self.Cunits = self.experiment.variables[self.varNameY].units
+                else:
+                    self.Cunits = self.experiment.variables[self.varNameY[0]].units
+                self.AUCunits = multiplyUnits(tvar.units.unit, self.Cunits.unit)
+                self.AUMCunits = multiplyUnits(tvar.units.unit, self.AUCunits)
 
                 if self.addStats or self.addIndividuals:
                     AUCvar = PKPDVariable()
@@ -324,7 +352,8 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
             self.NCA(self.model.x,y[0])
 
             # Keep results
-            simulationsY[i,:] = y[0]
+            for j in range(self.getResponseDimension()):
+                simulationsY[i,:,j] = y[j]
             AUCarray[i] = self.AUC0t
             AUMCarray[i] = self.AUMC0t
             MRTarray[i] = self.MRT
@@ -334,7 +363,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
             fluctuationArray[i] = self.fluctuation
             percentageAccumulationArray[i] = self.percentageAccumulation
             if self.addIndividuals or self.paramsSource==ProtPKPDODESimulate.PRM_USER_DEFINED:
-                self.addSample("Simulation_%d"%i, dosename, simulationsX, y[0])
+                self.addSample("Simulation_%d"%i, dosename, simulationsX, y)
 
         # Report NCA statistics
         alpha_2 = (100-self.confidenceLevel.get())/2
@@ -357,27 +386,36 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
 
         # Calculate statistics
         if self.addStats:
-            mu = np.mean(simulationsY,axis=0)
-            limits = np.percentile(simulationsY,[alpha_2,100-alpha_2],axis=0)
+            if self.paramsSource!=ProtPKPDODESimulate.PRM_USER_DEFINED:
+                limits = np.percentile(simulationsY,[alpha_2,100-alpha_2],axis=0)
 
-            print("Lower limit NCA")
-            self.NCA(simulationsX,limits[0])
-            self.addSample("LowerLimit", dosename, simulationsX, limits[0])
+                print("Lower limit NCA")
+                self.NCA(simulationsX,limits[0])
+                self.addSample("LowerLimit", dosename, simulationsX, limits[0])
 
             print("Mean profile NCA")
-            self.NCA(simulationsX,mu)
+            if self.getResponseDimension()==1:
+                mu = np.mean(simulationsY,axis=0)
+                self.NCA(simulationsX, mu)
+            else:
+                mu = []
+                for j in range(self.getResponseDimension()):
+                    mu.append(np.mean(simulationsY[:,:,j],axis=0))
+                self.NCA(simulationsX,mu[0])
             self.addSample("Mean", dosename, simulationsX, mu)
 
-            print("Upper limit NCA")
-            self.NCA(simulationsX,limits[1])
-            self.addSample("UpperLimit", dosename, simulationsX, limits[1])
+            if self.paramsSource!=ProtPKPDODESimulate.PRM_USER_DEFINED:
+                print("Upper limit NCA")
+                self.NCA(simulationsX,limits[1])
+                self.addSample("UpperLimit", dosename, simulationsX, limits[1])
 
         self.outputExperiment.write(self._getPath("experiment.pkpd"))
 
     def createOutputStep(self):
         self._defineOutputs(outputExperiment=self.outputExperiment)
         self._defineSourceRelation(self.inputODE.get(), self.outputExperiment)
-        self._defineSourceRelation(self.inputPopulation.get(), self.outputExperiment)
+        if self.paramsSource==ProtPKPDODESimulate.PRM_POPULATION:
+            self._defineSourceRelation(self.inputPopulation.get(), self.outputExperiment)
 
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
@@ -387,7 +425,7 @@ class ProtPKPDODESimulate(ProtPKPDODEBase):
             msg.append("Number of simulations: %d"%self.Nsimulations.get())
             msg.append("Confidence level: %f"%self.confidenceLevel.get())
         else:
-            msg.append("Parameters:\n"+self.prmUSer.get())
+            msg.append("Parameters:\n"+self.prmUser.get())
         return msg
 
     def _validate(self):

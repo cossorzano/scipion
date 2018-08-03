@@ -1,6 +1,9 @@
 Fitting plot should be more continuous
 Implement a test for allometric scaling and bootstrapping
 A bootstrapped population could be changed the experiment it refers to
+Allometric scaling: Mahmood, I.; Cheng, A.; Brauer, E. & Humeniuk, R.
+Prediction of Antimalarial Drug Clearance in Children: A Comparison of Three Different Interspecies Scaling Methods.
+European journal of drug metabolism and pharmacokinetics, 2016, 41, 767-775
 
 Generic analysis (signalAnalysis.py)
 Generic PD analysis

@@ -49,10 +49,10 @@ class ProtPKPDODETwoVias(ProtPKPD,PKPDModelBase2):
     def _defineParams(self, form):
         form.addSection('Input')
         form.addParam('prot1ptr', params.PointerParam, label="Model Via 1 (e.g. IV)",
-                      pointerClass='ProtPKPDMonoCompartment, ProtPKPDTwoCompartments',
+                      pointerClass='ProtPKPDMonoCompartment, ProtPKPDTwoCompartments, ProtPKPDTwoCompartmentsBoth, ProtPKPDMonoCompartmentPD, ProtPKPDTwoCompartmentsBothPD',
                       help='Select the model for the intravenous route')
         form.addParam('prot2ptr', params.PointerParam, label="Model Via 2 (e.g. PO)",
-                      pointerClass='ProtPKPDMonoCompartment, ProtPKPDTwoCompartments',
+                      pointerClass='ProtPKPDMonoCompartment, ProtPKPDTwoCompartments, ProtPKPDTwoCompartmentsBoth, ProtPKPDMonoCompartmentPD, ProtPKPDTwoCompartmentsBothPD',
                       help='Select the model for the oral route. It must be of the same type as the intravenous,'
                            'and the sample names must be the same in both experiments')
         form.addParam('fitType', params.EnumParam, choices=["Linear","Logarithmic","Relative"], label="Fit mode", default=1,

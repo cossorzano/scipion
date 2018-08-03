@@ -56,6 +56,10 @@ from protocol_pkpd_monocompartment_clint import ProtPKPDMonoCompartmentClint
 from protocol_pkpd_two_compartments_clint import ProtPKPDTwoCompartmentsClint
 from protocol_pkpd_two_compartments_metabolite import ProtPKPDTwoCompartmentsClintMetabolite
 from protocol_pkpd_two_compartments_autoinduction import ProtPKPDTwoCompartmentsAutoinduction
+from protocol_pkpd_twocompartments_both import ProtPKPDTwoCompartmentsBoth
+from protocol_pkpd_monocompartment_linkpd import ProtPKPDMonoCompartmentLinkPD
+from protocol_pkpd_monocompartment_pd import ProtPKPDMonoCompartmentPD
+from protocol_pkpd_twocompartments_both_pd import ProtPKPDTwoCompartmentsBothPD
 
 from tk_ode import PKPDODEDialog, PKPDFitDialog
 
@@ -103,6 +107,12 @@ class PKPDChooseVariableWizard(Wizard):
                 (ProtPKPDMonoCompartmentUrine, ['predictor']),
                 (ProtPKPDMonoCompartmentUrine, ['predicted']),
                 (ProtPKPDMonoCompartmentUrine, ['Au']),
+                (ProtPKPDMonoCompartmentLinkPD, ['predictor']),
+                (ProtPKPDMonoCompartmentLinkPD, ['predicted']),
+                (ProtPKPDMonoCompartmentLinkPD, ['E']),
+                (ProtPKPDMonoCompartmentPD, ['predictor']),
+                (ProtPKPDMonoCompartmentPD, ['predicted']),
+                (ProtPKPDMonoCompartmentPD, ['E']),
                 (ProtPKPDTwoCompartments, ['predictor']),
                 (ProtPKPDTwoCompartments, ['predicted']),
                 (ProtPKPDTwoCompartmentsClint, ['predictor']),
@@ -112,6 +122,13 @@ class PKPDChooseVariableWizard(Wizard):
                 (ProtPKPDTwoCompartmentsClintMetabolite, ['metabolite']),
                 (ProtPKPDTwoCompartmentsAutoinduction, ['predictor']),
                 (ProtPKPDTwoCompartmentsAutoinduction, ['predicted']),
+                (ProtPKPDTwoCompartmentsBoth, ['predictor']),
+                (ProtPKPDTwoCompartmentsBoth, ['predicted']),
+                (ProtPKPDTwoCompartmentsBoth, ['Cperipheral']),
+                (ProtPKPDTwoCompartmentsBothPD, ['predictor']),
+                (ProtPKPDTwoCompartmentsBothPD, ['predicted']),
+                (ProtPKPDTwoCompartmentsBothPD, ['Cperipheral']),
+                (ProtPKPDTwoCompartmentsBothPD, ['E']),
                 (ProtPKPDMonoCompartmentUrine, ['predicted']),
                 (ProtPKPDSimulateGenericPD, ['predictor']),
                 (ProtPKPDStatsExp2Subgroups2Mean, ['label1', 'inputExperiment1']),
@@ -318,8 +335,12 @@ class PKPDODEWizard(Wizard):
     _targets = [(ProtPKPDMonoCompartment, ['bounds']),
                 (ProtPKPDMonoCompartmentUrine, ['bounds']),
                 (ProtPKPDMonoCompartmentClint, ['bounds']),
+                (ProtPKPDMonoCompartmentLinkPD, ['bounds']),
+                (ProtPKPDMonoCompartmentPD, ['bounds']),
                 (ProtPKPDTwoCompartments, ['bounds']),
                 (ProtPKPDTwoCompartmentsUrine, ['bounds']),
+                (ProtPKPDTwoCompartmentsBoth, ['bounds']),
+                (ProtPKPDTwoCompartmentsBothPD, ['bounds']),
                 (ProtPKPDTwoCompartmentsClint, ['bounds']),
                 (ProtPKPDTwoCompartmentsClintMetabolite, ['bounds']),
                 (ProtPKPDTwoCompartmentsAutoinduction, ['bounds']),

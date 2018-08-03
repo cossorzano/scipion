@@ -40,6 +40,30 @@ class PKModel(PKPDModel):
 class PKGenericModel(PKModel):
     pass
 
+def signifcantMessage1(varName,lower,upper):
+    if lower < 0 and upper > 0:
+        return "Suspicious, %s looks like a constant"%varName
+    elif lower < 0:
+        return "Suspicious, %s may be unstable"%varName
+    elif lower > 0:
+        return "True"
+    else:
+        return "NA"
+
+def signifcantMessage2(varName,lower,upper):
+    if lower < 0 and upper > 0:
+        return "Suspicious, %s looks like 0"%varName
+    elif upper < 0:
+        return "Suspicious, %s seems to be negative"%varName
+    else:
+        return "True"
+
+def signifcantMessage3(varName,lower,upper):
+    if lower < 0 and upper > 0:
+        return "Suspicious, %s looks like 0"%varName
+    else:
+        return "True"
+
 class PKPDExponentialModel(PKGenericModel):
     def forwardModel(self, parameters, x=None):
         if x==None:
@@ -974,6 +998,169 @@ class PK_MonocompartmentUrine(PKPDODEModel):
     def areParametersValid(self, p):
         return np.sum(p<0)==0 and p[2]<1
 
+class PK_MonocompartmentLinkPD(PKPDODEModel):
+    def F(self, t, y):
+        C = y[0]
+        Cb = y[2]
+
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        Clb=self.parameters[2]
+        Vb=self.parameters[3]
+        Q12 = Clb * (C-Cb)
+
+        return np.array([-(Cl*C + Q12)/V, 0.0, Q12/Vb],np.double)
+
+    def G(self, t, dD):
+        V=self.parameters[1]
+        return np.array([dD/V,0.0,0.0],np.double)
+
+    def H(self, y):
+        Cb = y[2]
+
+        E0=self.parameters[4]
+        a=self.parameters[5]
+        b=self.parameters[6]
+        Cbm=self.parameters[7]
+        Cbb=math.pow(Cb,b)
+
+        y[1]=E0*(1+a*Cbb/(math.pow(Cbm,b)+Cbb))
+
+    def getResponseDimension(self):
+        return 2
+
+    def getStateDimension(self):
+        return 3
+
+    def getDescription(self):
+        return "One-compartmental model link pd (%s)"%self.__class__.__name__
+
+    def getModelEquation(self):
+        return "dC/dt = -Cl/V * C - Clb/V * (C-Cb) + 1/V * dD/dt, dCb/dt = Clb/Vb * (C-Cb) and E=E0+a*Cb^b/(Cbm^b+Cb^b)"
+
+    def getEquation(self):
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        Clp=self.parameters[2]
+        Vp=self.parameters[3]
+        E0=self.parameters[4]
+        a=self.parameters[5]
+        b=self.parameters[6]
+        Cbm=self.parameters[7]
+        return "dC/dt = -(%f)/(%f) * C - (%f)/(%f) * (C-Cb) + 1/(%f) * dD/dt, dCb/dt = (%f)/(%f) * (C-Cb) and E = (%f)+(%f)*Cb^(%f)/((%f)^(%f)+Cb^(%f))"%\
+               (Cl,V,Clp,V,V,Clp,Vp,E0,a,b,Cbm,b,b)
+
+    def getParameterNames(self):
+        return ['Cl','V','Clp','Vp','E0','a','b','Cbm']
+
+    def calculateParameterUnits(self,sample):
+        xunits = unitFromString("min")
+        yunits = self.experiment.getVarUnits(self.yName[0])
+        Eunits = self.experiment.getVarUnits(self.yName[1])
+        Vunits = divideUnits(self.Dunits,yunits)
+        Clunits = divideUnits(Vunits,xunits)
+        self.parameterUnits = [Clunits,Vunits,Clunits,Vunits,Eunits,PKPDUnit.UNIT_NONE,PKPDUnit.UNIT_NONE,yunits]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        retval.append(signifcantMessage1("Cl", lowerBound[0],upperBound[0]))
+        retval.append(signifcantMessage2("V",  lowerBound[1],upperBound[1]))
+        retval.append(signifcantMessage1("Clp",lowerBound[2],upperBound[2]))
+        retval.append(signifcantMessage2("Vp", lowerBound[3],upperBound[3]))
+        retval.append(signifcantMessage2("E0", lowerBound[4],upperBound[4]))
+        retval.append(signifcantMessage2("a",  lowerBound[5],upperBound[5]))
+
+        if lowerBound[6] < 1 and upperBound[6] > 1:
+            retval.append("Suspicious, %s looks like 1" % "b")
+        else:
+            retval.append("True")
+
+        retval.append(signifcantMessage2("Cbm",lowerBound[7],upperBound[7]))
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p[0:4]<0)==0
+
+class PK_MonocompartmentPD(PKPDODEModel):
+    def F(self, t, y):
+        C = y[0]
+
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+
+        return np.array([-Cl*C/V, 0.0],np.double)
+
+    def G(self, t, dD):
+        V=self.parameters[1]
+        return np.array([dD/V,0.0],np.double)
+
+    def H(self, y):
+        C = y[0]
+
+        E0=self.parameters[2]
+        a=self.parameters[3]
+        b=self.parameters[4]
+        Cm=self.parameters[5]
+        try:
+            Cb=math.pow(C,b)
+            Cmb=math.pow(Cm,b)
+            y[1] = E0*(1+a*Cb/(Cmb+Cb))
+        except:
+            y[1] = E0
+
+    def getResponseDimension(self):
+        return 2
+
+    def getStateDimension(self):
+        return 2
+
+    def getDescription(self):
+        return "One-compartmental model pd (%s)"%self.__class__.__name__
+
+    def getModelEquation(self):
+        return "dC/dt = -Cl/V * C + 1/V * dD/dt and E=E0+a*C^b/(Cm^b+C^b)"
+
+    def getEquation(self):
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        E0=self.parameters[2]
+        a=self.parameters[3]
+        b=self.parameters[4]
+        Cm=self.parameters[5]
+        return "dC/dt = -(%f)/(%f) * C + 1/(%f) * dD/dt, and E=(%f)+(%f)*Cb^(%f)/((%f)^(%f)+Cb^(%f))"%\
+               (Cl,V,V,E0,a,b,Cm,b,b)
+
+    def getParameterNames(self):
+        return ['Cl','V','E0','a','b','Cbm']
+
+    def calculateParameterUnits(self,sample):
+        xunits = unitFromString("min")
+        yunits = self.experiment.getVarUnits(self.yName[0])
+        Eunits = self.experiment.getVarUnits(self.yName[1])
+        Vunits = divideUnits(self.Dunits,yunits)
+        Clunits = divideUnits(Vunits,xunits)
+        self.parameterUnits = [Clunits,Vunits,Eunits,PKPDUnit.UNIT_NONE,PKPDUnit.UNIT_NONE,yunits]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        retval.append(signifcantMessage1("Cl", lowerBound[0],upperBound[0]))
+        retval.append(signifcantMessage2("V",  lowerBound[1],upperBound[1]))
+        retval.append(signifcantMessage2("E0", lowerBound[2],upperBound[2]))
+        retval.append(signifcantMessage2("a",  lowerBound[3],upperBound[3]))
+
+        if lowerBound[4] < 1 and upperBound[4] > 1:
+            retval.append("Suspicious, %s looks like 1" % "b")
+        else:
+            retval.append("True")
+
+        retval.append(signifcantMessage2("Cm",lowerBound[5],upperBound[5]))
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p[0:2]<0)==0
+
 class PK_TwocompartmentsUrine(PKPDODEModel):
     def F(self, t, y):
         C = y[0]
@@ -1010,7 +1197,7 @@ class PK_TwocompartmentsUrine(PKPDODEModel):
         Clp=self.parameters[2]
         Vp=self.parameters[3]
         fe=self.parameters[4]
-        return "dC/dt = -(%f)/(%f) * C - (%f)/(%f) * (C-Cp) + 1/(%f) * dD/dt, dCp/dt = (%f)/(%f) * (C-Cp) and and dAu/dt = (%f)*(%f)*C"%\
+        return "dC/dt = -(%f)/(%f) * C - (%f)/(%f) * (C-Cp) + 1/(%f) * dD/dt, dCp/dt = (%f)/(%f) * (C-Cp) and dAu/dt = (%f)*(%f)*C"%\
                (Cl,V,Clp,V,V,Clp,Vp,fe,Cl)
 
     def getParameterNames(self):
@@ -1085,3 +1272,100 @@ class PK_TwocompartmentsUrine(PKPDODEModel):
 
     def areParametersValid(self, p):
         return np.sum(p<0)==0 and p[4]<1
+
+class PK_TwocompartmentsBoth(PK_Twocompartments):
+    def getResponseDimension(self):
+        return 2
+
+    def getDescription(self):
+        return "Two-compartmental model both (%s)"%self.__class__.__name__
+
+    def calculateParameterUnits(self,sample):
+        xunits = unitFromString("min")
+        yunits = self.experiment.getVarUnits(self.yName[0])
+        Vunits = divideUnits(self.Dunits,yunits)
+        Clunits = divideUnits(Vunits,xunits)
+        self.parameterUnits = [Clunits,Vunits,Clunits,Vunits]
+        return self.parameterUnits
+
+class PK_TwocompartmentsBothPD(PKPDODEModel):
+    def F(self, t, y):
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        Clp=self.parameters[2]
+        Vp=self.parameters[3]
+        C=y[0]
+        Cp=y[1]
+
+        Q12 = Clp * (C-Cp)
+        return np.array([-(Cl*C + Q12)/V, Q12/Vp, 0.0],np.double)
+
+    def G(self, t, dD):
+        V=self.parameters[1]
+        return np.array([dD/V,0.0,0.0],np.double)
+
+    def H(self, y):
+        Cp = y[1]
+
+        E0=self.parameters[4]
+        a=self.parameters[5]
+        b=self.parameters[6]
+        Cpm=self.parameters[7]
+        try:
+            Cpb=math.pow(Cp,b)
+            Cpmb=math.pow(Cpm,b)
+            y[2] = E0*(1+a*Cpb/(math.pow(Cpm,b)+Cpb))
+        except:
+            y[2] = E0
+
+    def getResponseDimension(self):
+        return 3
+
+    def getStateDimension(self):
+        return 3
+
+    def getDescription(self):
+        return "Two-compartments both PD model (%s)"%self.__class__.__name__
+
+    def getModelEquation(self):
+        return "dC/dt = -Cl/V * C - Clp/V * (C-Cp) + 1/V * dD/dt, dCp/dt = Clp/Vp * (C-Cp) and E=E0+a*Cp^b/(Cpm^b+Cp^b)"
+
+    def getEquation(self):
+        Cl=self.parameters[0]
+        V=self.parameters[1]
+        Clp=self.parameters[2]
+        Vp=self.parameters[3]
+        return "dC/dt = -(%f)/(%f) * C - (%f)/(%f) * (C-Cp) + 1/(%f) * dD/dt; dCp/dt = (%f)/(%f) * (C-Cp)"%(Cl,V,Clp,V,V,Clp,Vp)
+
+    def getParameterNames(self):
+        return ['Cl','V','Clp','Vp','E0','a','b','Cpm']
+
+    def calculateParameterUnits(self,sample):
+        xunits = unitFromString("min")
+        yunits = self.experiment.getVarUnits(self.yName[0])
+        Eunits = self.experiment.getVarUnits(self.yName[1])
+        Vunits = divideUnits(self.Dunits,yunits)
+        Clunits = divideUnits(Vunits,xunits)
+        self.parameterUnits = [Clunits,Vunits,Clunits,Vunits,Eunits,PKPDUnit.UNIT_NONE,PKPDUnit.UNIT_NONE,yunits]
+        return self.parameterUnits
+
+    def areParametersSignificant(self, lowerBound, upperBound):
+        retval=[]
+        retval.append(signifcantMessage1("Cl", lowerBound[0],upperBound[0]))
+        retval.append(signifcantMessage2("V",  lowerBound[1],upperBound[1]))
+        retval.append(signifcantMessage1("Clp",lowerBound[2],upperBound[2]))
+        retval.append(signifcantMessage2("Vp", lowerBound[3],upperBound[3]))
+        retval.append(signifcantMessage2("E0", lowerBound[4],upperBound[4]))
+        retval.append(signifcantMessage2("a",  lowerBound[5],upperBound[5]))
+
+        if lowerBound[6] < 1 and upperBound[6] > 1:
+            retval.append("Suspicious, %s looks like 1" % "b")
+        else:
+            retval.append("True")
+
+        retval.append(signifcantMessage2("Cpm",lowerBound[7],upperBound[7]))
+        return retval
+
+    def areParametersValid(self, p):
+        return np.sum(p[0:4]<0)==0
+
