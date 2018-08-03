@@ -257,6 +257,8 @@ class ProtPKPDDoseEscalation(ProtPKPD):
         print("Current Maximum Tolerable Dose=%f"%doseNextIndividual)
         print("This strategy should be run up to a prespecified total number of patients")
 
+        # bcrm, CRM, dfcrm, crmpack
+
     #--------------------------- INFO functions --------------------------------------------
     def _summary(self):
         return [self.measurements.get()]
