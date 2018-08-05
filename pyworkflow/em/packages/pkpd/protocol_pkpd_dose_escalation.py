@@ -146,7 +146,7 @@ class ProtPKPDDoseEscalation(ProtPKPD):
             if Nresponse==0:
                 print("0 DLTs in 3. Go to next Dose=%f"%self.getNextDose())
             elif Nresponse==1:
-                print("1 DLT in 3. Try 3 more patients at this Dose=%f"%self.getNextDose())
+                print("1 DLT in 3. Try 3 more patients at this Dose=%f"%self.getCurrentDose())
             else:
                 print("Discontinue escalation. Maximum Tolerable Dose=%f"%self.getPreviousDose())
         elif Npatients==6:
